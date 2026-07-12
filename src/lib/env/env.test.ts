@@ -18,8 +18,33 @@ describe("server environment", () => {
   it("parses a complete environment without reading it at import time", async () => {
     const { parseServerEnv } = await import("./server");
 
-    expect(parseServerEnv(validServerEnv)).toEqual(validServerEnv);
+    expect(parseServerEnv(validServerEnv)).toEqual({
+      ...validServerEnv,
+      TRUSTED_PROXY_HOPS: 1,
+    });
   });
+
+  it("coerces trusted proxy hops within the supported range", async () => {
+    const { parseServerEnv } = await import("./server");
+
+    expect(
+      parseServerEnv({
+        ...validServerEnv,
+        TRUSTED_PROXY_HOPS: "3",
+      }).TRUSTED_PROXY_HOPS,
+    ).toBe(3);
+  });
+
+  it.each(["0", "6", "1.5", "invalid"])(
+    "rejects invalid trusted proxy hops %s",
+    async (TRUSTED_PROXY_HOPS) => {
+      const { parseServerEnv } = await import("./server");
+
+      expect(() =>
+        parseServerEnv({ ...validServerEnv, TRUSTED_PROXY_HOPS }),
+      ).toThrow();
+    },
+  );
 
   it("rejects weak credentials", async () => {
     const { parseServerEnv } = await import("./server");

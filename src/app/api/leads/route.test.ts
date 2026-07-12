@@ -5,8 +5,8 @@ vi.mock("server-only", () => ({}));
 import {
   LeadErrorResponseSchema,
   LeadSuccessResponseSchema,
-} from "../../../modules/leads/lead.schemas";
-import { LeadDomainError } from "../../../modules/leads/create-lead.service";
+} from "@/modules/leads/lead.schemas";
+import { LeadDomainError } from "@/modules/leads/create-lead.service";
 
 import { createLeadHandler } from "./route";
 
@@ -21,7 +21,7 @@ function request(body: string, headers?: HeadersInit): Request {
 }
 
 describe("POST /api/leads", () => {
-  it("returns 201 and passes trusted client context", async () => {
+  it("returns 201 and prefers the trusted forwarded chain", async () => {
     const createLead = vi.fn().mockResolvedValue({ id: ID });
     const now = new Date("2026-07-12T10:07:30.000Z");
     const handler = createLeadHandler({ createLead, now: () => now });
@@ -39,7 +39,7 @@ describe("POST /api/leads", () => {
     expect(body).toEqual({ ok: true, data: { id: ID } });
     expect(createLead).toHaveBeenCalledWith(
       { name: "Алексей", phone: "9991234567" },
-      { clientIp: "203.0.113.42", now },
+      { clientIp: "198.51.100.2", now },
     );
   });
 
@@ -103,10 +103,16 @@ describe("POST /api/leads", () => {
 
   it("returns safe 500 and logs only a stable diagnostic", async () => {
     const logger = { error: vi.fn() };
+    const repositoryError = new Error(
+      'INSERT INTO leads phone="+79991234567"; secret=raw-db-error',
+    );
     const handler = createLeadHandler({
       createLead: async () => {
-        throw new Error(
-          'INSERT INTO leads phone="+79991234567"; secret=raw-db-error',
+        throw new LeadDomainError(
+          "PERSISTENCE",
+          undefined,
+          undefined,
+          repositoryError,
         );
       },
       logger,
@@ -131,6 +137,7 @@ describe("POST /api/leads", () => {
     });
     expect(logger.error).toHaveBeenCalledWith({
       event: "lead_create_failed",
+      errorClass: "LeadDomainError",
       code: "PERSISTENCE",
       category: "persistence",
     });
@@ -139,17 +146,21 @@ describe("POST /api/leads", () => {
     );
   });
 
-  it("uses first forwarded IP and stable unknown fallback", async () => {
+  it("uses configured trusted hop and stable unknown fallback", async () => {
     const createLead = vi.fn().mockResolvedValue({ id: ID });
-    const handler = createLeadHandler({ createLead });
+    const trustedHandler = createLeadHandler({
+      createLead,
+      trustedProxyHops: 2,
+    });
+    const unknownHandler = createLeadHandler({ createLead });
     const payload = JSON.stringify({ name: "Алексей", phone: "9991234567" });
 
-    await handler(
+    await trustedHandler(
       request(payload, {
-        "x-forwarded-for": " 198.51.100.1, 198.51.100.2 ",
+        "x-forwarded-for": " 203.0.113.9, 198.51.100.1, 198.51.100.2 ",
       }),
     );
-    await handler(request(payload));
+    await unknownHandler(request(payload));
 
     expect(createLead.mock.calls[0]?.[1].clientIp).toBe("198.51.100.1");
     expect(createLead.mock.calls[1]?.[1].clientIp).toBe("unknown");

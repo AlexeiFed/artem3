@@ -42,6 +42,12 @@ describe("normalizeRussianPhone", () => {
     ["8 (999) 123-45-67", "+79991234567"],
     ["+7 999 123 45 67", "+79991234567"],
     ["9991234567", "+79991234567"],
+    ["+7 495 123-45-67", "+74951234567"],
+    ["+7 812 123-45-67", "+78121234567"],
+    ["+7 800 123-45-67", "+78001234567"],
+    ["8 495 123-45-67", "+74951234567"],
+    ["4951234567", "+74951234567"],
+    ["3481234567", "+73481234567"],
   ])("normalizes %s", (input, expected) => {
     expect(normalizeRussianPhone(input)).toBe(expected);
   });
@@ -49,8 +55,14 @@ describe("normalizeRussianPhone", () => {
   it.each([
     "",
     "+1 999 123 45 67",
+    "+8 999 123 45 67",
+    "+44 20 7946 0958",
     "7 899 123 45 67",
     "899123456",
+    "2991234567",
+    "5991234567",
+    "6991234567",
+    "7991234567",
     "9999999999",
     "+7 (999) abc-45-67",
   ])("rejects invalid phone %j", (input) => {
@@ -138,26 +150,106 @@ describe("createLeadService", () => {
     expect(repositories.leadCalls).toHaveLength(0);
   });
 
-  it("silently accepts honeypot without creating or rate-limiting a lead", async () => {
+  it.each([
+    ["name", { name: "A", phone: "9991234567" }],
+    ["phone", { name: "Алексей", phone: "+1 202 555 0100" }],
+    [
+      "situation",
+      { name: "Алексей", phone: "9991234567", situation: "x".repeat(2_001) },
+    ],
+    [
+      "service",
+      { name: "Алексей", phone: "9991234567", service: "x".repeat(121) },
+    ],
+  ])("maps invalid %s to its public field", async (field, input) => {
     const repositories = createRepositories();
     const service = createLeadService({
       ...repositories,
       sessionSecret: SESSION_SECRET,
     });
 
-    const result = await service.create(
-      {
-        name: "Алексей",
-        phone: "9991234567",
-        website: "https://spam.example",
-      },
-      { clientIp: "203.0.113.42", now: NOW },
-    );
+    await expect(
+      service.create(input, { clientIp: "unknown", now: NOW }),
+    ).rejects.toMatchObject({
+      code: "VALIDATION",
+      fields: { [field]: expect.any(Array) },
+    });
+  });
 
-    expect(result.id).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
-    );
+  it("maps a filled honeypot to a generic form error without bot hints", async () => {
+    const repositories = createRepositories();
+    const service = createLeadService({
+      ...repositories,
+      sessionSecret: SESSION_SECRET,
+    });
+
+    const error: unknown = await service
+      .create(
+        {
+          name: "Алексей",
+          phone: "9991234567",
+          website: "https://spam.example",
+        },
+        { clientIp: "203.0.113.42", now: NOW },
+      )
+      .catch((reason: unknown) => reason);
+
+    expect(error).toMatchObject({
+      code: "VALIDATION",
+      fields: { _form: ["Проверьте заполненные поля"] },
+    });
+    expect(JSON.stringify(error)).not.toMatch(/website|bot|spam/i);
     expect(repositories.rateLimitCalls).toHaveLength(0);
     expect(repositories.leadCalls).toHaveLength(0);
+  });
+
+  it("preserves a lead repository Error as persistence cause", async () => {
+    const repositories = createRepositories();
+    const repositoryError = new Error(
+      'INSERT failed for phone="+79991234567"',
+    );
+    const service = createLeadService({
+      ...repositories,
+      leadRepository: {
+        create: async () => {
+          throw repositoryError;
+        },
+      },
+      sessionSecret: SESSION_SECRET,
+    });
+
+    await expect(
+      service.create(
+        { name: "Алексей", phone: "9991234567" },
+        { clientIp: "203.0.113.42", now: NOW },
+      ),
+    ).rejects.toMatchObject({
+      code: "PERSISTENCE",
+      cause: repositoryError,
+    });
+  });
+
+  it("preserves a rate-limit repository Error as persistence cause", async () => {
+    const repositories = createRepositories();
+    const repositoryError = new Error("rate_limits SQL failed");
+    const service = createLeadService({
+      ...repositories,
+      rateLimitRepository: {
+        increment: async () => {
+          throw repositoryError;
+        },
+      },
+      sessionSecret: SESSION_SECRET,
+    });
+
+    await expect(
+      service.create(
+        { name: "Алексей", phone: "9991234567" },
+        { clientIp: "203.0.113.42", now: NOW },
+      ),
+    ).rejects.toMatchObject({
+      code: "PERSISTENCE",
+      cause: repositoryError,
+    });
   });
 });

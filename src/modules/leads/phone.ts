@@ -17,19 +17,21 @@ export function normalizeRussianPhone(input: string): string {
   const digits = value.replace(/\D/gu, "");
   let nationalNumber: string;
 
-  if (digits.length === 10 && digits.startsWith("9")) {
+  if (value.startsWith("+")) {
+    if (!value.startsWith("+7") || digits.length !== 11) {
+      throw new InvalidRussianPhoneError();
+    }
+    nationalNumber = digits.slice(1);
+  } else if (digits.length === 10) {
     nationalNumber = digits;
-  } else if (
-    digits.length === 11 &&
-    (digits.startsWith("7") || digits.startsWith("8"))
-  ) {
+  } else if (digits.length === 11 && digits.startsWith("8")) {
     nationalNumber = digits.slice(1);
   } else {
     throw new InvalidRussianPhoneError();
   }
 
   if (
-    !nationalNumber.startsWith("9") ||
+    !/^[3489]\d{9}$/u.test(nationalNumber) ||
     /^(\d)\1{9}$/u.test(nationalNumber)
   ) {
     throw new InvalidRussianPhoneError();

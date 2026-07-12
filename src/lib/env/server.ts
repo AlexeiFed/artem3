@@ -18,6 +18,7 @@ const serverEnvSchema = z.object({
   S3_BUCKET: z.string().min(1),
   S3_ACCESS_KEY_ID: z.string().min(1),
   S3_SECRET_ACCESS_KEY: z.string().min(1),
+  TRUSTED_PROXY_HOPS: z.coerce.number().int().min(1).max(5).default(1),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

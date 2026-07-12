@@ -1,14 +1,15 @@
 import type {
   CreateLeadContext,
   CreateLeadResult,
-} from "../../../modules/leads/create-lead.service";
-import { LeadDomainError } from "../../../modules/leads/create-lead.service";
+} from "@/modules/leads/create-lead.service";
+import { LeadDomainError } from "@/modules/leads/create-lead.service";
+import { extractTrustedClientIp } from "@/modules/leads/client-ip";
 import {
   LeadPersistenceErrorResponseSchema,
   LeadRateLimitErrorResponseSchema,
   LeadSuccessResponseSchema,
   LeadValidationErrorResponseSchema,
-} from "../../../modules/leads/lead.schemas";
+} from "@/modules/leads/lead.schemas";
 
 interface LeadHandlerDependencies {
   createLead(
@@ -17,6 +18,7 @@ interface LeadHandlerDependencies {
   ): Promise<CreateLeadResult>;
   now?: () => Date;
   logger?: LeadLogger;
+  trustedProxyHops?: number;
 }
 
 interface LeadLogger {
@@ -25,6 +27,7 @@ interface LeadLogger {
 
 interface LeadFailureDiagnostic {
   event: "lead_create_failed";
+  errorClass: "LeadDomainError" | "Error" | "UnknownError";
   code: "PERSISTENCE";
   category: "persistence";
 }
@@ -35,6 +38,7 @@ export function createLeadHandler({
   createLead,
   now = () => new Date(),
   logger = console,
+  trustedProxyHops = 1,
 }: LeadHandlerDependencies): (request: Request) => Promise<Response> {
   return async function handleCreateLead(request: Request): Promise<Response> {
     let input: unknown;
@@ -47,7 +51,7 @@ export function createLeadHandler({
 
     try {
       const data = await createLead(input, {
-        clientIp: getClientIp(request.headers),
+        clientIp: extractTrustedClientIp(request.headers, trustedProxyHops),
         now: now(),
       });
       const body = LeadSuccessResponseSchema.parse({ ok: true, data });
@@ -87,6 +91,12 @@ export function createLeadHandler({
 
       logger.error({
         event: "lead_create_failed",
+        errorClass:
+          error instanceof LeadDomainError
+            ? "LeadDomainError"
+            : error instanceof Error
+              ? "Error"
+              : "UnknownError",
         code: "PERSISTENCE",
         category: "persistence",
       });
@@ -122,20 +132,6 @@ function validationResponse(fields: Record<string, string[]>): Response {
   });
 }
 
-function getClientIp(headers: Headers): string {
-  const realIp = headers.get("x-real-ip")?.trim();
-  if (realIp) {
-    return realIp;
-  }
-
-  const forwardedIp = headers
-    .get("x-forwarded-for")
-    ?.split(",")[0]
-    ?.trim();
-
-  return forwardedIp || "unknown";
-}
-
 async function createLeadFromDatabase(
   input: unknown,
   context: CreateLeadContext,
@@ -160,4 +156,12 @@ async function createLeadFromDatabase(
   return service.create(input, context);
 }
 
-export const POST = createLeadHandler({ createLead: createLeadFromDatabase });
+export async function POST(request: Request): Promise<Response> {
+  const { getServerEnv } = await import("@/lib/env/server");
+  const handler = createLeadHandler({
+    createLead: createLeadFromDatabase,
+    trustedProxyHops: getServerEnv().TRUSTED_PROXY_HOPS,
+  });
+
+  return handler(request);
+}

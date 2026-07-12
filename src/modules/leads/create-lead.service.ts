@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createHmac, randomUUID } from "node:crypto";
+import { createHmac } from "node:crypto";
 import { z } from "zod";
 
 import {
@@ -25,8 +25,9 @@ export class LeadDomainError extends Error {
     readonly code: LeadErrorCode,
     fields?: LeadFieldErrors,
     retryAfterSeconds?: number,
+    cause?: Error,
   ) {
-    super(code);
+    super(code, cause ? { cause } : undefined);
     this.name = "LeadDomainError";
     this.fields = fields;
     this.retryAfterSeconds = retryAfterSeconds;
@@ -63,7 +64,9 @@ export function createLeadService({
       context: CreateLeadContext,
     ): Promise<CreateLeadResult> {
       if (hasFilledHoneypot(input)) {
-        return { id: randomUUID() };
+        throw new LeadDomainError("VALIDATION", {
+          _form: ["Проверьте заполненные поля"],
+        });
       }
 
       const parsed = CreateLeadInputSchema.safeParse(input);
@@ -98,8 +101,13 @@ export function createLeadService({
           action: RATE_LIMIT_ACTION,
           windowStart,
         });
-      } catch {
-        throw new LeadDomainError("PERSISTENCE");
+      } catch (error) {
+        throw new LeadDomainError(
+          "PERSISTENCE",
+          undefined,
+          undefined,
+          asErrorCause(error),
+        );
       }
 
       if (count > RATE_LIMIT_MAXIMUM) {
@@ -132,8 +140,13 @@ export function createLeadService({
         });
 
         return { id };
-      } catch {
-        throw new LeadDomainError("PERSISTENCE");
+      } catch (error) {
+        throw new LeadDomainError(
+          "PERSISTENCE",
+          undefined,
+          undefined,
+          asErrorCause(error),
+        );
       }
     },
   };
@@ -158,4 +171,10 @@ function validationError(error: z.ZodError): LeadDomainError {
   }
 
   return new LeadDomainError("VALIDATION", fields);
+}
+
+function asErrorCause(error: unknown): Error {
+  return error instanceof Error
+    ? error
+    : new Error("Non-Error persistence failure");
 }
