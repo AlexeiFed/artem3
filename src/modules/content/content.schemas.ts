@@ -90,6 +90,22 @@ export const HeroBadgeSchema = z.object({
   label: shortText,
 });
 
+export const DEFAULT_HERO_METRICS = [
+  { value: "11+", label: "лет практики" },
+  { value: "200+", label: "дел доведено до результата" },
+  { value: "0 ₽", label: "первая консультация" },
+];
+
+export const HeroMetricSchema = z.object({
+  value: shortText,
+  label: shortText,
+});
+
+export const HeroMetricsSchema = z
+  .array(HeroMetricSchema)
+  .length(3, "Должно быть ровно три показателя hero")
+  .default(DEFAULT_HERO_METRICS);
+
 export const VkEmbedSchema = z.object({
   url: PublicHttpsUrlSchema.superRefine((value, context) => {
     let url: URL;
@@ -120,6 +136,7 @@ export const HeroContentSchema = z.object({
     error: "Подзаголовок должен соответствовать утверждённому тексту",
   }),
   badges: z.array(HeroBadgeSchema).length(4),
+  metrics: HeroMetricsSchema,
   cta: CtaSchema,
   disclaimer: mediumText,
   video: z.object({

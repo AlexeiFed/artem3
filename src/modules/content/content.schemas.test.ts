@@ -15,6 +15,11 @@ import type {
 
 const APPROVED_SUBTITLE =
   "Помогаю решить семейные и имущественные споры без лишнего стресса и затяжных судов";
+const APPROVED_METRICS = [
+  { value: "11+", label: "лет практики" },
+  { value: "200+", label: "дел доведено до результата" },
+  { value: "0 ₽", label: "первая консультация" },
+];
 
 function createValidHeroSettings(): HeroSettings {
   const settings = structuredClone(seedContent.settings.hero);
@@ -28,6 +33,32 @@ function createValidHeroSettings(): HeroSettings {
 }
 
 describe("HeroSettingsSchema", () => {
+  it("defaults approved metrics for legacy hero settings", () => {
+    const settings = createValidHeroSettings();
+    const legacyHero = { ...settings.hero };
+    Reflect.deleteProperty(legacyHero, "metrics");
+
+    const parsed = HeroSettingsSchema.parse({
+      ...settings,
+      hero: legacyHero,
+    });
+
+    expect(parsed.hero.metrics).toEqual(APPROVED_METRICS);
+  });
+
+  it("requires exactly three hero metrics", () => {
+    const settings = createValidHeroSettings();
+    const result = HeroSettingsSchema.safeParse({
+      ...settings,
+      hero: {
+        ...settings.hero,
+        metrics: APPROVED_METRICS.slice(0, 2),
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
   it("requires the exact approved hero subtitle", () => {
     const validSettings = createValidHeroSettings();
     const settings = {

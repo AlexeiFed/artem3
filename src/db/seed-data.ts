@@ -72,12 +72,17 @@ export const seedContent = {
           { label: "Фиксируем стоимость" },
           { label: "Конфиденциально" },
         ],
-        cta: { label: "Получить консультацию", target: "#contacts" },
+        metrics: [
+          { value: "11+", label: "лет практики" },
+          { value: "200+", label: "дел доведено до результата" },
+          { value: "0 ₽", label: "первая консультация" },
+        ],
+        cta: { label: "Получить оценку ситуации", target: "#contacts" },
         disclaimer:
-          "Первая беседа помогает оценить перспективу, сроки и бюджет. Результат по делу заранее не гарантируется.",
+          "Первая консультация — бесплатная. Результат по делу заранее не гарантируется.",
         video: {
-          fallbackUrl: "/media/hero-loop.mp4",
-          posterUrl: "/media/hero-poster.webp",
+          fallbackUrl: "/media/artem-hero-loop.mp4",
+          posterUrl: "/media/artem-hero-poster.jpg",
         },
       },
       quickLinks: [

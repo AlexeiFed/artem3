@@ -57,6 +57,11 @@ describe("buildLandingData", () => {
   it("maps complete content in stable public order without persistence fields", async () => {
     const data = await buildLandingData(createFakeRepository());
 
+    expect(data.hero.metrics).toEqual([
+      { value: "11+", label: "лет практики" },
+      { value: "200+", label: "дел доведено до результата" },
+      { value: "0 ₽", label: "первая консультация" },
+    ]);
     expect(data.services.map((item) => item.slug)).toEqual([
       "razvod",
       "alimenty",
