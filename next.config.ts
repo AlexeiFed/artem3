@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const contentSecurityPolicy = [
   "default-src 'self'",
-  "script-src 'self' https://api-maps.yandex.ru https://yastatic.net https://mc.yandex.ru https://vk.com https://*.vk.com https://vkvideo.ru https://*.vkvideo.ru",
+  "script-src 'self' 'unsafe-inline' https://api-maps.yandex.ru https://yastatic.net https://mc.yandex.ru https://vk.com https://*.vk.com https://vkvideo.ru https://*.vkvideo.ru",
   "style-src 'self' 'unsafe-inline' https://yastatic.net",
   "img-src 'self' data: blob: https://*.twcstorage.ru https://*.timeweb.cloud https://*.yandex.ru https://*.maps.yandex.net https://yastatic.net https://*.vk.com https://*.vkuser.net https://*.userapi.com",
   "font-src 'self' data: https://yastatic.net",

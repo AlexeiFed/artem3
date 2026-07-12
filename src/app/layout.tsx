@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
+import {
+  designTokenCssVariables,
+  type DesignTokenCssVariables,
+} from "@/lib/design-tokens";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -29,9 +33,17 @@ type RootLayoutProps = Readonly<{
   children: ReactNode;
 }>;
 
+const rootStyle: CSSProperties & DesignTokenCssVariables = {
+  ...designTokenCssVariables,
+};
+
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="ru" className={`${cormorant.variable} ${inter.variable}`}>
+    <html
+      lang="ru"
+      className={`${cormorant.variable} ${inter.variable}`}
+      style={rootStyle}
+    >
       <body>{children}</body>
     </html>
   );

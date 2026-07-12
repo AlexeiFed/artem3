@@ -22,4 +22,38 @@ export const designTokens = {
   },
 } as const;
 
+export type DesignTokenCssVariables = Readonly<{
+  "--token-color-background": string;
+  "--token-color-text-primary": string;
+  "--token-color-text-secondary": string;
+  "--token-color-accent-sage": string;
+  "--token-color-accent-forest": string;
+  "--token-motion-ease-cinematic": string;
+  "--token-motion-duration-fast": string;
+  "--token-motion-duration-base": string;
+  "--token-motion-duration-slow": string;
+  "--token-radius-control": string;
+  "--token-radius-card": string;
+  "--token-radius-panel": string;
+  "--token-shadow-lift": string;
+}>;
+
+export const designTokenCssVariables: DesignTokenCssVariables = {
+  "--token-color-background": designTokens.color.background,
+  "--token-color-text-primary": designTokens.color.textPrimary,
+  "--token-color-text-secondary": designTokens.color.textSecondary,
+  "--token-color-accent-sage": designTokens.color.accentSage,
+  "--token-color-accent-forest": designTokens.color.accentForest,
+  "--token-motion-ease-cinematic": `cubic-bezier(${designTokens.motion.easeCinematic.join(
+    ", ",
+  )})`,
+  "--token-motion-duration-fast": `${designTokens.motion.durationFast}s`,
+  "--token-motion-duration-base": `${designTokens.motion.durationBase}s`,
+  "--token-motion-duration-slow": `${designTokens.motion.durationSlow}s`,
+  "--token-radius-control": designTokens.radius.control,
+  "--token-radius-card": designTokens.radius.card,
+  "--token-radius-panel": designTokens.radius.panel,
+  "--token-shadow-lift": designTokens.shadow.lift,
+};
+
 export type DesignTokens = typeof designTokens;
