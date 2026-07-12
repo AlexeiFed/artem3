@@ -15,10 +15,13 @@ import {
   VkEmbedSettingsSchema,
   WorkflowSettingsSchema,
 } from "@/modules/content/content.schemas";
+import { getServerEnv } from "@/lib/env/server";
+import { seedAdminUser } from "@/modules/auth/seed-admin";
 
 import { getDb, getPostgresClient } from "./client";
 import { seedContent } from "./seed-data";
 import {
+  adminUsers,
   cases,
   certificates,
   faqs,
@@ -90,12 +93,35 @@ async function runSeed(): Promise<void> {
         .values(certificateRows)
         .onConflictDoNothing();
     });
+
+    const env = getServerEnv();
+    await seedAdminUser(
+      { email: env.ADMIN_EMAIL, password: env.ADMIN_PASSWORD },
+      {
+        upsert: async ({ email, passwordHash }) => {
+          await db
+            .insert(adminUsers)
+            .values({ email, passwordHash, active: true })
+            .onConflictDoUpdate({
+              target: adminUsers.email,
+              set: {
+                passwordHash,
+                active: true,
+                updatedAt: new Date(),
+              },
+            });
+        },
+      },
+    );
   } finally {
     await client.end({ timeout: 5 });
   }
 }
 
 void runSeed().catch((error: unknown) => {
-  console.error("Database seed failed", error);
+  console.error({
+    event: "database_seed_failed",
+    errorClass: error instanceof Error ? error.name : "UnknownError",
+  });
   process.exitCode = 1;
 });
