@@ -2,7 +2,10 @@ import "server-only";
 
 import { z } from "zod";
 
-import { hashPassword } from "./password";
+import {
+  hashPassword,
+  verifyPassword,
+} from "./password";
 
 const AdminSeedInputSchema = z
   .object({
@@ -12,22 +15,60 @@ const AdminSeedInputSchema = z
   .strict();
 
 export interface AdminSeedRepository {
-  upsert(input: { email: string; passwordHash: string }): Promise<void>;
+  findByEmail(email: string): Promise<{
+    id: string;
+    passwordHash: string;
+    active: boolean;
+  } | null>;
+  create(input: {
+    email: string;
+    passwordHash: string;
+    active: true;
+  }): Promise<void>;
+  rotatePasswordAndRevokeSessions(input: {
+    userId: string;
+    passwordHash: string;
+  }): Promise<void>;
 }
 
 interface SeedAdminDependencies {
-  upsert: AdminSeedRepository["upsert"];
+  repository: AdminSeedRepository;
   hashPassword?: (password: string) => Promise<string>;
+  verifyPassword?: (passwordHash: string, password: string) => Promise<boolean>;
 }
 
 export async function seedAdminUser(
   input: unknown,
   {
-    upsert,
+    repository,
     hashPassword: createPasswordHash = hashPassword,
+    verifyPassword: verifyExistingPassword = verifyPassword,
   }: SeedAdminDependencies,
 ): Promise<void> {
   const parsed = AdminSeedInputSchema.parse(input);
+  const existing = await repository.findByEmail(parsed.email);
+
+  if (existing) {
+    const passwordMatches = await verifyExistingPassword(
+      existing.passwordHash,
+      parsed.password,
+    );
+    if (passwordMatches) {
+      return;
+    }
+
+    const passwordHash = await createPasswordHash(parsed.password);
+    await repository.rotatePasswordAndRevokeSessions({
+      userId: existing.id,
+      passwordHash,
+    });
+    return;
+  }
+
   const passwordHash = await createPasswordHash(parsed.password);
-  await upsert({ email: parsed.email, passwordHash });
+  await repository.create({
+    email: parsed.email,
+    passwordHash,
+    active: true,
+  });
 }

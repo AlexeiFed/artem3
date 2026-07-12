@@ -17,17 +17,17 @@ export function createLogoutHandler({
   production = false,
 }: LogoutHandlerDependencies): (request: Request) => Promise<Response> {
   return async function handleLogout(request: Request): Promise<Response> {
-    const cookie = expiredSessionCookie(production);
     if (!isSameOrigin(request, siteUrl)) {
       const body = AuthErrorResponseSchema.parse({
         error: { code: "FORBIDDEN", message: "Запрос отклонён." },
       });
       return Response.json(body, {
         status: 403,
-        headers: { "Cache-Control": "no-store", "Set-Cookie": cookie },
+        headers: { "Cache-Control": "no-store" },
       });
     }
 
+    const cookie = expiredSessionCookie(production);
     const token = readSessionToken(request.headers.get("cookie"));
     if (token) {
       try {

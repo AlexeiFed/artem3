@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { eq } from "drizzle-orm";
 
 import {
   CaseSchema,
@@ -21,6 +22,7 @@ import { seedAdminUser } from "@/modules/auth/seed-admin";
 import { getDb, getPostgresClient } from "./client";
 import { seedContent } from "./seed-data";
 import {
+  adminSessions,
   adminUsers,
   cases,
   certificates,
@@ -98,18 +100,39 @@ async function runSeed(): Promise<void> {
     await seedAdminUser(
       { email: env.ADMIN_EMAIL, password: env.ADMIN_PASSWORD },
       {
-        upsert: async ({ email, passwordHash }) => {
-          await db
-            .insert(adminUsers)
-            .values({ email, passwordHash, active: true })
-            .onConflictDoUpdate({
-              target: adminUsers.email,
-              set: {
-                passwordHash,
-                active: true,
-                updatedAt: new Date(),
-              },
+        repository: {
+          findByEmail: async (email) => {
+            const [user] = await db
+              .select({
+                id: adminUsers.id,
+                passwordHash: adminUsers.passwordHash,
+                active: adminUsers.active,
+              })
+              .from(adminUsers)
+              .where(eq(adminUsers.email, email))
+              .limit(1);
+            return user ?? null;
+          },
+          create: async ({ email, passwordHash, active }) => {
+            await db
+              .insert(adminUsers)
+              .values({ email, passwordHash, active })
+              .onConflictDoNothing({ target: adminUsers.email });
+          },
+          rotatePasswordAndRevokeSessions: async ({
+            userId,
+            passwordHash,
+          }) => {
+            await db.transaction(async (transaction) => {
+              await transaction
+                .update(adminUsers)
+                .set({ passwordHash, updatedAt: new Date() })
+                .where(eq(adminUsers.id, userId));
+              await transaction
+                .delete(adminSessions)
+                .where(eq(adminSessions.userId, userId));
             });
+          },
         },
       },
     );

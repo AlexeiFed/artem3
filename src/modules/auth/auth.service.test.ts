@@ -78,6 +78,7 @@ function dependencies(
   };
   const rateLimitRepository: RateLimitRepository = {
     increment: vi.fn().mockResolvedValue(1),
+    deleteOlderThan: vi.fn().mockResolvedValue(undefined),
   };
 
   return {
@@ -122,6 +123,24 @@ describe("auth service", () => {
     });
   });
 
+  it("prunes rate-limit windows older than 24 hours once per fresh IP window", async () => {
+    const deps = dependencies();
+    const deleteOlderThan = vi.mocked(
+      deps.rateLimitRepository.deleteOlderThan,
+    );
+    const now = new Date("2026-07-12T10:00:00.000Z");
+
+    await createAuthService(deps).login(
+      { email: "admin@example.com", password: "correct-password" },
+      { clientIp: "203.0.113.5", now },
+    );
+
+    expect(deleteOlderThan).toHaveBeenCalledOnce();
+    expect(deleteOlderThan).toHaveBeenCalledWith(
+      new Date("2026-07-11T10:00:00.000Z"),
+    );
+  });
+
   it("uses the fixed dummy hash and returns the same invalid-credentials error", async () => {
     const verify = vi.fn().mockResolvedValue(false);
     const deps = dependencies({
@@ -155,6 +174,7 @@ describe("auth service", () => {
           .fn()
           .mockResolvedValueOnce(1)
           .mockResolvedValueOnce(6),
+        deleteOlderThan: vi.fn().mockResolvedValue(undefined),
       },
     });
 
@@ -168,6 +188,64 @@ describe("auth service", () => {
       ),
     ).rejects.toMatchObject({ code: "RATE_LIMITED" });
     expect(deps.authRepository.findUserByEmail).not.toHaveBeenCalled();
+  });
+
+  it("stops before consuming the email bucket when the IP bucket is blocked", async () => {
+    const increment = vi.fn().mockResolvedValue(6);
+    const deps = dependencies({
+      rateLimitRepository: {
+        increment,
+        deleteOlderThan: vi.fn().mockResolvedValue(undefined),
+      },
+    });
+
+    await expect(
+      createAuthService(deps).login(
+        { email: "first@example.com", password: "correct-password" },
+        {
+          clientIp: "203.0.113.5",
+          now: new Date("2026-07-12T10:01:00.000Z"),
+        },
+      ),
+    ).rejects.toMatchObject({ code: "RATE_LIMITED" });
+
+    expect(increment).toHaveBeenCalledOnce();
+    expect(increment).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "admin:login:ip" }),
+    );
+  });
+
+  it("does not create email buckets for unique emails after the IP is blocked", async () => {
+    const increment = vi.fn().mockResolvedValue(6);
+    const deps = dependencies({
+      rateLimitRepository: {
+        increment,
+        deleteOlderThan: vi.fn().mockResolvedValue(undefined),
+      },
+    });
+    const service = createAuthService(deps);
+    const context = {
+      clientIp: "203.0.113.5",
+      now: new Date("2026-07-12T10:01:00.000Z"),
+    };
+
+    await expect(
+      service.login(
+        { email: "first@example.com", password: "correct-password" },
+        context,
+      ),
+    ).rejects.toMatchObject({ code: "RATE_LIMITED" });
+    await expect(
+      service.login(
+        { email: "second@example.com", password: "correct-password" },
+        context,
+      ),
+    ).rejects.toMatchObject({ code: "RATE_LIMITED" });
+
+    expect(increment).toHaveBeenCalledTimes(2);
+    expect(
+      increment.mock.calls.map(([input]) => input.action),
+    ).toEqual(["admin:login:ip", "admin:login:ip"]);
   });
 
   it.each([

@@ -19,6 +19,7 @@ const LOGIN_RATE_LIMIT_ACTION_IP = "admin:login:ip";
 const LOGIN_RATE_LIMIT_ACTION_EMAIL = "admin:login:email";
 const LOGIN_RATE_LIMIT_MAXIMUM = 5;
 const LOGIN_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1_000;
+const RATE_LIMIT_RETENTION_MS = 24 * 60 * 60 * 1_000;
 const SESSION_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
 export type AuthErrorCode =
@@ -83,27 +84,38 @@ export function createAuthService({
         Math.floor(context.now.getTime() / LOGIN_RATE_LIMIT_WINDOW_MS) *
           LOGIN_RATE_LIMIT_WINDOW_MS,
       );
-      const [ipCount, emailCount] = await Promise.all([
-        incrementLoginBucket(
-          rateLimitRepository,
-          sessionSecret,
-          context.clientIp,
-          LOGIN_RATE_LIMIT_ACTION_IP,
-          windowStart,
-        ),
-        incrementLoginBucket(
-          rateLimitRepository,
-          sessionSecret,
-          parsed.data.email,
-          LOGIN_RATE_LIMIT_ACTION_EMAIL,
-          windowStart,
-        ),
-      ]);
+      const ipCount = await incrementLoginBucket(
+        rateLimitRepository,
+        sessionSecret,
+        context.clientIp,
+        LOGIN_RATE_LIMIT_ACTION_IP,
+        windowStart,
+      );
+      if (ipCount > LOGIN_RATE_LIMIT_MAXIMUM) {
+        throw new AuthDomainError(
+          "RATE_LIMITED",
+          undefined,
+          retryAfterSeconds(windowStart, context.now),
+        );
+      }
+      if (ipCount === 1) {
+        try {
+          await rateLimitRepository.deleteOlderThan(
+            new Date(context.now.getTime() - RATE_LIMIT_RETENTION_MS),
+          );
+        } catch {
+          // Cleanup is bounded maintenance and must not block authentication.
+        }
+      }
 
-      if (
-        ipCount > LOGIN_RATE_LIMIT_MAXIMUM ||
-        emailCount > LOGIN_RATE_LIMIT_MAXIMUM
-      ) {
+      const emailCount = await incrementLoginBucket(
+        rateLimitRepository,
+        sessionSecret,
+        parsed.data.email,
+        LOGIN_RATE_LIMIT_ACTION_EMAIL,
+        windowStart,
+      );
+      if (emailCount > LOGIN_RATE_LIMIT_MAXIMUM) {
         throw new AuthDomainError(
           "RATE_LIMITED",
           undefined,

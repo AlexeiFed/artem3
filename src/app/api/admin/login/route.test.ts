@@ -75,6 +75,33 @@ describe("POST /api/admin/login", () => {
     expect(login).not.toHaveBeenCalled();
   });
 
+  it("returns a safe 413 without authenticating an oversized body", async () => {
+    const login = vi.fn();
+    const handler = createLoginHandler({
+      login,
+      siteUrl: "https://example.test",
+    });
+    const oversized = new Request(
+      "https://example.test/api/admin/login",
+      {
+        method: "POST",
+        headers: {
+          Origin: "https://example.test",
+          "Content-Length": "8193",
+        },
+        body: "{}",
+      },
+    );
+
+    const response = await handler(oversized);
+    const body = JSON.stringify(await response.json());
+
+    expect(response.status).toBe(413);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(body).not.toMatch(/password|argon2|token/i);
+    expect(login).not.toHaveBeenCalled();
+  });
+
   it.each([
     ["INVALID_CREDENTIALS", 401],
     ["RATE_LIMITED", 429],

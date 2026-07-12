@@ -21,6 +21,7 @@ function createRepositories() {
       count += 1;
       return count;
     },
+    deleteOlderThan: async () => undefined,
   };
   const leadRepository: LeadRepository = {
     create: async (input) => {
@@ -238,6 +239,7 @@ describe("createLeadService", () => {
         increment: async () => {
           throw repositoryError;
         },
+        deleteOlderThan: async () => undefined,
       },
       sessionSecret: SESSION_SECRET,
     });

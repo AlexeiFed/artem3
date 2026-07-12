@@ -1,5 +1,9 @@
 import { isSameOrigin } from "@/lib/http/origin";
 import {
+  PayloadTooLargeError,
+  readLimitedJson,
+} from "@/lib/http/read-limited-json";
+import {
   AuthenticatedSessionResponseSchema,
   AuthErrorResponseSchema,
 } from "@/modules/auth/auth.schemas";
@@ -20,6 +24,7 @@ interface LoginHandlerDependencies {
 
 const NO_STORE_HEADERS = { "Cache-Control": "no-store" };
 const COOKIE_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
+const LOGIN_BODY_MAXIMUM_BYTES = 8 * 1_024;
 
 export function createLoginHandler({
   login,
@@ -35,8 +40,15 @@ export function createLoginHandler({
 
     let input: unknown;
     try {
-      input = await request.json();
-    } catch {
+      input = await readLimitedJson(request, LOGIN_BODY_MAXIMUM_BYTES);
+    } catch (error) {
+      if (error instanceof PayloadTooLargeError) {
+        return errorResponse(
+          413,
+          "PAYLOAD_TOO_LARGE",
+          "Размер запроса превышает допустимый.",
+        );
+      }
       return errorResponse(400, "VALIDATION", "Некорректный запрос.");
     }
 
@@ -120,6 +132,7 @@ function errorResponse(
   code:
     | "VALIDATION"
     | "FORBIDDEN"
+    | "PAYLOAD_TOO_LARGE"
     | "INVALID_CREDENTIALS"
     | "RATE_LIMITED"
     | "INTERNAL",

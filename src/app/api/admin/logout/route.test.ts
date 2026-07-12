@@ -38,7 +38,7 @@ describe("POST /api/admin/logout", () => {
     expect(cookie).toMatch(/Secure/);
   });
 
-  it("rejects mismatched Origin and still expires the cookie", async () => {
+  it("rejects mismatched Origin without mutating the cookie or database", async () => {
     const logout = vi.fn();
     const handler = createLogoutHandler({
       logout,
@@ -48,7 +48,7 @@ describe("POST /api/admin/logout", () => {
     const response = await handler(request("https://evil.test"));
 
     expect(response.status).toBe(403);
-    expect(response.headers.get("set-cookie")).toMatch(/Max-Age=0/);
+    expect(response.headers.get("set-cookie")).toBeNull();
     expect(logout).not.toHaveBeenCalled();
   });
 });

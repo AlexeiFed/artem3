@@ -1,6 +1,6 @@
 import "server-only";
 
-import { sql } from "drizzle-orm";
+import { lt, sql } from "drizzle-orm";
 
 import { getDb } from "@/db/client";
 import { rateLimits } from "@/db/schema";
@@ -15,6 +15,7 @@ export interface IncrementRateLimitInput {
 
 export interface RateLimitRepository {
   increment(input: IncrementRateLimitInput): Promise<number>;
+  deleteOlderThan(cutoff: Date): Promise<void>;
 }
 
 export class DrizzleRateLimitRepository implements RateLimitRepository {
@@ -39,5 +40,11 @@ export class DrizzleRateLimitRepository implements RateLimitRepository {
     }
 
     return row.count;
+  }
+
+  async deleteOlderThan(cutoff: Date): Promise<void> {
+    await this.db
+      .delete(rateLimits)
+      .where(lt(rateLimits.windowStart, cutoff));
   }
 }

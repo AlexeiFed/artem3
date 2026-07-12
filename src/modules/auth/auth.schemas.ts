@@ -28,6 +28,7 @@ export const AuthErrorResponseSchema = z
         code: z.enum([
           "VALIDATION",
           "FORBIDDEN",
+          "PAYLOAD_TOO_LARGE",
           "INVALID_CREDENTIALS",
           "RATE_LIMITED",
           "UNAUTHORIZED",
