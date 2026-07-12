@@ -126,4 +126,38 @@ describe("buildLandingData", () => {
       buildLandingData(createFakeRepository(undefined, serviceRows)),
     ).rejects.toEqual(new ContentDataError());
   });
+
+  it("preserves the original internal failure as ContentDataError cause", async () => {
+    const originalError = new Error(
+      'SELECT * FROM admin_users WHERE password = "secret"',
+    );
+    const repository = createFakeRepository();
+    repository.listServices = async () => {
+      throw originalError;
+    };
+
+    let thrown: unknown;
+    try {
+      await buildLandingData(repository);
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(ContentDataError);
+    if (!(thrown instanceof ContentDataError)) {
+      throw new Error("Expected ContentDataError");
+    }
+    expect(thrown.message).toBe("Landing content is unavailable");
+    expect(thrown.cause).toBe(originalError);
+  });
+
+  it("does not wrap an existing ContentDataError again", async () => {
+    const originalError = new ContentDataError();
+    const repository = createFakeRepository();
+    repository.listServices = async () => {
+      throw originalError;
+    };
+
+    await expect(buildLandingData(repository)).rejects.toBe(originalError);
+  });
 });

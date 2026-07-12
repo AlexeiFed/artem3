@@ -4,7 +4,9 @@ import { seedContent } from "../../db/seed-data";
 
 import {
   HeroSettingsSchema,
+  RatingSchema,
   RatingsSettingsSchema,
+  VkEmbedSchema,
 } from "./content.schemas";
 import type {
   HeroSettings,
@@ -134,5 +136,49 @@ describe("RatingsSettingsSchema", () => {
         ]),
       );
     }
+  });
+});
+
+describe("external URL security", () => {
+  it.each([
+    "javascript://vk.com/video",
+    "ftp://example.com/resource",
+    "http://example.com/resource",
+  ])("rejects non-HTTPS public URL %s", (externalUrl) => {
+    const [rating] = seedContent.settings.ratings.items;
+    if (!rating) throw new Error("Invalid rating fixture");
+
+    expect(RatingSchema.safeParse({ ...rating, externalUrl }).success).toBe(
+      false,
+    );
+  });
+
+  it.each([
+    "https://vk.com/video-1_2",
+    "https://video.vk.com/video-1_2",
+    "https://media.vkvideo.ru/video-1_2",
+  ])("accepts approved HTTPS VK URL %s", (url) => {
+    expect(
+      VkEmbedSchema.safeParse({ url, title: "Видео Артёма Сысуева" }).success,
+    ).toBe(true);
+  });
+
+  it.each([
+    "javascript://vk.com/video-1_2",
+    "ftp://vk.com/video-1_2",
+    "http://vk.com/video-1_2",
+    "https://vk.com.evil.test/video-1_2",
+    "https://vk.com@evil.test/video-1_2",
+    "https://evilvk.com/video-1_2",
+  ])("rejects unsafe VK URL %s", (url) => {
+    expect(
+      VkEmbedSchema.safeParse({ url, title: "Видео Артёма Сысуева" }).success,
+    ).toBe(false);
+  });
+
+  it("keeps local hero asset paths valid", () => {
+    expect(HeroSettingsSchema.safeParse(createValidHeroSettings()).success).toBe(
+      true,
+    );
   });
 });

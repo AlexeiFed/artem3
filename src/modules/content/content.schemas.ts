@@ -3,9 +3,29 @@ import { z } from "zod";
 const shortText = z.string().trim().min(1).max(160);
 const mediumText = z.string().trim().min(1).max(500);
 const longText = z.string().trim().min(1).max(2_500);
-const publicUrl = z.url().max(2_048);
 const localAssetUrl = z.string().regex(/^\/[a-zA-Z0-9/_-]+\.[a-zA-Z0-9]+$/);
 const anchorUrl = z.string().regex(/^#[a-z][a-z0-9-]*$/).max(80);
+const APPROVED_VK_HOSTS = ["vk.com", "vk.ru", "vkvideo.ru"] as const;
+
+export const PublicHttpsUrlSchema = z
+  .string()
+  .max(2_048)
+  .superRefine((value, context) => {
+    try {
+      const url = new URL(value);
+      if (url.protocol !== "https:") {
+        context.addIssue({
+          code: "custom",
+          message: "Внешняя ссылка должна использовать HTTPS",
+        });
+      }
+    } catch {
+      context.addIssue({
+        code: "custom",
+        message: "Некорректный URL",
+      });
+    }
+  });
 
 export const APPROVED_HERO_SUBTITLE =
   "Помогаю решить семейные и имущественные споры без лишнего стресса и затяжных судов";
@@ -71,10 +91,25 @@ export const HeroBadgeSchema = z.object({
 });
 
 export const VkEmbedSchema = z.object({
-  url: publicUrl.refine(
-    (url) => ["vk.com", "vkvideo.ru", "vk.ru"].includes(new URL(url).hostname),
-    "Разрешён только VK Video URL",
-  ),
+  url: PublicHttpsUrlSchema.superRefine((value, context) => {
+    let url: URL;
+    try {
+      url = new URL(value);
+    } catch {
+      return;
+    }
+
+    const hostname = url.hostname.toLowerCase();
+    const isApprovedHost = APPROVED_VK_HOSTS.some(
+      (host) => hostname === host || hostname.endsWith(`.${host}`),
+    );
+    if (!isApprovedHost || url.username !== "" || url.password !== "") {
+      context.addIssue({
+        code: "custom",
+        message: "Разрешены только URL одобренных доменов VK без userinfo",
+      });
+    }
+  }),
   title: shortText,
 });
 
@@ -195,11 +230,11 @@ export const ContactsSettingsSchema = z.object({
   }),
   telegram: z.object({
     label: shortText,
-    url: publicUrl,
+    url: PublicHttpsUrlSchema,
   }),
   whatsapp: z.object({
     label: shortText,
-    url: publicUrl,
+    url: PublicHttpsUrlSchema,
   }),
   address: mediumText,
   workHours: mediumText,
@@ -208,14 +243,14 @@ export const ContactsSettingsSchema = z.object({
 export const MapSettingsSchema = z.object({
   latitude: z.number().min(48).max(49),
   longitude: z.number().min(134).max(136),
-  externalUrl: publicUrl,
+  externalUrl: PublicHttpsUrlSchema,
 });
 
 export const RatingSchema = z.object({
   source: z.enum(["Яндекс", "2ГИС"]),
   value: z.number().min(1).max(5),
   reviewCount: z.number().int().min(1).max(100_000),
-  externalUrl: publicUrl,
+  externalUrl: PublicHttpsUrlSchema,
 });
 
 export const RatingsSettingsSchema = z.object({
@@ -293,14 +328,14 @@ export const FaqSchema = z.object({
 export const ReviewSchema = z.object({
   author: shortText,
   quote: longText,
-  imageUrl: publicUrl.nullable(),
+  imageUrl: PublicHttpsUrlSchema.nullable(),
   source: shortText,
-  sourceUrl: publicUrl,
+  sourceUrl: PublicHttpsUrlSchema,
 });
 
 export const CertificateSchema = z.object({
   title: mediumText,
-  imageUrl: publicUrl,
+  imageUrl: PublicHttpsUrlSchema,
   altText: mediumText,
 });
 

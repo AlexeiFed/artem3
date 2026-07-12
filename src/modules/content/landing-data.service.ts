@@ -20,8 +20,11 @@ import type { LandingData } from "./content.types";
 export class ContentDataError extends Error {
   readonly code = "CONTENT_DATA_INVALID";
 
-  constructor() {
-    super("Landing content is unavailable");
+  constructor(cause?: unknown) {
+    super(
+      "Landing content is unavailable",
+      cause === undefined ? undefined : { cause },
+    );
     this.name = "ContentDataError";
   }
 }
@@ -130,7 +133,10 @@ export async function buildLandingData(
       },
       legal,
     });
-  } catch {
-    throw new ContentDataError();
+  } catch (error) {
+    if (error instanceof ContentDataError) {
+      throw error;
+    }
+    throw new ContentDataError(error);
   }
 }
