@@ -30,6 +30,7 @@ export const leads = pgTable(
     name: text("name").notNull(),
     phone: text("phone").notNull(),
     situation: text("situation"),
+    serviceName: text("service_name"),
     serviceId: uuid("service_id").references(() => services.id, {
       onDelete: "set null",
     }),

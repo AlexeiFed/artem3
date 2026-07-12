@@ -96,4 +96,12 @@ describe("database schema contracts", () => {
       "leads_service_id_idx",
     );
   });
+
+  it("preserves a submitted dynamic service name independently of service FK", () => {
+    const columns = getTableColumns(leads);
+
+    expect(columns.serviceName?.name).toBe("service_name");
+    expect(columns.serviceName?.notNull).toBe(false);
+    expect(columns.serviceId?.name).toBe("service_id");
+  });
 });
