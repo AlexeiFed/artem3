@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import type { CSSProperties, ReactNode } from "react";
 
+import { ModalProvider } from "@/components/forms/ModalProvider";
+import { LenisProvider } from "@/components/motion/LenisProvider";
 import {
   designTokenCssVariables,
   type DesignTokenCssVariables,
@@ -38,13 +40,23 @@ const rootStyle: CSSProperties & DesignTokenCssVariables = {
 };
 
 export default function RootLayout({ children }: RootLayoutProps) {
+  const metrikaValue = Number(process.env.NEXT_PUBLIC_YANDEX_METRIKA_ID);
+  const metrikaId =
+    Number.isInteger(metrikaValue) && metrikaValue > 0
+      ? metrikaValue
+      : undefined;
+
   return (
     <html
       lang="ru"
       className={`${cormorant.variable} ${inter.variable}`}
       style={rootStyle}
     >
-      <body>{children}</body>
+      <body>
+        <LenisProvider>
+          <ModalProvider metrikaId={metrikaId}>{children}</ModalProvider>
+        </LenisProvider>
+      </body>
     </html>
   );
 }
