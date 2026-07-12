@@ -30,10 +30,11 @@ export const siteSettings = pgTable(
   {
     id: text("id").primaryKey().default("default"),
     hero: jsonb("hero").$type<ContentSection>().default({}).notNull(),
-    trustWorkflow: jsonb("trust_workflow")
+    trustBanner: jsonb("trust_banner")
       .$type<ContentSection>()
       .default({})
       .notNull(),
+    workflow: jsonb("workflow").$type<ContentSection>().default({}).notNull(),
     contacts: jsonb("contacts").$type<ContentSection>().default({}).notNull(),
     legal: jsonb("legal").$type<ContentSection>().default({}).notNull(),
     map: jsonb("map").$type<ContentSection>().default({}).notNull(),

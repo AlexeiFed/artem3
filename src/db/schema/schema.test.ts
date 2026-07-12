@@ -47,6 +47,16 @@ describe("database schema contracts", () => {
     ]);
   });
 
+  it("keeps trust banner and workflow independently editable", () => {
+    const columns = getTableColumns(siteSettings);
+
+    expect(columns.trustBanner?.name).toBe("trust_banner");
+    expect(columns.trustBanner?.notNull).toBe(true);
+    expect(columns.workflow?.name).toBe("workflow");
+    expect(columns.workflow?.notNull).toBe(true);
+    expect(columns).not.toHaveProperty("trustWorkflow");
+  });
+
   it.each(sortableTables)(
     "$_.sortOrder is required and globally unique",
     (table) => {

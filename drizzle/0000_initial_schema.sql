@@ -93,7 +93,8 @@ CREATE TABLE "services" (
 CREATE TABLE "site_settings" (
 	"id" text PRIMARY KEY DEFAULT 'default' NOT NULL,
 	"hero" jsonb DEFAULT '{}'::jsonb NOT NULL,
-	"trust_workflow" jsonb DEFAULT '{}'::jsonb NOT NULL,
+	"trust_banner" jsonb DEFAULT '{}'::jsonb NOT NULL,
+	"workflow" jsonb DEFAULT '{}'::jsonb NOT NULL,
 	"contacts" jsonb DEFAULT '{}'::jsonb NOT NULL,
 	"legal" jsonb DEFAULT '{}'::jsonb NOT NULL,
 	"map" jsonb DEFAULT '{}'::jsonb NOT NULL,

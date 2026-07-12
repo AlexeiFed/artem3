@@ -1,5 +1,5 @@
 {
-  "id": "0ff1f029-ef6d-4f36-a840-9b3fd4a2f022",
+  "id": "475fc050-7cf3-4ae7-a92c-0a796fae96d2",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -604,8 +604,15 @@
           "notNull": true,
           "default": "'{}'::jsonb"
         },
-        "trust_workflow": {
-          "name": "trust_workflow",
+        "trust_banner": {
+          "name": "trust_banner",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "workflow": {
+          "name": "workflow",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": true,
