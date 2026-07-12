@@ -1,0 +1,19 @@
+---
+description: Design tokens, responsive UI and motion conventions
+globs:
+  - "src/**/*.tsx"
+  - "src/**/*.css"
+alwaysApply: false
+---
+
+# Design system
+
+- Read `.cursor/rules.md` and `src/lib/design-tokens.ts` before UI work.
+- `src/lib/design-tokens.ts` is the only source of color, radius, shadow and motion values.
+- Never add arbitrary color literals or Tailwind arbitrary color values in components.
+- Map tokens to CSS variables in `src/app/globals.css`; use their Tailwind utilities.
+- Use Cormorant Garamond for display text and Inter for body text.
+- Build mobile-first, semantic, keyboard-accessible interfaces with visible focus.
+- Use `motion/react`; animate transform and opacity where possible.
+- Respect `prefers-reduced-motion` and disable Lenis-driven effects for it.
+- Avoid large `backdrop-filter` regions and layout-triggering scroll state.

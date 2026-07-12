@@ -1,0 +1,17 @@
+---
+description: Core architecture and project-wide boundaries
+globs:
+  - "**/*"
+alwaysApply: true
+---
+
+# Core architecture
+
+- Read `.cursor/rules.md` before inspecting or changing project files.
+- Keep the application a Next.js App Router modular monolith.
+- Organize domain logic under `src/modules`; keep routes and pages thin.
+- Server Components are the default. Add `"use client"` only at the smallest interactive boundary.
+- Keep public site, admin, auth, content, leads, media and database concerns separated.
+- Do not import server-only modules into Client Components.
+- Use the `@/*` alias for cross-directory imports.
+- Keep changes inside the requested task; do not implement future plan tasks.

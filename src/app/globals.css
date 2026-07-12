@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+:root {
+  --token-color-background: #fafaf7;
+  --token-color-text-primary: #2b2b2b;
+  --token-color-text-secondary: #4a4741;
+  --token-color-accent-sage: #3b5942;
+  --token-color-accent-forest: #2f4a36;
+  --token-motion-ease-cinematic: cubic-bezier(0.22, 1, 0.36, 1);
+  --token-motion-duration-fast: 240ms;
+  --token-motion-duration-base: 560ms;
+  --token-motion-duration-slow: 900ms;
+  --token-radius-control: 999px;
+  --token-radius-card: 1.5rem;
+  --token-radius-panel: 2rem;
+  --token-shadow-lift: 0 24px 80px rgb(47 74 54 / 0.12);
+}
+
+@theme inline {
+  --color-background: var(--token-color-background);
+  --color-primary: var(--token-color-text-primary);
+  --color-secondary: var(--token-color-text-secondary);
+  --color-sage: var(--token-color-accent-sage);
+  --color-forest: var(--token-color-accent-forest);
+  --font-display: var(--font-cormorant);
+  --font-sans: var(--font-inter);
+  --radius-control: var(--token-radius-control);
+  --radius-card: var(--token-radius-card);
+  --radius-panel: var(--token-radius-panel);
+  --shadow-lift: var(--token-shadow-lift);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--token-color-background);
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background: var(--token-color-background);
+  color: var(--token-color-text-primary);
+  font-family: var(--font-inter), sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--token-color-accent-sage);
+  color: var(--token-color-background);
+}

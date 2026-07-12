@@ -1,0 +1,20 @@
+---
+description: Drizzle schema, migration and repository conventions
+globs:
+  - "src/db/**/*.ts"
+  - "src/modules/**/*.repository.ts"
+  - "src/modules/**/repositories/**/*.ts"
+alwaysApply: false
+---
+
+# Database
+
+- Read `.cursor/rules.md` before changing matching files.
+- Keep Drizzle schema and database bootstrap code under `src/db`.
+- Access persistence through domain repositories; do not query from UI components.
+- Keep transactions explicit for multi-write invariants.
+- Generate migrations with `npm run db:generate`; never hand-edit generated migrations.
+- Run migrations separately from application startup.
+- Use parameterized Drizzle/postgres APIs and never interpolate SQL input.
+- Validate untrusted values with Zod before persistence.
+- Keep `DATABASE_URL` and connection details in server-only modules.

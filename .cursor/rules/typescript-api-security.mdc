@@ -1,0 +1,20 @@
+---
+description: Strict TypeScript, API validation and security boundaries
+globs:
+  - "src/app/api/**/*.ts"
+  - "src/modules/**/*.ts"
+  - "src/modules/**/*.tsx"
+alwaysApply: false
+---
+
+# TypeScript, API and security
+
+- Read `.cursor/rules.md` before changing matching files.
+- Preserve strict TypeScript, `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`.
+- Do not use `any`, unsafe assertions or untyped external data.
+- Validate every request, environment and persistence boundary with Zod.
+- Return explicit DTOs; never leak database rows, SQL, stack traces or secret values.
+- Keep secrets in server-only modules and mark sensitive modules with `import "server-only"`.
+- Never expose database, S3, session or password material through `NEXT_PUBLIC_*`.
+- Require authenticated server sessions and same-origin checks for admin mutations.
+- Normalize errors into stable public responses and log only non-sensitive context.

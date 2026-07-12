@@ -1,0 +1,23 @@
+---
+description: TDD workflow and required verification commands
+globs:
+  - "src/**/*.test.ts"
+  - "src/**/*.test.tsx"
+  - "src/**/*.spec.ts"
+  - "src/**/*.spec.tsx"
+  - "tests/**/*.ts"
+  - "tests/**/*.tsx"
+alwaysApply: false
+---
+
+# Testing and verification
+
+- Read `.cursor/rules.md` before changing matching files.
+- Use TDD for behavior: write one failing test, confirm the expected failure, then implement minimally.
+- Do not add behavior without first observing its test fail.
+- Prefer real behavior over mocks; mock only external system boundaries.
+- Keep unit/component tests colocated and browser journeys under `tests/e2e`.
+- Run focused tests during development: `npm test -- <path>`.
+- Before handoff run `npm test`, `npm run typecheck`, `npm run lint` and `npm run build`.
+- Run `npm run test:e2e` when browser behavior or release scope is involved.
+- Report exact commands, exit status and any warnings; never claim success from stale output.
