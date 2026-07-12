@@ -7,6 +7,27 @@ const publicUrl = z.url().max(2_048);
 const localAssetUrl = z.string().regex(/^\/[a-zA-Z0-9/_-]+\.[a-zA-Z0-9]+$/);
 const anchorUrl = z.string().regex(/^#[a-z][a-z0-9-]*$/).max(80);
 
+export const APPROVED_HERO_SUBTITLE =
+  "Помогаю решить семейные и имущественные споры без лишнего стресса и затяжных судов";
+
+const REQUIRED_SERVICE_SLUGS = [
+  "razvod",
+  "alimenty",
+  "imushchestvo",
+  "deti",
+  "zemlya",
+  "uslugi",
+] as const;
+
+const REQUIRED_QUICK_LINKS = [
+  { slug: "razvod", href: "#razvod" },
+  { slug: "alimenty", href: "#alimenty" },
+  { slug: "imushchestvo", href: "#imushchestvo" },
+  { slug: "deti", href: "#deti" },
+  { slug: "zemlya", href: "#zemlya" },
+  { slug: "uslugi", href: "#uslugi" },
+] as const;
+
 export const ServiceSlugSchema = z.enum([
   "razvod",
   "alimenty",
@@ -60,7 +81,9 @@ export const VkEmbedSchema = z.object({
 export const HeroContentSchema = z.object({
   eyebrow: shortText,
   title: z.literal("Развод, алименты и раздел имущества в Хабаровске"),
-  subtitle: mediumText,
+  subtitle: z.literal(APPROVED_HERO_SUBTITLE, {
+    error: "Подзаголовок должен соответствовать утверждённому тексту",
+  }),
   badges: z.array(HeroBadgeSchema).length(4),
   cta: CtaSchema,
   disclaimer: mediumText,
@@ -76,6 +99,31 @@ export const QuickLinkSchema = z.object({
   label: shortText,
   href: anchorUrl,
 });
+
+export const QuickLinksSchema = z
+  .array(QuickLinkSchema)
+  .length(6, "Должно быть ровно шесть быстрых ссылок")
+  .superRefine((links, context) => {
+    REQUIRED_QUICK_LINKS.forEach((expected, index) => {
+      const link = links[index];
+      if (!link) return;
+
+      if (link.slug !== expected.slug) {
+        context.addIssue({
+          code: "custom",
+          path: [index, "slug"],
+          message: `Ожидается slug «${expected.slug}» на позиции ${index + 1}`,
+        });
+      }
+      if (link.href !== expected.href) {
+        context.addIssue({
+          code: "custom",
+          path: [index, "href"],
+          message: `Для «${expected.slug}» ожидается ссылка «${expected.href}»`,
+        });
+      }
+    });
+  });
 
 export const HiddenRisksSchema = z.object({
   eyebrow: shortText,
@@ -102,7 +150,7 @@ export const HeroSettingsSchema = z.object({
       posterUrl: localAssetUrl,
     }),
   }),
-  quickLinks: z.array(QuickLinkSchema).length(6),
+  quickLinks: QuickLinksSchema,
   hiddenRisks: HiddenRisksSchema,
 });
 
@@ -172,7 +220,22 @@ export const RatingSchema = z.object({
 
 export const RatingsSettingsSchema = z.object({
   heading: shortText,
-  items: z.array(RatingSchema).length(2),
+  items: z
+    .array(RatingSchema)
+    .length(2, "Должно быть ровно два рейтинга")
+    .superRefine((items, context) => {
+      const expectedSources = ["Яндекс", "2ГИС"] as const;
+      expectedSources.forEach((expectedSource, index) => {
+        const item = items[index];
+        if (item && item.source !== expectedSource) {
+          context.addIssue({
+            code: "custom",
+            path: [index, "source"],
+            message: `На позиции ${index + 1} ожидается источник «${expectedSource}»`,
+          });
+        }
+      });
+    }),
 });
 
 export const LegalSettingsSchema = z.object({
@@ -199,6 +262,22 @@ export const ServiceSchema = z.object({
   priceFromKopecks: z.number().int().min(0).max(100_000_000),
   isHighValue: z.boolean(),
 });
+
+export const ServicesSchema = z
+  .array(ServiceSchema)
+  .length(6, "Должно быть ровно шесть услуг")
+  .superRefine((items, context) => {
+    REQUIRED_SERVICE_SLUGS.forEach((expectedSlug, index) => {
+      const item = items[index];
+      if (item && item.slug !== expectedSlug) {
+        context.addIssue({
+          code: "custom",
+          path: [index, "slug"],
+          message: `На позиции ${index + 1} ожидается услуга «${expectedSlug}»`,
+        });
+      }
+    });
+  });
 
 export const CaseSchema = z.object({
   situation: longText,
@@ -233,9 +312,9 @@ export const LandingDataSchema = z.object({
   meta: MetaSchema,
   header: HeaderSchema,
   hero: HeroContentSchema,
-  quickLinks: z.array(QuickLinkSchema).length(6),
+  quickLinks: QuickLinksSchema,
   hiddenRisks: HiddenRisksSchema,
-  services: z.array(ServiceSchema).length(6),
+  services: ServicesSchema,
   consultation: ConsultationSchema,
   workflow: WorkflowSettingsSchema,
   honesty: HonestyBannerSchema,

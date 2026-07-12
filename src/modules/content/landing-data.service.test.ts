@@ -9,7 +9,14 @@ const timestamp = new Date("2026-07-12T00:00:00.000Z");
 
 function createFakeRepository(
   settingsOverride?: Partial<Awaited<ReturnType<ContentRepository["getSiteSettings"]>>>,
+  servicesOverride?: Awaited<ReturnType<ContentRepository["listServices"]>>,
 ): ContentRepository {
+  const serviceRows = seedContent.services.map((item) => ({
+    ...item,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  }));
+
   return {
     getSiteSettings: async () => ({
       id: "default",
@@ -18,12 +25,7 @@ function createFakeRepository(
       updatedAt: timestamp,
       ...settingsOverride,
     }),
-    listServices: async () =>
-      seedContent.services.map((item) => ({
-        ...item,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-      })),
+    listServices: async () => servicesOverride ?? serviceRows,
     listCases: async () =>
       seedContent.cases.map((item) => ({
         ...item,
@@ -63,6 +65,15 @@ describe("buildLandingData", () => {
       "zemlya",
       "uslugi",
     ]);
+    expect(data.services[0]).toEqual({
+      slug: seedContent.services[0]?.slug,
+      title: seedContent.services[0]?.title,
+      description: seedContent.services[0]?.description,
+      situations: seedContent.services[0]?.situations,
+      trustNote: seedContent.services[0]?.trustNote,
+      priceFromKopecks: seedContent.services[0]?.priceFromKopecks,
+      isHighValue: seedContent.services[0]?.isHighValue,
+    });
     expect(data.cases).toHaveLength(4);
     expect(data.faqs.length).toBeGreaterThanOrEqual(6);
     expect(data).not.toHaveProperty("id");
@@ -89,5 +100,30 @@ describe("buildLandingData", () => {
 
     expect(data.hero.video.vkEmbed).toBeUndefined();
     expect(data.reviews.some((review) => review.imageUrl === null)).toBe(true);
+  });
+
+  it("rejects duplicate service slugs", async () => {
+    const baseRepository = createFakeRepository();
+    const serviceRows = await baseRepository.listServices();
+    const [first, second] = serviceRows;
+    if (!first || !second) throw new Error("Invalid services fixture");
+    serviceRows[1] = { ...second, slug: first.slug };
+
+    await expect(
+      buildLandingData(createFakeRepository(undefined, serviceRows)),
+    ).rejects.toEqual(new ContentDataError());
+  });
+
+  it("rejects service order drift", async () => {
+    const baseRepository = createFakeRepository();
+    const serviceRows = await baseRepository.listServices();
+    const [first, second] = serviceRows;
+    if (!first || !second) throw new Error("Invalid services fixture");
+    serviceRows[0] = second;
+    serviceRows[1] = first;
+
+    await expect(
+      buildLandingData(createFakeRepository(undefined, serviceRows)),
+    ).rejects.toEqual(new ContentDataError());
   });
 });
