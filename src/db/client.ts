@@ -6,32 +6,30 @@ import postgres from "postgres";
 import { getServerEnv } from "@/lib/env/server";
 
 import * as schema from "./schema";
+import { getPostgresConnectionOptions } from "./connection-options";
 
 type PostgresClient = ReturnType<typeof postgres>;
+type Database = PostgresJsDatabase<typeof schema>;
 
-let client: PostgresClient | undefined;
-let database: PostgresJsDatabase<typeof schema> | undefined;
-
-function usesLocalDatabase(databaseUrl: string): boolean {
-  const hostname = new URL(databaseUrl).hostname;
-  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+declare global {
+  var __artemPostgresClient: PostgresClient | undefined;
+  var __artemDatabase: Database | undefined;
 }
 
 export function getPostgresClient(): PostgresClient {
-  if (!client) {
+  if (!globalThis.__artemPostgresClient) {
     const { DATABASE_URL } = getServerEnv();
 
-    client = postgres(DATABASE_URL, {
-      ssl: usesLocalDatabase(DATABASE_URL)
-        ? false
-        : { rejectUnauthorized: true },
-    });
+    globalThis.__artemPostgresClient = postgres(
+      DATABASE_URL,
+      getPostgresConnectionOptions(DATABASE_URL),
+    );
   }
 
-  return client;
+  return globalThis.__artemPostgresClient;
 }
 
-export function getDb(): PostgresJsDatabase<typeof schema> {
-  database ??= drizzle(getPostgresClient(), { schema });
-  return database;
+export function getDb(): Database {
+  globalThis.__artemDatabase ??= drizzle(getPostgresClient(), { schema });
+  return globalThis.__artemDatabase;
 }

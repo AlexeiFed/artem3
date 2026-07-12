@@ -4,18 +4,13 @@ import postgres from "postgres";
 
 import { getServerEnv } from "@/lib/env/server";
 
-function usesLocalDatabase(databaseUrl: string): boolean {
-  const hostname = new URL(databaseUrl).hostname;
-  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
-}
+import { getPostgresConnectionOptions } from "./connection-options";
 
 async function runMigrations(): Promise<void> {
   const { DATABASE_URL } = getServerEnv();
   const client = postgres(DATABASE_URL, {
+    ...getPostgresConnectionOptions(DATABASE_URL),
     max: 1,
-    ssl: usesLocalDatabase(DATABASE_URL)
-      ? false
-      : { rejectUnauthorized: true },
   });
 
   try {

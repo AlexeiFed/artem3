@@ -1,5 +1,5 @@
 {
-  "id": "475fc050-7cf3-4ae7-a92c-0a796fae96d2",
+  "id": "675c5bf8-7430-411b-aa48-72fb3ab0ba47",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -740,6 +740,21 @@
         }
       },
       "indexes": {
+        "leads_service_id_idx": {
+          "name": "leads_service_id_idx",
+          "columns": [
+            {
+              "expression": "service_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "leads_status_idx": {
           "name": "leads_status_idx",
           "columns": [

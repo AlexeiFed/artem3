@@ -88,4 +88,12 @@ describe("database schema contracts", () => {
   it("defines stable lead status values", () => {
     expect(leadStatus.enumValues).toEqual(["NEW", "IN_PROGRESS", "CLOSED"]);
   });
+
+  it("indexes the optional lead service foreign key", () => {
+    const config = getTableConfig(leads);
+
+    expect(config.indexes.map((tableIndex) => tableIndex.config.name)).toContain(
+      "leads_service_id_idx",
+    );
+  });
 });

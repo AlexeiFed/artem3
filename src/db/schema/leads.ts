@@ -38,6 +38,7 @@ export const leads = pgTable(
     updatedAt: timestampWithTimezone("updated_at").defaultNow().notNull(),
   },
   (table) => [
+    index("leads_service_id_idx").on(table.serviceId),
     index("leads_status_idx").on(table.status),
     index("leads_created_at_idx").on(table.createdAt),
     check("leads_name_nonempty_check", sql`length(trim(${table.name})) > 0`),

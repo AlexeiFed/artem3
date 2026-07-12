@@ -148,6 +148,7 @@ ALTER TABLE "admin_sessions" ADD CONSTRAINT "admin_sessions_user_id_admin_users_
 ALTER TABLE "leads" ADD CONSTRAINT "leads_service_id_services_id_fk" FOREIGN KEY ("service_id") REFERENCES "public"."services"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "admin_sessions_user_id_idx" ON "admin_sessions" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "admin_sessions_expires_at_idx" ON "admin_sessions" USING btree ("expires_at");--> statement-breakpoint
+CREATE INDEX "leads_service_id_idx" ON "leads" USING btree ("service_id");--> statement-breakpoint
 CREATE INDEX "leads_status_idx" ON "leads" USING btree ("status");--> statement-breakpoint
 CREATE INDEX "leads_created_at_idx" ON "leads" USING btree ("created_at");--> statement-breakpoint
 CREATE INDEX "rate_limits_window_start_idx" ON "rate_limits" USING btree ("window_start");
