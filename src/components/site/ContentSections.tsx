@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion, useReducedMotion } from "motion/react";
 
 import type { LandingData } from "@/modules/content/content.types";
@@ -61,25 +62,39 @@ export function CasesStack({ cases }: { cases: LandingData["cases"] }) {
     <section id="cases" className="cases section shell">
       <p className="eyebrow">Практика</p>
       <h2>Дела, где важны детали</h2>
-      <div className="case-stack">
-        {cases.map((item, index) => (
-          <motion.article
-            key={item.situation}
-            className="case-card"
-            data-testid="case-card"
-            style={{ top: `${5 + index * 1.1}rem` }}
-            initial={reduced ? false : { scale: 0.97, opacity: 0.7 }}
-            whileInView={{ scale: 1, opacity: 1 }}
-            viewport={{ amount: 0.4 }}
-          >
-            <span className="case-index">
-              Кейс {String(index + 1).padStart(2, "0")}
-            </span>
-            <CasePart label="Ситуация" text={item.situation} />
-            <CasePart label="Действия" text={item.action} />
-            <CasePart label="Результат" text={item.result} result />
-          </motion.article>
-        ))}
+      <div className="cases-layout">
+        <figure className="cases-portrait">
+          <Image
+            src="/media/artem-desk-cases.jpg"
+            alt="Артём Сысуев за рабочим столом с материалами дела"
+            width={260}
+            height={347}
+            className="site-portrait-image cases-portrait-image"
+          />
+          <figcaption>Разбор материалов дела</figcaption>
+        </figure>
+        <div className="case-stack">
+          {cases.map((item, index) => (
+            <motion.article
+              key={item.situation}
+              className="case-card"
+              data-testid="case-card"
+              style={{ top: `${5 + index * 1.1}rem` }}
+              initial={reduced ? false : { scale: 0.97, opacity: 0.7 }}
+              whileInView={{ scale: 1, opacity: 1 }}
+              viewport={{ amount: 0.4 }}
+            >
+              <span className="case-index">
+                Кейс {String(index + 1).padStart(2, "0")}
+              </span>
+              <div className="case-copy">
+                <CasePart label="Ситуация" text={item.situation} />
+                <CasePart label="Действия" text={item.action} />
+                <CasePart label="Результат" text={item.result} result />
+              </div>
+            </motion.article>
+          ))}
+        </div>
       </div>
     </section>
   );

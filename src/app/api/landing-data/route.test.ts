@@ -21,6 +21,7 @@ function createLandingDataFixture() {
     },
     quickLinks: settings.hero.quickLinks,
     hiddenRisks: settings.hero.hiddenRisks,
+    servicesIntro: settings.hero.servicesIntro,
     services: seedContent.services.map(
       ({
         slug,
@@ -85,7 +86,7 @@ describe("GET /api/landing-data", () => {
 
     expect(response.status).toBe(200);
     expect(body.data.hero.title).toBe(
-      "Развод, алименты и раздел имущества в Хабаровске",
+      "Развод, алименты\nи раздел имущества\nв Хабаровске",
     );
     expect(body.data.hero.metrics).toEqual([
       { value: "11+", label: "лет практики" },

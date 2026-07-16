@@ -5,6 +5,7 @@ export const designTokens = {
     textSecondary: "#4A4741",
     accentSage: "#3B5942",
     accentForest: "#2F4A36",
+    error: "#B33A3A",
   },
   motion: {
     easeCinematic: [0.22, 1, 0.36, 1] as const,
@@ -28,6 +29,7 @@ export type DesignTokenCssVariables = Readonly<{
   "--token-color-text-secondary": string;
   "--token-color-accent-sage": string;
   "--token-color-accent-forest": string;
+  "--token-color-error": string;
   "--token-motion-ease-cinematic": string;
   "--token-motion-duration-fast": string;
   "--token-motion-duration-base": string;
@@ -44,6 +46,7 @@ export const designTokenCssVariables: DesignTokenCssVariables = {
   "--token-color-text-secondary": designTokens.color.textSecondary,
   "--token-color-accent-sage": designTokens.color.accentSage,
   "--token-color-accent-forest": designTokens.color.accentForest,
+  "--token-color-error": designTokens.color.error,
   "--token-motion-ease-cinematic": `cubic-bezier(${designTokens.motion.easeCinematic.join(
     ", ",
   )})`,

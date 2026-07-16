@@ -142,7 +142,7 @@ export function createMediaService({
       ) {
         throw new MediaDomainError("CONFLICT", {
           objectKey: [
-            "Метаданные объекта в S3 не совпадают с заявленными значениями",
+            "Метаданные файла не совпадают с заявленными значениями",
           ],
         });
       }

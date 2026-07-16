@@ -2,14 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import { designTokenCssVariables, designTokens } from "./design-tokens";
 
-describe("design token CSS variables", () => {
-  it("maps every canonical token to its CSS custom property", () => {
+describe("design tokens", () => {
+  it("exposes CSS variables for every token value", () => {
     expect(designTokenCssVariables).toEqual({
       "--token-color-background": designTokens.color.background,
       "--token-color-text-primary": designTokens.color.textPrimary,
       "--token-color-text-secondary": designTokens.color.textSecondary,
       "--token-color-accent-sage": designTokens.color.accentSage,
       "--token-color-accent-forest": designTokens.color.accentForest,
+      "--token-color-error": designTokens.color.error,
       "--token-motion-ease-cinematic": `cubic-bezier(${designTokens.motion.easeCinematic.join(
         ", ",
       )})`,

@@ -119,7 +119,7 @@ describe("buildLandingData", () => {
     ).rejects.toEqual(new ContentDataError());
   });
 
-  it("rejects service order drift", async () => {
+  it("accepts reordered services when slugs stay unique", async () => {
     const baseRepository = createFakeRepository();
     const serviceRows = await baseRepository.listServices();
     const [first, second] = serviceRows;
@@ -127,9 +127,11 @@ describe("buildLandingData", () => {
     serviceRows[0] = second;
     serviceRows[1] = first;
 
-    await expect(
-      buildLandingData(createFakeRepository(undefined, serviceRows)),
-    ).rejects.toEqual(new ContentDataError());
+    const data = await buildLandingData(
+      createFakeRepository(undefined, serviceRows),
+    );
+    expect(data.services[0]?.slug).toBe(second.slug);
+    expect(data.services[1]?.slug).toBe(first.slug);
   });
 
   it("preserves the original internal failure as ContentDataError cause", async () => {

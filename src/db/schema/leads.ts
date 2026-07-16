@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   check,
   index,
   integer,
@@ -35,6 +36,9 @@ export const leads = pgTable(
       onDelete: "set null",
     }),
     status: leadStatus("status").default("NEW").notNull(),
+    isDataAgreed: boolean("is_data_agreed").default(false).notNull(),
+    isMarketingAgreed: boolean("is_marketing_agreed").default(false).notNull(),
+    consentAt: timestampWithTimezone("consent_at").defaultNow().notNull(),
     createdAt: timestampWithTimezone("created_at").defaultNow().notNull(),
     updatedAt: timestampWithTimezone("updated_at").defaultNow().notNull(),
   },

@@ -44,6 +44,12 @@ function createMemoryRepository(
     async updateService() {
       throw new Error("not implemented in this fixture");
     },
+    async createService() {
+      throw new Error("not implemented in this fixture");
+    },
+    async deleteService() {
+      throw new Error("not implemented in this fixture");
+    },
     async createCase() {
       throw new Error("not implemented in this fixture");
     },

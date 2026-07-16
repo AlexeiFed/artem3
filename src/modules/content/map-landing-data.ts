@@ -15,6 +15,7 @@ import {
   WorkflowSettingsSchema,
 } from "./content.schemas";
 import type { LandingData } from "./content.types";
+import { serviceAnchorHref } from "./service-anchors";
 
 export interface LandingContentSource {
   settings: {
@@ -34,11 +35,58 @@ export interface LandingContentSource {
   certificates: unknown[];
 }
 
+/** Old seed used `#uslugi` for the last service; that collides with section id. */
+function normalizeHeroSettings(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object") return raw;
+  const hero = raw as { quickLinks?: Array<{ slug?: string; href?: string }> };
+  if (!Array.isArray(hero.quickLinks)) return raw;
+  return {
+    ...hero,
+    quickLinks: hero.quickLinks.map((link) =>
+      link?.slug === "uslugi" && link.href === "#uslugi"
+        ? { ...link, href: "#prochee" }
+        : link,
+    ),
+  };
+}
+
+function normalizeContactsSettings(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object") return raw;
+  const contacts = raw as {
+    telegram?: { label?: string; url?: string };
+    whatsapp?: { label?: string; url?: string };
+    max?: { label?: string; url?: string };
+  };
+  const telegramUrl = contacts.telegram?.url?.replace(
+    /^https:\/\/t\.me\//u,
+    "https://telegram.me/",
+  );
+  return {
+    ...contacts,
+    ...(contacts.telegram
+      ? {
+          telegram: {
+            label: contacts.telegram.label ?? "Telegram",
+            url: telegramUrl ?? contacts.telegram.url,
+          },
+        }
+      : {}),
+    max: contacts.max ?? {
+      label: "MAX",
+      url: "https://max.ru/",
+    },
+  };
+}
+
 export function mapLandingData(source: LandingContentSource): LandingData {
-  const hero = HeroSettingsSchema.parse(source.settings.hero);
+  const hero = HeroSettingsSchema.parse(
+    normalizeHeroSettings(source.settings.hero),
+  );
   const trust = TrustBannerSettingsSchema.parse(source.settings.trustBanner);
   const workflow = WorkflowSettingsSchema.parse(source.settings.workflow);
-  const contacts = ContactsSettingsSchema.parse(source.settings.contacts);
+  const contacts = ContactsSettingsSchema.parse(
+    normalizeContactsSettings(source.settings.contacts),
+  );
   const legal = LegalSettingsSchema.parse(source.settings.legal);
   const map = MapSettingsSchema.parse(source.settings.map);
   const ratings = RatingsSettingsSchema.parse(source.settings.ratings);
@@ -63,8 +111,13 @@ export function mapLandingData(source: LandingContentSource): LandingData {
         ...(vk.enabled ? { vkEmbed: vk.embed } : {}),
       },
     },
-    quickLinks: hero.quickLinks,
+    quickLinks: services.map(({ slug, title }) => ({
+      slug,
+      label: title,
+      href: serviceAnchorHref(slug),
+    })),
     hiddenRisks: hero.hiddenRisks,
+    servicesIntro: hero.servicesIntro,
     services: services.map(
       ({
         slug,

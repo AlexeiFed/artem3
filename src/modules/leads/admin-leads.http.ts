@@ -75,6 +75,7 @@ export function createListLeadsHandler({
       return okResponse({
         items: items.map((item) => ({
           ...item,
+          consentAt: item.consentAt.toISOString(),
           createdAt: item.createdAt.toISOString(),
           updatedAt: item.updatedAt.toISOString(),
         })),
@@ -122,6 +123,7 @@ export function createUpdateLeadStatusHandler({
       const data = await service.updateStatus(id, body);
       return okResponse({
         ...data,
+        consentAt: data.consentAt.toISOString(),
         createdAt: data.createdAt.toISOString(),
         updatedAt: data.updatedAt.toISOString(),
       });

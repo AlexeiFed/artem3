@@ -59,89 +59,64 @@ describe("HeroSettingsSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("requires the exact approved hero subtitle", () => {
+  it("accepts a custom hero title and subtitle", () => {
     const validSettings = createValidHeroSettings();
-    const settings = {
+    const result = HeroSettingsSchema.safeParse({
       ...validSettings,
       hero: {
         ...validSettings.hero,
-        subtitle: "Произвольный маркетинговый подзаголовок",
+        title: "Семейный юрист в Хабаровске",
+        subtitle: "Произвольный маркетинговый подзаголовок для клиента",
       },
-    };
+    });
 
-    const result = HeroSettingsSchema.safeParse(settings);
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            path: ["hero", "subtitle"],
-            message: expect.stringContaining("утверждённому тексту"),
-          }),
-        ]),
-      );
-    }
+    expect(result.success).toBe(true);
   });
 
-  it("accepts the exact approved hero subtitle", () => {
+  it("rejects empty hero title", () => {
+    const validSettings = createValidHeroSettings();
+    const result = HeroSettingsSchema.safeParse({
+      ...validSettings,
+      hero: {
+        ...validSettings.hero,
+        title: "   ",
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts the seeded hero subtitle", () => {
     expect(HeroSettingsSchema.safeParse(createValidHeroSettings()).success).toBe(
       true,
     );
   });
 
-  it.each([
-    {
-      name: "duplicate slug",
-      mutate: () => {
-        const settings = createValidHeroSettings();
-        const [first, second] = settings.quickLinks;
-        if (!first || !second) throw new Error("Invalid quick-link fixture");
-        settings.quickLinks[1] = { ...first, label: second.label };
-        return settings;
-      },
-    },
-    {
-      name: "missing link",
-      mutate: () => {
-        const settings = createValidHeroSettings();
-        settings.quickLinks = settings.quickLinks.slice(0, -1);
-        return settings;
-      },
-    },
-    {
-      name: "wrong href",
-      mutate: () => {
-        const settings = createValidHeroSettings();
-        const [first] = settings.quickLinks;
-        if (!first) throw new Error("Invalid quick-link fixture");
-        settings.quickLinks[0] = { ...first, href: "#alimenty" };
-        return settings;
-      },
-    },
-    {
-      name: "order drift",
-      mutate: () => {
-        const settings = createValidHeroSettings();
-        const [first, second] = settings.quickLinks;
-        if (!first || !second) throw new Error("Invalid quick-link fixture");
-        settings.quickLinks[0] = second;
-        settings.quickLinks[1] = first;
-        return settings;
-      },
-    },
-  ])("rejects quick links with $name", ({ mutate }) => {
-    const result = HeroSettingsSchema.safeParse(mutate());
+  it("rejects empty quick links", () => {
+    const settings = createValidHeroSettings();
+    settings.quickLinks = [];
+    expect(HeroSettingsSchema.safeParse(settings).success).toBe(false);
+  });
 
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues[0]).toEqual(
-        expect.objectContaining({
-          path: expect.arrayContaining(["quickLinks"]),
-          message: expect.any(String),
-        }),
-      );
-    }
+  it("rejects more than 12 quick links", () => {
+    const settings = createValidHeroSettings();
+    const [first] = settings.quickLinks;
+    if (!first) throw new Error("Invalid quick-link fixture");
+    settings.quickLinks = Array.from({ length: 13 }, (_, index) => ({
+      ...first,
+      slug: `link-${index}`,
+      href: `#link-${index}`,
+    }));
+    expect(HeroSettingsSchema.safeParse(settings).success).toBe(false);
+  });
+
+  it("accepts reordered quick links", () => {
+    const settings = createValidHeroSettings();
+    const [first, second] = settings.quickLinks;
+    if (!first || !second) throw new Error("Invalid quick-link fixture");
+    settings.quickLinks[0] = second;
+    settings.quickLinks[1] = first;
+    expect(HeroSettingsSchema.safeParse(settings).success).toBe(true);
   });
 });
 

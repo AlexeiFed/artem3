@@ -24,11 +24,11 @@ export function FaqEditor({ initialItems, loadError }: FaqEditorProps) {
   const selected = items.find((item) => item.id === selectedId) ?? null;
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[18rem_1fr]">
-      <div className="grid gap-3">
+    <div className="grid items-start gap-8 lg:grid-cols-[18rem_1fr]">
+      <div className="flex flex-col gap-3 self-start">
         <button
           type="button"
-          className="rounded-control bg-forest px-4 py-2 font-sans text-sm text-background"
+          className="shrink-0 rounded-card bg-forest px-4 py-2.5 font-sans text-sm text-background"
           onClick={async () => {
             const response = await fetch("/api/admin/content/faqs", {
               method: "POST",

@@ -6,7 +6,15 @@ import { AnimatePresence, motion } from "motion/react";
 import { useModal } from "@/components/forms/ModalProvider";
 import type { LandingData } from "@/modules/content/content.types";
 
-export function Header({ data }: { data: LandingData["header"] }) {
+export function Header({
+  data,
+  address,
+  workHours,
+}: {
+  data: LandingData["header"];
+  address: string;
+  workHours: string;
+}) {
   const { openModal } = useModal();
   const [menuOpen, setMenuOpen] = useState(false);
   const firstLink = useRef<HTMLAnchorElement>(null);
@@ -33,6 +41,11 @@ export function Header({ data }: { data: LandingData["header"] }) {
           {data.logo.text}
           <small>Семейный юрист</small>
         </a>
+        <p className="header-meta">
+          <span>{address}</span>
+          <span aria-hidden="true">·</span>
+          <span>{workHours}</span>
+        </p>
         <nav className="desktop-nav" aria-label="Основная навигация">
           {data.nav.map((item) => (
             <a key={item.href} href={item.href}>
@@ -43,7 +56,7 @@ export function Header({ data }: { data: LandingData["header"] }) {
         <button
           type="button"
           className="header-cta"
-          onClick={() => openModal()}
+          onClick={() => openModal("Шапка сайта")}
         >
           {data.cta.label}
         </button>
@@ -82,12 +95,16 @@ export function Header({ data }: { data: LandingData["header"] }) {
                   {item.label}
                 </motion.a>
               ))}
+              <p className="header-meta header-meta-mobile">
+                <span>{address}</span>
+                <span>{workHours}</span>
+              </p>
               <button
                 type="button"
                 className="button button-light"
                 onClick={() => {
                   setMenuOpen(false);
-                  openModal();
+                  openModal("Шапка сайта");
                 }}
               >
                 {data.cta.label}

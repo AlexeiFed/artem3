@@ -22,6 +22,14 @@ interface ServicesEditorProps {
   loadError: string | null;
 }
 
+function rublesFromKopecks(kopecks: number): number {
+  return Math.round(kopecks / 100);
+}
+
+function kopecksFromRubles(rubles: number): number {
+  return Math.round(rubles * 100);
+}
+
 export function ServicesEditor({
   initialItems,
   loadError,
@@ -33,31 +41,88 @@ export function ServicesEditor({
   const selected = items.find((item) => item.id === selectedId) ?? null;
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[18rem_1fr]">
-      <SortableEntityList
-        items={items.map((item) => ({ id: item.id, label: item.title }))}
-        {...(selectedId ? { selectedId } : {})}
-        onSelect={setSelectedId}
-        onReorder={async (orderedIds) => {
-          const response = await fetch("/api/admin/content/reorder", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ entity: "services", orderedIds }),
-          });
-          if (!response.ok) {
-            const parsed = AdminApiErrorSchema.safeParse(await response.json());
-            setError(
-              parsed.success ? parsed.data.error.message : "Ошибка reorder",
+    <div className="grid items-start gap-8 lg:grid-cols-[18rem_1fr]">
+      <div className="flex flex-col gap-3 self-start">
+        <p className="font-sans text-xs text-secondary">
+          Блок «С чем помочь» на лендинге строится из этого списка услуг.
+        </p>
+        <button
+          type="button"
+          className="shrink-0 rounded-card bg-forest px-4 py-2.5 font-sans text-sm text-background"
+          onClick={async () => {
+            const slug = `usluga-${Date.now().toString(36)}`;
+            const response = await fetch("/api/admin/content/services", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                slug,
+                title: "Новая услуга",
+                description:
+                  "Кратко опишите, чем помогаете клиенту в этой услуге.",
+                situations: [
+                  "Типовая ситуация 1",
+                  "Типовая ситуация 2",
+                  "Типовая ситуация 3",
+                ],
+                trustNote: "Короткое пояснение для клиента.",
+                priceFromKopecks: 0,
+                isHighValue: false,
+              }),
+            });
+            if (!response.ok) {
+              const parsed = AdminApiErrorSchema.safeParse(
+                await response.json(),
+              );
+              setError(
+                parsed.success
+                  ? parsed.data.error.message
+                  : "Не удалось создать услугу",
+              );
+              return;
+            }
+            const body = (await response.json()) as {
+              ok: true;
+              data: ServiceEditorItem;
+            };
+            setItems((current) => [...current, body.data]);
+            setSelectedId(body.data.id);
+            setError(null);
+          }}
+        >
+          Добавить услугу
+        </button>
+        <SortableEntityList
+          items={items.map((item) => ({ id: item.id, label: item.title }))}
+          {...(selectedId ? { selectedId } : {})}
+          onSelect={setSelectedId}
+          onReorder={async (orderedIds) => {
+            const response = await fetch("/api/admin/content/reorder", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ entity: "services", orderedIds }),
+            });
+            if (!response.ok) {
+              const parsed = AdminApiErrorSchema.safeParse(
+                await response.json(),
+              );
+              setError(
+                parsed.success
+                  ? parsed.data.error.message
+                  : "Ошибка reorder",
+              );
+              return;
+            }
+            setItems(
+              orderedIds
+                .map((id) => items.find((item) => item.id === id))
+                .filter(
+                  (item): item is ServiceEditorItem => item !== undefined,
+                ),
             );
-            return;
-          }
-          setItems(
-            orderedIds
-              .map((id) => items.find((item) => item.id === id))
-              .filter((item): item is ServiceEditorItem => item !== undefined),
-          );
-        }}
-      />
+            setError(null);
+          }}
+        />
+      </div>
       {selected ? (
         <EntityEditor
           key={selected.id}
@@ -66,7 +131,7 @@ export function ServicesEditor({
             title: selected.title,
             description: selected.description,
             trustNote: selected.trustNote,
-            priceFromKopecks: selected.priceFromKopecks,
+            priceFromRubles: rublesFromKopecks(selected.priceFromKopecks),
             isHighValue: selected.isHighValue,
           }}
           fields={[
@@ -74,13 +139,21 @@ export function ServicesEditor({
             { name: "description", label: "Описание", type: "textarea" },
             { name: "trustNote", label: "Заметка доверия", type: "text" },
             {
-              name: "priceFromKopecks",
-              label: "Цена от (копейки)",
+              name: "priceFromRubles",
+              label: "Цена от (₽)",
               type: "number",
             },
-            { name: "isHighValue", label: "Высокий чек", type: "checkbox" },
+            {
+              name: "isHighValue",
+              label:
+                "Высокий чек — на карточке услуги появится метка «Высокий чек» и более сильный акцент цены (для сложных/дорогих дел)",
+              type: "checkbox",
+            },
           ]}
           onSave={async (value) => {
+            const priceFromKopecks = kopecksFromRubles(
+              Number(value.priceFromRubles ?? 0),
+            );
             const response = await fetch(
               `/api/admin/content/services/${selected.id}`,
               {
@@ -89,12 +162,18 @@ export function ServicesEditor({
                 body: JSON.stringify({
                   slug: selected.slug,
                   situations: selected.situations,
-                  ...value,
+                  title: value.title,
+                  description: value.description,
+                  trustNote: value.trustNote,
+                  priceFromKopecks,
+                  isHighValue: value.isHighValue,
                 }),
               },
             );
             if (!response.ok) {
-              const parsed = AdminApiErrorSchema.safeParse(await response.json());
+              const parsed = AdminApiErrorSchema.safeParse(
+                await response.json(),
+              );
               throw new Error(
                 parsed.success
                   ? parsed.data.error.message
@@ -111,9 +190,7 @@ export function ServicesEditor({
                         value.description ?? item.description,
                       ),
                       trustNote: String(value.trustNote ?? item.trustNote),
-                      priceFromKopecks: Number(
-                        value.priceFromKopecks ?? item.priceFromKopecks,
-                      ),
+                      priceFromKopecks,
                       isHighValue: Boolean(
                         value.isHighValue ?? item.isHighValue,
                       ),
@@ -121,6 +198,29 @@ export function ServicesEditor({
                   : item,
               ),
             );
+          }}
+          onDelete={async () => {
+            const response = await fetch(
+              `/api/admin/content/services/${selected.id}`,
+              { method: "DELETE" },
+            );
+            if (!response.ok) {
+              const parsed = AdminApiErrorSchema.safeParse(
+                await response.json(),
+              );
+              setError(
+                parsed.success
+                  ? parsed.data.error.message
+                  : "Не удалось удалить",
+              );
+              return;
+            }
+            setItems((current) => {
+              const next = current.filter((item) => item.id !== selected.id);
+              setSelectedId(next[0]?.id ?? null);
+              return next;
+            });
+            setError(null);
           }}
         />
       ) : null}

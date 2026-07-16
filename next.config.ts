@@ -37,6 +37,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Dev: браузер на 127.0.0.1 ≠ localhost → без этого блокируются HMR и шрифты
+  allowedDevOrigins: ["127.0.0.1"],
   async headers() {
     if (process.env.NODE_ENV !== "production") {
       return [];

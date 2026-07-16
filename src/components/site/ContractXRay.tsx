@@ -11,8 +11,8 @@ export function ContractXRay({
   data: LandingData["hiddenRisks"];
 }) {
   const x = useMotionValue(280);
-  const y = useMotionValue(220);
-  const mask = useMotionTemplate`radial-gradient(circle at ${x}px ${y}px, var(--token-color-text-primary) 0%, transparent 34%)`;
+  const y = useMotionValue(180);
+  const mask = useMotionTemplate`radial-gradient(circle at ${x}px ${y}px, #000 0%, transparent 42%)`;
 
   function move(event: PointerEvent<HTMLDivElement>) {
     const box = event.currentTarget.getBoundingClientRect();
@@ -27,25 +27,38 @@ export function ContractXRay({
           <p className="eyebrow">{data.eyebrow}</p>
           <h2>{data.title}</h2>
           <p className="lead">{data.copy}</p>
+          <p className="xray-hint">
+            Наведите курсор на документ — проявятся строки соглашения и опасные
+            условия.
+          </p>
         </div>
         <div
           className="legal-document"
           tabIndex={0}
           onPointerMove={move}
-          aria-label="Документ с выделенными рискованными условиями"
+          aria-label="Документ с выделенными рискованными условиями. Наведите курсор или сфокусируйте блок, чтобы увидеть опасные условия."
         >
-          <DocumentLines lines={data.documentLines} />
-          <motion.div className="document-reveal" style={{ maskImage: mask }}>
+          <div className="legal-document-scan">
             <DocumentLines lines={data.documentLines} />
-            <div className="toxic-clauses">
-              {data.toxicClauses.map((item) => (
-                <article key={item.clause}>
-                  <strong>{item.clause}</strong>
-                  <p>{item.risk}</p>
-                </article>
-              ))}
-            </div>
-          </motion.div>
+            <motion.div
+              className="document-reveal"
+              style={{
+                maskImage: mask,
+                WebkitMaskImage: mask,
+              }}
+            >
+              <DocumentLines lines={data.documentLines} />
+            </motion.div>
+          </div>
+          <div className="toxic-clauses">
+            <p className="toxic-clauses-heading">Опасные условия</p>
+            {data.toxicClauses.map((item) => (
+              <article key={item.clause}>
+                <strong>{item.clause}</strong>
+                <p>{item.risk}</p>
+              </article>
+            ))}
+          </div>
         </div>
       </div>
     </section>

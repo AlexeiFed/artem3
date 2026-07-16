@@ -4,29 +4,49 @@ import { z } from "zod";
 
 const postgresUrlSchema = z
   .url()
-  .refine((value) => ["postgres:", "postgresql:"].includes(new URL(value).protocol), {
-    message: "DATABASE_URL must use the postgres or postgresql protocol",
-  });
+  .refine(
+    (value) =>
+      ["postgres:", "postgresql:"].includes(new URL(value).protocol),
+    {
+      message: "DATABASE_URL must use the postgres or postgresql protocol",
+    },
+  );
 
-const serverEnvSchema = z.object({
+const commonServerEnvSchema = z.object({
   DATABASE_URL: postgresUrlSchema,
   SESSION_SECRET: z.string().min(32),
   ADMIN_EMAIL: z.email(),
   ADMIN_PASSWORD: z.string().min(14),
+  TRUSTED_PROXY_HOPS: z.coerce.number().int().min(1).max(5).default(1),
+});
+
+const localMediaEnvSchema = commonServerEnvSchema.extend({
+  MEDIA_DRIVER: z.literal("local"),
+});
+
+const s3MediaEnvSchema = commonServerEnvSchema.extend({
+  MEDIA_DRIVER: z.literal("s3"),
   S3_ENDPOINT: z.url(),
   S3_REGION: z.string().min(1),
   S3_BUCKET: z.string().min(1),
   S3_ACCESS_KEY_ID: z.string().min(1),
   S3_SECRET_ACCESS_KEY: z.string().min(1),
-  TRUSTED_PROXY_HOPS: z.coerce.number().int().min(1).max(5).default(1),
 });
+
+const serverEnvSchema = z.discriminatedUnion("MEDIA_DRIVER", [
+  localMediaEnvSchema,
+  s3MediaEnvSchema,
+]);
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
 type Environment = Record<string, string | undefined>;
 
 export function parseServerEnv(environment: Environment): ServerEnv {
-  return serverEnvSchema.parse(environment);
+  return serverEnvSchema.parse({
+    ...environment,
+    MEDIA_DRIVER: environment.MEDIA_DRIVER ?? "local",
+  });
 }
 
 let cachedServerEnv: ServerEnv | undefined;

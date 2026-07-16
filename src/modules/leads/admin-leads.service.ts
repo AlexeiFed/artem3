@@ -17,6 +17,9 @@ export interface AdminLeadRecord {
   situation: string | null;
   serviceName: string | null;
   status: LeadStatus;
+  isDataAgreed: boolean;
+  isMarketingAgreed: boolean;
+  consentAt: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -122,6 +125,9 @@ export function createAdminLeadsService(
         "service",
         "situation",
         "status",
+        "data_agreed",
+        "marketing_agreed",
+        "consent_at",
       ];
       const lines = rows.map((row) =>
         [
@@ -131,6 +137,9 @@ export function createAdminLeadsService(
           row.serviceName ?? "",
           row.situation ?? "",
           row.status,
+          row.isDataAgreed ? "yes" : "no",
+          row.isMarketingAgreed ? "yes" : "no",
+          row.consentAt.toISOString(),
         ]
           .map(csvEscape)
           .join(","),

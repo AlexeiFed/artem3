@@ -10,6 +10,16 @@ import type { RateLimitRepository } from "./rate-limit.repository";
 const NOW = new Date("2026-07-12T10:07:30.000Z");
 const SESSION_SECRET = "s".repeat(32);
 
+function validLeadInput(overrides: Record<string, unknown> = {}) {
+  return {
+    name: "Алексей",
+    phone: "9991234567",
+    isDataAgreed: true as const,
+    isMarketingAgreed: false,
+    ...overrides,
+  };
+}
+
 function createRepositories() {
   const rateLimitCalls: Parameters<RateLimitRepository["increment"]>[0][] = [];
   const leadCalls: Parameters<LeadRepository["create"]>[0][] = [];
@@ -86,6 +96,8 @@ describe("createLeadService", () => {
         situation: "  Нужна консультация  ",
         service: "  Раздел имущества  ",
         website: "",
+        isDataAgreed: true,
+        isMarketingAgreed: true,
       },
       { clientIp: "203.0.113.42", now: NOW },
     );
@@ -97,6 +109,9 @@ describe("createLeadService", () => {
         phone: "+79991234567",
         situation: "Нужна консультация",
         serviceName: "Раздел имущества",
+        isDataAgreed: true,
+        isMarketingAgreed: true,
+        consentAt: NOW,
       },
     ]);
     expect(repositories.rateLimitCalls).toHaveLength(1);
@@ -116,7 +131,7 @@ describe("createLeadService", () => {
       ...repositories,
       sessionSecret: SESSION_SECRET,
     });
-    const input = { name: "Алексей", phone: "9991234567" };
+    const input = validLeadInput();
     const context = { clientIp: "203.0.113.42", now: NOW };
 
     await Promise.all(
@@ -152,16 +167,11 @@ describe("createLeadService", () => {
   });
 
   it.each([
-    ["name", { name: "A", phone: "9991234567" }],
-    ["phone", { name: "Алексей", phone: "+1 202 555 0100" }],
-    [
-      "situation",
-      { name: "Алексей", phone: "9991234567", situation: "x".repeat(2_001) },
-    ],
-    [
-      "service",
-      { name: "Алексей", phone: "9991234567", service: "x".repeat(121) },
-    ],
+    ["name", validLeadInput({ name: "A" })],
+    ["phone", validLeadInput({ phone: "+1 202 555 0100" })],
+    ["situation", validLeadInput({ situation: "x".repeat(2_001) })],
+    ["service", validLeadInput({ service: "x".repeat(121) })],
+    ["isDataAgreed", validLeadInput({ isDataAgreed: false })],
   ])("maps invalid %s to its public field", async (field, input) => {
     const repositories = createRepositories();
     const service = createLeadService({
@@ -190,6 +200,8 @@ describe("createLeadService", () => {
           name: "Алексей",
           phone: "9991234567",
           website: "https://spam.example",
+          isDataAgreed: true,
+          isMarketingAgreed: true,
         },
         { clientIp: "203.0.113.42", now: NOW },
       )
@@ -221,7 +233,7 @@ describe("createLeadService", () => {
 
     await expect(
       service.create(
-        { name: "Алексей", phone: "9991234567" },
+        { name: "Алексей", phone: "9991234567", isDataAgreed: true, isMarketingAgreed: true },
         { clientIp: "203.0.113.42", now: NOW },
       ),
     ).rejects.toMatchObject({
@@ -246,7 +258,7 @@ describe("createLeadService", () => {
 
     await expect(
       service.create(
-        { name: "Алексей", phone: "9991234567" },
+        { name: "Алексей", phone: "9991234567", isDataAgreed: true, isMarketingAgreed: true },
         { clientIp: "203.0.113.42", now: NOW },
       ),
     ).rejects.toMatchObject({

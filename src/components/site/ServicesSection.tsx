@@ -5,11 +5,17 @@ import { motion } from "motion/react";
 
 import { useModal } from "@/components/forms/ModalProvider";
 import type { LandingData } from "@/modules/content/content.types";
+import {
+  serviceAnchorHref,
+  serviceAnchorId,
+} from "@/modules/content/service-anchors";
 
 export function ServicesSection({
   services,
+  intro,
 }: {
   services: LandingData["services"];
+  intro: LandingData["servicesIntro"];
 }) {
   const [active, setActive] = useState<string>(
     services[0]?.slug ?? "razvod",
@@ -22,12 +28,17 @@ export function ServicesSection({
         const visible = entries
           .filter((entry) => entry.isIntersecting)
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible?.target.id) setActive(visible.target.id);
+        const domId = visible?.target.id;
+        if (!domId) return;
+        const match = services.find(
+          (service) => serviceAnchorId(service.slug) === domId,
+        );
+        if (match) setActive(match.slug);
       },
       { rootMargin: "-30% 0px -55%", threshold: [0.15, 0.5] },
     );
     for (const service of services) {
-      const element = document.getElementById(service.slug);
+      const element = document.getElementById(serviceAnchorId(service.slug));
       if (element) observer.observe(element);
     }
     return () => observer.disconnect();
@@ -35,13 +46,13 @@ export function ServicesSection({
 
   return (
     <section id="uslugi" className="services section shell">
-      <p className="eyebrow">Практика</p>
-      <h2>Юридическая помощь без туманных формулировок</h2>
+      <p className="eyebrow">{intro.eyebrow}</p>
+      <h2>{intro.title}</h2>
       <nav className="service-tabs" aria-label="Разделы услуг">
         {services.map((service) => (
           <a
             key={service.slug}
-            href={`#${service.slug}`}
+            href={serviceAnchorHref(service.slug)}
             aria-current={active === service.slug ? "location" : undefined}
           >
             {service.title}
@@ -51,7 +62,7 @@ export function ServicesSection({
       <div className="service-list">
         {services.map((service, index) => (
           <article
-            id={service.slug}
+            id={serviceAnchorId(service.slug)}
             key={service.slug}
             tabIndex={service.isHighValue ? 0 : undefined}
             className={`service-card${service.isHighValue ? " high-value" : ""}`}
@@ -70,6 +81,9 @@ export function ServicesSection({
             </div>
             <aside>
               <JusticeScales />
+              {service.isHighValue ? (
+                <p className="service-high-value-badge">Высокий чек</p>
+              ) : null}
               <p>
                 <strong>Важно</strong>
                 {service.trustNote}
@@ -115,7 +129,12 @@ function JusticeScales() {
         }}
       >
         <path d="M24 34H136M80 21V96" />
-        <path d="M42 34L24 74H60L42 34ZM118 34L100 74H136L118 34Z" />
+        <g className="scale-pan scale-pan-left">
+          <path d="M42 34L24 74H60L42 34Z" />
+        </g>
+        <g className="scale-pan scale-pan-right">
+          <path d="M118 34L100 74H136L118 34Z" />
+        </g>
       </motion.g>
       <path d="M55 97H105M67 88H93" />
     </motion.svg>

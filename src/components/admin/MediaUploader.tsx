@@ -103,7 +103,7 @@ export function MediaUploader({ onCompleted }: MediaUploaderProps) {
   return (
     <div className="grid gap-3 rounded-panel border border-sage/40 p-5">
       <label className="font-sans text-sm text-secondary" htmlFor="media-upload">
-        Загрузка файла в S3
+        Загрузка файла (локально или S3)
       </label>
       <input
         id="media-upload"
@@ -145,6 +145,7 @@ function uploadWithProgress(
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", url);
+    xhr.withCredentials = true;
     xhr.setRequestHeader("Content-Type", file.type);
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) {
@@ -156,7 +157,7 @@ function uploadWithProgress(
         resolve();
         return;
       }
-      reject(new Error("S3 отклонил загрузку файла."));
+      reject(new Error("Хранилище отклонило загрузку файла."));
     };
     xhr.onerror = () => reject(new Error("Сетевая ошибка при загрузке."));
     xhr.send(file);

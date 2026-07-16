@@ -88,7 +88,7 @@ export function EntityEditor({
             {field.type === "textarea" ? (
               <textarea
                 id={fieldId}
-                className="min-h-32 rounded-card border border-sage bg-background px-4 py-3 text-primary outline-none focus-visible:ring-2 focus-visible:ring-forest"
+                className="min-h-48 rounded-card border border-sage bg-background px-4 py-3 text-primary outline-none focus-visible:ring-2 focus-visible:ring-forest"
                 value={typeof current === "string" ? current : ""}
                 onChange={(event) => updateField(field.name, event.target.value)}
               />

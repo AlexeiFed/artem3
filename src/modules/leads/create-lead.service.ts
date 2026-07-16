@@ -131,6 +131,9 @@ export function createLeadService({
         const id = await leadRepository.create({
           name: parsed.data.name,
           phone,
+          isDataAgreed: parsed.data.isDataAgreed,
+          isMarketingAgreed: parsed.data.isMarketingAgreed,
+          consentAt: context.now,
           ...(parsed.data.situation === undefined
             ? {}
             : { situation: parsed.data.situation }),

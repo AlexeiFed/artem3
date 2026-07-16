@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { validatePersonName } from "./lead-form.validation";
+
 function trimmedOptional(maximum: number) {
   return z
     .string()
@@ -11,22 +13,25 @@ function trimmedOptional(maximum: number) {
     .optional();
 }
 
-export const CreateLeadInputSchema = z
-  .strictObject({
-    name: z
-      .string()
-      .transform((value) => value.trim())
-      .refine((value) => Array.from(value).length >= 2, {
-        message: "Введите не менее 2 символов",
-      })
-      .refine((value) => Array.from(value).length <= 80, {
-        message: "Введите не более 80 символов",
-      }),
-    phone: z.string().trim().min(1, "Введите телефон"),
-    situation: trimmedOptional(2_000),
-    service: trimmedOptional(120),
-    website: z.string().optional(),
-  });
+export const CreateLeadInputSchema = z.strictObject({
+  name: z
+    .string()
+    .transform((value) => value.trim().replace(/\s+/gu, " "))
+    .superRefine((value, context) => {
+      const error = validatePersonName(value);
+      if (error) {
+        context.addIssue({ code: "custom", message: error });
+      }
+    }),
+  phone: z.string().trim().min(1, "Введите телефон"),
+  situation: trimmedOptional(2_000),
+  service: trimmedOptional(120),
+  website: z.string().optional(),
+  isDataAgreed: z.literal(true, {
+    error: "Подтвердите согласие на обработку персональных данных",
+  }),
+  isMarketingAgreed: z.boolean().optional().default(false),
+});
 
 export const LeadSuccessResponseSchema = z.strictObject({
   ok: z.literal(true),

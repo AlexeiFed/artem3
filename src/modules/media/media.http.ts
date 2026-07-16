@@ -163,14 +163,32 @@ export function createListMediaHandler({
 export async function createDefaultMediaService(): Promise<MediaService> {
   const [
     { getServerEnv },
+    { getPublicEnv },
     { createMediaService, DrizzleMediaRepository },
-    { buildPublicMediaBaseUrl, createS3ObjectStorage },
   ] = await Promise.all([
     import("@/lib/env/server"),
-    import("@/modules/media/media.service"),
-    import("@/modules/media/s3.client"),
+    import("@/lib/env/public"),
+    import("./media.service"),
   ]);
   const env = getServerEnv();
+  const siteUrl = getPublicEnv().NEXT_PUBLIC_SITE_URL;
+
+  if (env.MEDIA_DRIVER === "local") {
+    const { buildLocalMediaPublicBaseUrl, createLocalObjectStorage } =
+      await import("./local.storage");
+    return createMediaService({
+      storage: createLocalObjectStorage({
+        uploadEndpoint: "/api/admin/media/local-upload",
+      }),
+      repository: new DrizzleMediaRepository(),
+      bucket: "local",
+      publicBaseUrl: buildLocalMediaPublicBaseUrl(siteUrl),
+    });
+  }
+
+  const { buildPublicMediaBaseUrl, createS3ObjectStorage } = await import(
+    "./s3.client"
+  );
   return createMediaService({
     storage: createS3ObjectStorage(),
     repository: new DrizzleMediaRepository(),

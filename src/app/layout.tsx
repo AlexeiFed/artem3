@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import type { CSSProperties, ReactNode } from "react";
 
+import { CookieBanner } from "@/components/CookieBanner";
 import { ModalProvider } from "@/components/forms/ModalProvider";
 import { LenisProvider } from "@/components/motion/LenisProvider";
 import {
@@ -54,7 +55,10 @@ export default function RootLayout({ children }: RootLayoutProps) {
     >
       <body>
         <LenisProvider>
-          <ModalProvider metrikaId={metrikaId}>{children}</ModalProvider>
+          <ModalProvider metrikaId={metrikaId}>
+            {children}
+            <CookieBanner />
+          </ModalProvider>
         </LenisProvider>
       </body>
     </html>

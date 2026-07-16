@@ -11,7 +11,7 @@ import {
 interface HandlerDependencies {
   requireAdmin(): Promise<SafeAdminUser>;
   siteUrl: string;
-  service: Pick<AdminContentService, "updateService">;
+  service: Pick<AdminContentService, "updateService" | "deleteService">;
 }
 
 export function createUpdateServiceHandler({
@@ -46,6 +46,34 @@ export function createUpdateServiceHandler({
   };
 }
 
+export function createDeleteServiceHandler({
+  requireAdmin,
+  siteUrl,
+  service,
+}: HandlerDependencies): (
+  request: Request,
+  context: { params: Promise<{ id: string }> },
+) => Promise<Response> {
+  return async function handleDeleteService(request, context) {
+    const blocked = await guardAdminMutation(request, {
+      requireAdmin,
+      siteUrl,
+    });
+    if (blocked) {
+      return blocked;
+    }
+
+    const { id } = await context.params;
+
+    try {
+      await service.deleteService(id);
+      return okResponse({ id });
+    } catch (error) {
+      return mapAdminContentError(error);
+    }
+  };
+}
+
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> },
@@ -57,6 +85,23 @@ export async function PATCH(
   ]);
 
   return createUpdateServiceHandler({
+    requireAdmin,
+    siteUrl: getPublicEnv().NEXT_PUBLIC_SITE_URL,
+    service,
+  })(request, context);
+}
+
+export async function DELETE(
+  request: Request,
+  context: { params: Promise<{ id: string }> },
+): Promise<Response> {
+  const [{ requireAdmin }, { getPublicEnv }, service] = await Promise.all([
+    import("@/modules/auth/require-admin"),
+    import("@/lib/env/public"),
+    createDefaultAdminContentService(),
+  ]);
+
+  return createDeleteServiceHandler({
     requireAdmin,
     siteUrl: getPublicEnv().NEXT_PUBLIC_SITE_URL,
     service,

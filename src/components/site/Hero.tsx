@@ -9,12 +9,6 @@ import { MagneticButton } from "@/components/motion/MagneticButton";
 import { designTokens } from "@/lib/design-tokens";
 import type { LandingData } from "@/modules/content/content.types";
 
-const TITLE_LINES = [
-  { text: "Развод, алименты", className: "" },
-  { text: "и раздел имущества", className: "" },
-  { text: "в Хабаровске", className: " hero-title-place" },
-] as const;
-
 const subscribeHydration = () => () => {};
 const getHydratedSnapshot = () => true;
 const getServerHydratedSnapshot = () => false;
@@ -39,6 +33,44 @@ const titleStagger = durationFast / 3;
 const subtitleDelay = durationFast + titleDelay;
 const dossierDelay = durationBase + durationFast / 2;
 const metricsDelay = dossierDelay + durationFast;
+
+const DEFAULT_TITLE_LINES = [
+  { text: "Развод, алименты", place: false },
+  { text: "и раздел имущества", place: false },
+  { text: "в Хабаровске", place: true },
+] as const;
+
+const DEFAULT_TITLE_JOINED = DEFAULT_TITLE_LINES.map((line) => line.text).join(
+  " ",
+);
+
+function titleLines(
+  title: string,
+): Array<{ text: string; place: boolean; wrap: boolean }> {
+  const byNewline = title
+    .split(/\n/u)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (byNewline.length > 1) {
+    return byNewline.map((text) => ({
+      text,
+      place: /хабаровске/iu.test(text),
+      wrap: false,
+    }));
+  }
+
+  const collapsed = title.replace(/\s+/gu, " ").trim();
+  if (collapsed === DEFAULT_TITLE_JOINED) {
+    return DEFAULT_TITLE_LINES.map((line) => ({
+      text: line.text,
+      place: line.place,
+      wrap: false,
+    }));
+  }
+
+  return [{ text: collapsed, place: false, wrap: true }];
+}
 
 export function Hero({ data }: { data: LandingData["hero"] }) {
   const modal = useOptionalModal();
@@ -124,12 +156,12 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
             {data.eyebrow}
           </motion.p>
 
-          <h1 aria-label={data.title}>
-            {TITLE_LINES.map((line, index) => (
+          <h1 aria-label={data.title.replace(/\s+/gu, " ").trim()}>
+            {titleLines(data.title).map((line, index) => (
               <motion.span
                 aria-hidden="true"
-                className={`hero-title-line${line.className}`}
-                key={line.text}
+                className={`hero-title-line${line.place ? " hero-title-place" : ""}${line.wrap ? " hero-title-line-wrap" : ""}`}
+                key={`${index}-${line.text}`}
                 initial={
                   shouldReduceMotion ? false : { opacity: 0, y: "55%" }
                 }
@@ -162,7 +194,7 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
             <MagneticButton
               type="button"
               className="button button-light"
-              onClick={() => modal?.openModal()}
+              onClick={() => modal?.openModal("Главный экран")}
             >
               {data.cta.label}
             </MagneticButton>

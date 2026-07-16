@@ -13,6 +13,9 @@ import type { ObjectStorage } from "./media.service";
 
 export function createS3ClientFromEnv(): S3Client {
   const env = getServerEnv();
+  if (env.MEDIA_DRIVER !== "s3") {
+    throw new Error("S3 media driver is not configured");
+  }
   return new S3Client({
     endpoint: env.S3_ENDPOINT,
     region: env.S3_REGION,
@@ -26,7 +29,13 @@ export function createS3ClientFromEnv(): S3Client {
 
 export function createS3ObjectStorage(
   client: S3Client = createS3ClientFromEnv(),
-  bucket: string = getServerEnv().S3_BUCKET,
+  bucket: string = (() => {
+    const env = getServerEnv();
+    if (env.MEDIA_DRIVER !== "s3") {
+      throw new Error("S3 media driver is not configured");
+    }
+    return env.S3_BUCKET;
+  })(),
 ): ObjectStorage {
   return {
     async createPresignedPutUrl({

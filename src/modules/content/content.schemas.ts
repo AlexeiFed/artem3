@@ -3,6 +3,7 @@ import { z } from "zod";
 const shortText = z.string().trim().min(1).max(160);
 const mediumText = z.string().trim().min(1).max(500);
 const longText = z.string().trim().min(1).max(2_500);
+const legalPageText = z.string().trim().min(1).max(20_000);
 const localAssetUrl = z.string().regex(/^\/[a-zA-Z0-9/_-]+\.[a-zA-Z0-9]+$/);
 const anchorUrl = z.string().regex(/^#[a-z][a-z0-9-]*$/).max(80);
 const APPROVED_VK_HOSTS = ["vk.com", "vk.ru", "vkvideo.ru"] as const;
@@ -30,32 +31,10 @@ export const PublicHttpsUrlSchema = z
 export const APPROVED_HERO_SUBTITLE =
   "Помогаю решить семейные и имущественные споры без лишнего стресса и затяжных судов";
 
-const REQUIRED_SERVICE_SLUGS = [
-  "razvod",
-  "alimenty",
-  "imushchestvo",
-  "deti",
-  "zemlya",
-  "uslugi",
-] as const;
-
-const REQUIRED_QUICK_LINKS = [
-  { slug: "razvod", href: "#razvod" },
-  { slug: "alimenty", href: "#alimenty" },
-  { slug: "imushchestvo", href: "#imushchestvo" },
-  { slug: "deti", href: "#deti" },
-  { slug: "zemlya", href: "#zemlya" },
-  { slug: "uslugi", href: "#uslugi" },
-] as const;
-
-export const ServiceSlugSchema = z.enum([
-  "razvod",
-  "alimenty",
-  "imushchestvo",
-  "deti",
-  "zemlya",
-  "uslugi",
-]);
+export const ServiceSlugSchema = z
+  .string()
+  .trim()
+  .regex(/^[a-z][a-z0-9-]{0,39}$/u, "Slug: латиница, цифры и дефис");
 
 export const CtaSchema = z.object({
   label: shortText,
@@ -131,10 +110,8 @@ export const VkEmbedSchema = z.object({
 
 export const HeroContentSchema = z.object({
   eyebrow: shortText,
-  title: z.literal("Развод, алименты и раздел имущества в Хабаровске"),
-  subtitle: z.literal(APPROVED_HERO_SUBTITLE, {
-    error: "Подзаголовок должен соответствовать утверждённому тексту",
-  }),
+  title: shortText,
+  subtitle: mediumText,
   badges: z.array(HeroBadgeSchema).length(4),
   metrics: HeroMetricsSchema,
   cta: CtaSchema,
@@ -154,28 +131,8 @@ export const QuickLinkSchema = z.object({
 
 export const QuickLinksSchema = z
   .array(QuickLinkSchema)
-  .length(6, "Должно быть ровно шесть быстрых ссылок")
-  .superRefine((links, context) => {
-    REQUIRED_QUICK_LINKS.forEach((expected, index) => {
-      const link = links[index];
-      if (!link) return;
-
-      if (link.slug !== expected.slug) {
-        context.addIssue({
-          code: "custom",
-          path: [index, "slug"],
-          message: `Ожидается slug «${expected.slug}» на позиции ${index + 1}`,
-        });
-      }
-      if (link.href !== expected.href) {
-        context.addIssue({
-          code: "custom",
-          path: [index, "href"],
-          message: `Для «${expected.slug}» ожидается ссылка «${expected.href}»`,
-        });
-      }
-    });
-  });
+  .min(1, "Нужна хотя бы одна быстрая ссылка")
+  .max(12);
 
 export const HiddenRisksSchema = z.object({
   eyebrow: shortText,
@@ -193,6 +150,18 @@ export const HiddenRisksSchema = z.object({
     .max(6),
 });
 
+export const DEFAULT_SERVICES_INTRO = {
+  eyebrow: "Практика",
+  title: "Юридическая помощь без туманных формулировок",
+} as const;
+
+export const ServicesIntroSchema = z
+  .object({
+    eyebrow: shortText,
+    title: shortText,
+  })
+  .default(DEFAULT_SERVICES_INTRO);
+
 export const HeroSettingsSchema = z.object({
   meta: MetaSchema,
   header: HeaderSchema,
@@ -204,6 +173,7 @@ export const HeroSettingsSchema = z.object({
   }),
   quickLinks: QuickLinksSchema,
   hiddenRisks: HiddenRisksSchema,
+  servicesIntro: ServicesIntroSchema,
 });
 
 export const ConsultationSchema = z.object({
@@ -214,7 +184,7 @@ export const ConsultationSchema = z.object({
 });
 
 export const HonestyBannerSchema = z.object({
-  theme: z.literal("Честно о результате"),
+  theme: shortText,
   title: shortText,
   copy: longText,
 });
@@ -250,6 +220,10 @@ export const ContactsSettingsSchema = z.object({
     url: PublicHttpsUrlSchema,
   }),
   whatsapp: z.object({
+    label: shortText,
+    url: PublicHttpsUrlSchema,
+  }),
+  max: z.object({
     label: shortText,
     url: PublicHttpsUrlSchema,
   }),
@@ -292,9 +266,10 @@ export const RatingsSettingsSchema = z.object({
 
 export const LegalSettingsSchema = z.object({
   entityText: mediumText,
-  privacyText: longText,
+  privacyText: legalPageText,
+  cookiesConsentText: legalPageText,
   nonPublicOfferText: mediumText,
-  personalDataText: mediumText,
+  personalDataText: legalPageText,
 });
 
 export const VkEmbedSettingsSchema = z.discriminatedUnion("enabled", [
@@ -317,17 +292,19 @@ export const ServiceSchema = z.object({
 
 export const ServicesSchema = z
   .array(ServiceSchema)
-  .length(6, "Должно быть ровно шесть услуг")
+  .min(1, "Нужна хотя бы одна услуга")
+  .max(12)
   .superRefine((items, context) => {
-    REQUIRED_SERVICE_SLUGS.forEach((expectedSlug, index) => {
-      const item = items[index];
-      if (item && item.slug !== expectedSlug) {
+    const seen = new Set<string>();
+    items.forEach((item, index) => {
+      if (seen.has(item.slug)) {
         context.addIssue({
           code: "custom",
           path: [index, "slug"],
-          message: `На позиции ${index + 1} ожидается услуга «${expectedSlug}»`,
+          message: "Slug услуги должен быть уникальным",
         });
       }
+      seen.add(item.slug);
     });
   });
 
@@ -366,11 +343,12 @@ export const LandingDataSchema = z.object({
   hero: HeroContentSchema,
   quickLinks: QuickLinksSchema,
   hiddenRisks: HiddenRisksSchema,
+  servicesIntro: ServicesIntroSchema,
   services: ServicesSchema,
   consultation: ConsultationSchema,
   workflow: WorkflowSettingsSchema,
   honesty: HonestyBannerSchema,
-  cases: z.array(CaseSchema).length(4),
+  cases: z.array(CaseSchema).min(1).max(12),
   ratings: RatingsSettingsSchema,
   reviews: z.array(ReviewSchema).min(3).max(6),
   certificates: z.array(CertificateSchema).min(2).max(4),

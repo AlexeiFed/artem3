@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  type ChangeEvent,
   type FormEvent,
   useEffect,
   useId,
@@ -8,6 +9,12 @@ import {
   useState,
 } from "react";
 import { AnimatePresence, motion } from "motion/react";
+
+import {
+  formatRussianPhoneMask,
+  validatePersonName,
+  validateRussianPhoneInput,
+} from "@/modules/leads/lead-form.validation";
 
 interface ModalFormProps {
   service: string | undefined;
@@ -18,18 +25,28 @@ interface ModalFormProps {
 const FOCUSABLE =
   'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), a[href]';
 
+const SUCCESS_COPY =
+  "Спасибо, заявка принята! Я изучу вашу ситуацию и свяжусь с вами в ближайшее время. Обычно отвечаю в течение 15–30 минут в рабочее время.";
+
 export function ModalForm({
   service,
   metrikaId,
   onClose,
 }: ModalFormProps) {
   const titleId = useId();
+  const consentHeadingId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("+7");
+  const [situation, setSituation] = useState("");
   const [errors, setErrors] = useState<{ name?: string; phone?: string }>({});
+  const [isDataAgreed, setIsDataAgreed] = useState(false);
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">(
     "idle",
   );
+
+  const canSubmit = isDataAgreed && status !== "sending";
 
   useEffect(() => {
     const previousFocus = document.activeElement;
@@ -63,14 +80,32 @@ export function ModalForm({
     };
   }, [onClose]);
 
+  function onPhoneChange(event: ChangeEvent<HTMLInputElement>) {
+    setPhone(formatRussianPhoneMask(event.target.value));
+    setErrors((current) =>
+      current.phone ? { ...(current.name ? { name: current.name } : {}) } : current,
+    );
+  }
+
+  function onNameChange(event: ChangeEvent<HTMLInputElement>) {
+    setName(event.target.value);
+    setErrors((current) =>
+      current.name
+        ? { ...(current.phone ? { phone: current.phone } : {}) }
+        : current,
+    );
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const name = String(form.get("name") ?? "").trim();
-    const phone = String(form.get("phone") ?? "").trim();
+    if (!isDataAgreed) return;
+
+    const nameError = validatePersonName(name);
+    const phoneError = validateRussianPhoneInput(phone);
+
     const nextErrors = {
-      ...(name.length < 2 ? { name: "Введите имя" } : {}),
-      ...(!phone ? { phone: "Введите телефон" } : {}),
+      ...(nameError ? { name: nameError } : {}),
+      ...(phoneError ? { phone: phoneError } : {}),
     };
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
@@ -81,13 +116,27 @@ export function ModalForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name,
+          name: name.trim(),
           phone,
-          situation: String(form.get("situation") ?? ""),
+          situation,
           service,
           website: "",
+          isDataAgreed: true,
+          isMarketingAgreed: false,
         }),
       });
+      if (response.status === 422) {
+        const body = (await response.json()) as {
+          error?: { fields?: Record<string, string[]> };
+        };
+        const fields = body.error?.fields ?? {};
+        setErrors({
+          ...(fields.name?.[0] ? { name: fields.name[0] } : {}),
+          ...(fields.phone?.[0] ? { phone: fields.phone[0] } : {}),
+        });
+        setStatus("idle");
+        return;
+      }
       if (response.status !== 201) throw new Error("Lead request failed");
       setStatus("success");
       if (metrikaId && window.ym) {
@@ -134,8 +183,8 @@ export function ModalForm({
               animate={{ opacity: 1, y: 0 }}
             >
               <p className="eyebrow">Заявка отправлена</p>
-              <h2 id={titleId}>Спасибо, заявка получена.</h2>
-              <p>Я свяжусь с вами в рабочее время, чтобы уточнить детали.</p>
+              <h2 id={titleId}>Заявка принята</h2>
+              <p>{SUCCESS_COPY}</p>
               <button type="button" className="button" onClick={onClose}>
                 Хорошо
               </button>
@@ -150,23 +199,93 @@ export function ModalForm({
             >
               <p className="eyebrow">Конфиденциально</p>
               <h2 id={titleId}>Обсудить ситуацию</h2>
+              <p className="modal-subtitle">
+                Без обязательств. Я свяжусь с вами и скажу возможные варианты
+                решения ситуации.
+              </p>
               {service ? <p className="modal-service">{service}</p> : null}
-              <label>
-                Имя
-                <input ref={nameRef} name="name" autoComplete="name" />
-              </label>
-              {errors.name ? <p className="field-error">{errors.name}</p> : null}
-              <label>
-                Телефон
-                <input name="phone" type="tel" autoComplete="tel" />
-              </label>
-              {errors.phone ? (
-                <p className="field-error">{errors.phone}</p>
-              ) : null}
-              <label>
+
+              <div className="modal-field-row">
+                <div className="modal-field">
+                  <label htmlFor="lead-name">Имя</label>
+                  <input
+                    id="lead-name"
+                    ref={nameRef}
+                    name="name"
+                    autoComplete="name"
+                    value={name}
+                    onChange={onNameChange}
+                    aria-invalid={errors.name ? true : undefined}
+                    aria-describedby={errors.name ? "lead-name-error" : undefined}
+                  />
+                  {errors.name ? (
+                    <p id="lead-name-error" className="field-error" role="alert">
+                      {errors.name}
+                    </p>
+                  ) : null}
+                </div>
+                <div className="modal-field">
+                  <label htmlFor="lead-phone">Телефон</label>
+                  <input
+                    id="lead-phone"
+                    name="phone"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    placeholder="+7 (___) ___-__-__"
+                    value={phone}
+                    onChange={onPhoneChange}
+                    aria-invalid={errors.phone ? true : undefined}
+                    aria-describedby={
+                      errors.phone ? "lead-phone-error" : undefined
+                    }
+                  />
+                  {errors.phone ? (
+                    <p id="lead-phone-error" className="field-error" role="alert">
+                      {errors.phone}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+
+              <label className="modal-field" htmlFor="lead-situation">
                 Ситуация <span>(необязательно)</span>
-                <textarea name="situation" rows={4} />
+                <textarea
+                  id="lead-situation"
+                  name="situation"
+                  rows={3}
+                  value={situation}
+                  onChange={(event) => setSituation(event.target.value)}
+                />
               </label>
+
+              <fieldset className="form-legal" aria-labelledby={consentHeadingId}>
+                <legend id={consentHeadingId} className="form-legal-heading">
+                  Обязательно отметьте поле ниже
+                </legend>
+
+                <label className="form-legal-item">
+                  <input
+                    type="checkbox"
+                    checked={isDataAgreed}
+                    onChange={(event) => setIsDataAgreed(event.target.checked)}
+                  />
+                  <span>
+                    Нажимая кнопку &laquo;Отправить заявку&raquo;, я соглашаюсь на
+                    обработку моих персональных данных в соотв. с ФЗ от 27.07.2006
+                    №152-ФЗ на условиях и для целей, определенных{" "}
+                    <a href="/personal-data" target="_blank" rel="noreferrer">
+                      Согласием на обработку персональных данных
+                    </a>
+                    , на условиях и для целей, определенных{" "}
+                    <a href="/privacy" target="_blank" rel="noreferrer">
+                      Политикой конфиденциальности
+                    </a>
+                    .
+                  </span>
+                </label>
+              </fieldset>
+
               {status === "error" ? (
                 <p role="alert" className="form-error">
                   Не удалось отправить заявку. Данные сохранены — попробуйте ещё
@@ -174,16 +293,12 @@ export function ModalForm({
                 </p>
               ) : null}
               <button
-                className="button"
+                className={`button${canSubmit ? "" : " button-disabled"}`}
                 type="submit"
-                disabled={status === "sending"}
+                disabled={!canSubmit}
               >
                 {status === "sending" ? "Отправляем…" : "Отправить заявку"}
               </button>
-              <p className="form-privacy">
-                Отправляя форму, вы соглашаетесь на обработку персональных
-                данных.
-              </p>
             </motion.form>
           )}
         </AnimatePresence>

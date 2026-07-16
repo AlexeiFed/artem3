@@ -37,10 +37,11 @@ type Database = ReturnType<typeof getDb>;
 type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 
 const ENTITY_LIMITS = {
-  cases: { min: 4, max: 4 },
+  cases: { min: 1, max: 12 },
   faqs: { min: 6, max: 20 },
   reviews: { min: 3, max: 6 },
   certificates: { min: 2, max: 4 },
+  services: { min: 1, max: 12 },
 } as const;
 
 export class DrizzleAdminContentRepository implements AdminContentRepository {
@@ -102,6 +103,46 @@ export class DrizzleAdminContentRepository implements AdminContentRepository {
     }
 
     return PersistedServiceSchema.parse(updated);
+  }
+
+  async createService(input: ServiceContent): Promise<PersistedService> {
+    return this.db.transaction(async (tx) => {
+      await this.assertCanCreate(tx, "services");
+      const sortOrder = await this.nextSortOrder(tx, services);
+      const [created] = await tx
+        .insert(services)
+        .values({
+          slug: input.slug,
+          title: input.title,
+          description: input.description,
+          situations: input.situations,
+          trustNote: input.trustNote,
+          priceFromKopecks: input.priceFromKopecks,
+          isHighValue: input.isHighValue,
+          sortOrder,
+        })
+        .returning();
+      if (!created) {
+        throw new AdminContentDomainError("PERSISTENCE");
+      }
+      return PersistedServiceSchema.parse(created);
+    });
+  }
+
+  async deleteService(id: string): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await this.assertCanDelete(tx, "services");
+      const deleted = await tx
+        .delete(services)
+        .where(eq(services.id, id))
+        .returning({ id: services.id });
+      if (deleted.length === 0) {
+        throw new AdminContentDomainError("NOT_FOUND", {
+          id: ["Услуга не найдена"],
+        });
+      }
+      await this.compactSortOrders(tx, "services");
+    });
   }
 
   async createCase(input: CaseContent): Promise<PersistedCase> {
@@ -361,12 +402,12 @@ export class DrizzleAdminContentRepository implements AdminContentRepository {
         });
       }
 
-      // Avoid unique sort_order collisions: move to negative temps first.
+      // Avoid unique sort_order collisions: move to high temps first.
       for (const [index, id] of orderedIds.entries()) {
         await tx
           .update(table)
           .set({
-            sortOrder: -(index + 1),
+            sortOrder: 1_000_000 + index,
             updatedAt: new Date(),
           })
           .where(eq(table.id, id));
@@ -412,7 +453,7 @@ export class DrizzleAdminContentRepository implements AdminContentRepository {
 
   private async countRows(
     tx: Transaction,
-    entity: keyof typeof ENTITY_LIMITS | "services",
+    entity: keyof typeof ENTITY_LIMITS,
   ): Promise<number> {
     const table = tableFor(entity);
     const [row] = await tx
@@ -450,7 +491,7 @@ export class DrizzleAdminContentRepository implements AdminContentRepository {
       await tx
         .update(table)
         .set({
-          sortOrder: -(index + 1),
+          sortOrder: 1_000_000 + index,
           updatedAt: new Date(),
         })
         .where(eq(table.id, row.id));

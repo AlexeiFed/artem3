@@ -22,6 +22,24 @@ function Trigger() {
   );
 }
 
+function openAndFill() {
+  fireEvent.click(screen.getByRole("button", { name: "Открыть форму" }));
+  fireEvent.change(screen.getByLabelText("Имя"), {
+    target: { value: "Алексей" },
+  });
+  fireEvent.change(screen.getByLabelText("Телефон"), {
+    target: { value: "9991234567" },
+  });
+}
+
+function checkConsent() {
+  fireEvent.click(
+    screen.getByRole("checkbox", {
+      name: /соглашаюсь на обработку моих персональных данных/i,
+    }),
+  );
+}
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -29,6 +47,35 @@ afterEach(() => {
 });
 
 describe("global lead modal", () => {
+  it("keeps submit disabled until personal-data consent is checked", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), { status: 201 }),
+    );
+
+    render(
+      <ModalProvider metrikaId={123}>
+        <Trigger />
+      </ModalProvider>,
+    );
+
+    openAndFill();
+
+    const submit = screen.getByRole("button", { name: "Отправить заявку" });
+    expect(submit).toBeDisabled();
+    expect(
+      screen.queryByRole("checkbox", { name: /получение рассылки/i }),
+    ).toBeNull();
+
+    checkConsent();
+    expect(submit).toBeEnabled();
+
+    fireEvent.click(submit);
+    expect(await screen.findByText("Заявка принята")).toBeVisible();
+    expect(
+      screen.getByText(/Обычно отвечаю в течение 15–30 минут/),
+    ).toBeVisible();
+  });
+
   it("opens for a service, validates, succeeds and fires Metrika only after 201", async () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
@@ -44,26 +91,60 @@ describe("global lead modal", () => {
     fireEvent.click(screen.getByRole("button", { name: "Открыть форму" }));
     expect(screen.getByText("Раздел имущества")).toBeVisible();
 
-    fireEvent.click(screen.getByRole("button", { name: "Отправить заявку" }));
-    expect(screen.getByText("Введите имя")).toBeVisible();
-    expect(screen.getByText("Введите телефон")).toBeVisible();
+    const submit = screen.getByRole("button", { name: "Отправить заявку" });
+    expect(submit).toBeDisabled();
+
+    checkConsent();
+
+    fireEvent.click(submit);
+    expect(screen.getByText("Введите имя (минимум 2 символа)")).toBeVisible();
+    expect(
+      screen.getByText("Введите телефон в формате +7 (___) ___-__-__"),
+    ).toBeVisible();
     expect(window.ym).not.toHaveBeenCalled();
 
     fireEvent.change(screen.getByLabelText("Имя"), {
       target: { value: "Алексей" },
     });
     fireEvent.change(screen.getByLabelText("Телефон"), {
-      target: { value: "+7 999 123-45-67" },
+      target: { value: "9991234567" },
     });
+    expect(screen.getByLabelText("Телефон")).toHaveValue("+7 (999) 123-45-67");
     fireEvent.click(screen.getByRole("button", { name: "Отправить заявку" }));
 
-    expect(await screen.findByText("Спасибо, заявка получена.")).toBeVisible();
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/leads",
-      expect.objectContaining({ method: "POST" }),
-    );
+    expect(await screen.findByText("Заявка принята")).toBeVisible();
+    const body = JSON.parse(
+      String((fetchMock.mock.calls[0]?.[1] as RequestInit).body),
+    ) as Record<string, unknown>;
+    expect(body).toMatchObject({
+      name: "Алексей",
+      phone: "+7 (999) 123-45-67",
+      service: "Раздел имущества",
+      isDataAgreed: true,
+      isMarketingAgreed: false,
+    });
     await waitFor(() => {
       expect(window.ym).toHaveBeenCalledWith(123, "reachGoal", "lead_success");
     });
+  });
+
+  it("rejects all-identical phone digits before submit", async () => {
+    render(
+      <ModalProvider metrikaId={undefined}>
+        <Trigger />
+      </ModalProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Открыть форму" }));
+    checkConsent();
+    fireEvent.change(screen.getByLabelText("Имя"), {
+      target: { value: "Тест" },
+    });
+    fireEvent.change(screen.getByLabelText("Телефон"), {
+      target: { value: "9999999999" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Отправить заявку" }));
+
+    expect(screen.getByText("Введите корректный российский номер")).toBeVisible();
   });
 });

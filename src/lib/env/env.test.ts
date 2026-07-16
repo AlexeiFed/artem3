@@ -2,11 +2,17 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-const validServerEnv = {
+const validLocalEnv = {
   DATABASE_URL: "postgresql://app:secret@localhost:5432/artem",
   SESSION_SECRET: "s".repeat(32),
   ADMIN_EMAIL: "admin@example.com",
   ADMIN_PASSWORD: "correct-horse-battery-staple",
+  MEDIA_DRIVER: "local" as const,
+};
+
+const validS3Env = {
+  ...validLocalEnv,
+  MEDIA_DRIVER: "s3" as const,
   S3_ENDPOINT: "https://s3.example.com",
   S3_REGION: "ru-central1",
   S3_BUCKET: "artem-media",
@@ -15,13 +21,40 @@ const validServerEnv = {
 };
 
 describe("server environment", () => {
-  it("parses a complete environment without reading it at import time", async () => {
+  it("defaults MEDIA_DRIVER to local without S3 credentials", async () => {
     const { parseServerEnv } = await import("./server");
 
-    expect(parseServerEnv(validServerEnv)).toEqual({
-      ...validServerEnv,
+    expect(
+      parseServerEnv({
+        DATABASE_URL: validLocalEnv.DATABASE_URL,
+        SESSION_SECRET: validLocalEnv.SESSION_SECRET,
+        ADMIN_EMAIL: validLocalEnv.ADMIN_EMAIL,
+        ADMIN_PASSWORD: validLocalEnv.ADMIN_PASSWORD,
+      }),
+    ).toEqual({
+      ...validLocalEnv,
       TRUSTED_PROXY_HOPS: 1,
     });
+  });
+
+  it("parses an s3 media environment", async () => {
+    const { parseServerEnv } = await import("./server");
+
+    expect(parseServerEnv(validS3Env)).toEqual({
+      ...validS3Env,
+      TRUSTED_PROXY_HOPS: 1,
+    });
+  });
+
+  it("rejects s3 driver without credentials", async () => {
+    const { parseServerEnv } = await import("./server");
+
+    expect(() =>
+      parseServerEnv({
+        ...validLocalEnv,
+        MEDIA_DRIVER: "s3",
+      }),
+    ).toThrow();
   });
 
   it("coerces trusted proxy hops within the supported range", async () => {
@@ -29,7 +62,7 @@ describe("server environment", () => {
 
     expect(
       parseServerEnv({
-        ...validServerEnv,
+        ...validLocalEnv,
         TRUSTED_PROXY_HOPS: "3",
       }).TRUSTED_PROXY_HOPS,
     ).toBe(3);
@@ -41,7 +74,7 @@ describe("server environment", () => {
       const { parseServerEnv } = await import("./server");
 
       expect(() =>
-        parseServerEnv({ ...validServerEnv, TRUSTED_PROXY_HOPS }),
+        parseServerEnv({ ...validLocalEnv, TRUSTED_PROXY_HOPS }),
       ).toThrow();
     },
   );
@@ -51,7 +84,7 @@ describe("server environment", () => {
 
     expect(() =>
       parseServerEnv({
-        ...validServerEnv,
+        ...validLocalEnv,
         SESSION_SECRET: "short",
         ADMIN_PASSWORD: "short",
       }),
@@ -71,6 +104,21 @@ describe("public environment", () => {
     ).toEqual({
       NEXT_PUBLIC_SITE_URL: "https://example.com",
       NEXT_PUBLIC_YANDEX_METRIKA_ID: 12345678,
+    });
+  });
+
+  it("accepts a Yandex Maps API key uuid", async () => {
+    const { parsePublicEnv } = await import("./public");
+
+    expect(
+      parsePublicEnv({
+        NEXT_PUBLIC_SITE_URL: "https://example.com",
+        NEXT_PUBLIC_YANDEX_MAPS_API_KEY:
+          "6e97c31d-b90e-4697-915a-958bace9b546",
+      }),
+    ).toEqual({
+      NEXT_PUBLIC_SITE_URL: "https://example.com",
+      NEXT_PUBLIC_YANDEX_MAPS_API_KEY: "6e97c31d-b90e-4697-915a-958bace9b546",
     });
   });
 

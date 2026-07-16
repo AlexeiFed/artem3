@@ -17,7 +17,12 @@ export default async function AdminLeadsPage() {
       new DrizzleAdminLeadsRepository(),
     ).list();
     initialItems = items.map((item) => ({
-      ...item,
+      id: item.id,
+      name: item.name,
+      phone: item.phone,
+      situation: item.situation,
+      serviceName: item.serviceName,
+      status: item.status,
       createdAt: item.createdAt.toISOString(),
     }));
   } catch {

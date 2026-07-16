@@ -7,6 +7,7 @@ import {
   CreateCertificateInputSchema,
   CreateFaqInputSchema,
   CreateReviewInputSchema,
+  CreateServiceInputSchema,
   ReorderableEntitySchema,
   ReorderInputSchema,
   UpdateCaseInputSchema,
@@ -82,6 +83,8 @@ export interface PersistedCertificate extends CertificateContent {
 export interface AdminContentRepository {
   updateSiteSettings(input: UpdateSiteSettingsInput): Promise<SiteSettingsRow>;
   updateService(id: string, input: ServiceContent): Promise<PersistedService>;
+  createService(input: ServiceContent): Promise<PersistedService>;
+  deleteService(id: string): Promise<void>;
   createCase(input: CaseContent): Promise<PersistedCase>;
   updateCase(id: string, input: CaseContent): Promise<PersistedCase>;
   deleteCase(id: string): Promise<void>;
@@ -108,6 +111,8 @@ interface AdminContentServiceDependencies {
 export interface AdminContentService {
   updateSettings(input: unknown): Promise<SiteSettingsRow>;
   updateService(id: string, input: unknown): Promise<PersistedService>;
+  createService(input: unknown): Promise<PersistedService>;
+  deleteService(id: string): Promise<void>;
   createCase(input: unknown): Promise<PersistedCase>;
   updateCase(id: string, input: unknown): Promise<PersistedCase>;
   deleteCase(id: string): Promise<void>;
@@ -145,6 +150,21 @@ export function createAdminContentService({
       );
       revalidateLandingData();
       return result;
+    },
+
+    async createService(input: unknown): Promise<PersistedService> {
+      const parsed = parseOrThrow(CreateServiceInputSchema, input);
+      const result = await runPersistence(() =>
+        repository.createService(parsed),
+      );
+      revalidateLandingData();
+      return result;
+    },
+
+    async deleteService(id: string): Promise<void> {
+      assertUuid(id);
+      await runPersistence(() => repository.deleteService(id));
+      revalidateLandingData();
     },
 
     async createCase(input: unknown): Promise<PersistedCase> {

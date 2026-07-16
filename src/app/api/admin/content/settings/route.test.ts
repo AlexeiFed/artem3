@@ -30,6 +30,7 @@ describe("PATCH /api/admin/content/settings", () => {
           legal: {
             entityText: "ИП Тест",
             privacyText: "Политика",
+            cookiesConsentText: "Cookies",
             nonPublicOfferText: "Не оферта",
             personalDataText: "ПДн",
           },

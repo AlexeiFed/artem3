@@ -48,6 +48,7 @@ export const UpdateSiteSettingsInputSchema = z
   });
 
 export const UpdateServiceInputSchema = ServiceSchema.strict();
+export const CreateServiceInputSchema = ServiceSchema.strict();
 export const CreateCaseInputSchema = CaseSchema.strict();
 export const UpdateCaseInputSchema = CaseSchema.strict();
 export const CreateFaqInputSchema = FaqSchema.strict();
