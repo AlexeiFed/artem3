@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import type { CSSProperties, ReactNode } from "react";
 
+import { YandexMetrika } from "@/components/analytics/YandexMetrika";
 import { CookieBanner } from "@/components/CookieBanner";
 import { ModalProvider } from "@/components/forms/ModalProvider";
 import { LenisProvider } from "@/components/motion/LenisProvider";
@@ -9,6 +10,7 @@ import {
   designTokenCssVariables,
   type DesignTokenCssVariables,
 } from "@/lib/design-tokens";
+import { getPublicAnalytics } from "@/modules/content/public-analytics";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -23,15 +25,6 @@ const inter = Inter({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "Артём Сысуев — семейный и имущественный юрист",
-    template: "%s — Артём Сысуев",
-  },
-  description:
-    "Юридическая помощь по семейным и имущественным спорам в Хабаровске.",
-};
-
 type RootLayoutProps = Readonly<{
   children: ReactNode;
 }>;
@@ -40,12 +33,29 @@ const rootStyle: CSSProperties & DesignTokenCssVariables = {
   ...designTokenCssVariables,
 };
 
-export default function RootLayout({ children }: RootLayoutProps) {
-  const metrikaValue = Number(process.env.NEXT_PUBLIC_YANDEX_METRIKA_ID);
-  const metrikaId =
-    Number.isInteger(metrikaValue) && metrikaValue > 0
-      ? metrikaValue
-      : undefined;
+export async function generateMetadata(): Promise<Metadata> {
+  const analytics = await getPublicAnalytics();
+
+  return {
+    title: {
+      default: "Артём Сысуев — семейный и имущественный юрист",
+      template: "%s — Артём Сысуев",
+    },
+    description:
+      "Юридическая помощь по семейным и имущественным спорам в Хабаровске.",
+    ...(analytics.yandexVerificationContent
+      ? {
+          verification: {
+            yandex: analytics.yandexVerificationContent,
+          },
+        }
+      : {}),
+  };
+}
+
+export default async function RootLayout({ children }: RootLayoutProps) {
+  const analytics = await getPublicAnalytics();
+  const metrikaId = analytics.metrikaId;
 
   return (
     <html
@@ -54,6 +64,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
       style={rootStyle}
     >
       <body>
+        {metrikaId ? <YandexMetrika counterId={metrikaId} /> : null}
         <LenisProvider>
           <ModalProvider metrikaId={metrikaId}>
             {children}

@@ -15,7 +15,9 @@ import {
   TrustBannerSettingsSchema,
   VkEmbedSettingsSchema,
   WorkflowSettingsSchema,
+  AnalyticsSettingsSchema,
 } from "@/modules/content/content.schemas";
+import { normalizeHonestySettings } from "@/modules/content/map-landing-data";
 import { getServerEnv } from "@/lib/env/server";
 import { seedAdminUser } from "@/modules/auth/seed-admin";
 
@@ -60,6 +62,7 @@ async function runSeed(): Promise<void> {
       map: MapSettingsSchema.parse(seedContent.settings.map),
       ratings: RatingsSettingsSchema.parse(seedContent.settings.ratings),
       vkEmbed: VkEmbedSettingsSchema.parse(seedContent.settings.vkEmbed),
+      analytics: AnalyticsSettingsSchema.parse(seedContent.settings.analytics),
     };
     const serviceRows = seedContent.services.map((item) =>
       seedServiceSchema.parse(item),
@@ -80,6 +83,33 @@ async function runSeed(): Promise<void> {
         .insert(siteSettings)
         .values(settings)
         .onConflictDoNothing();
+
+      // Legacy honesty.copy → items (не трогаем остальные settings).
+      const [existingSettings] = await transaction
+        .select({ trustBanner: siteSettings.trustBanner })
+        .from(siteSettings)
+        .where(eq(siteSettings.id, "default"))
+        .limit(1);
+      if (existingSettings) {
+        const current = existingSettings.trustBanner as {
+          honesty?: { items?: unknown };
+        };
+        const hasItems =
+          Array.isArray(current.honesty?.items) &&
+          current.honesty.items.length === 3;
+        if (!hasItems) {
+          await transaction
+            .update(siteSettings)
+            .set({
+              trustBanner: TrustBannerSettingsSchema.parse(
+                normalizeHonestySettings(existingSettings.trustBanner),
+              ),
+              updatedAt: new Date(),
+            })
+            .where(eq(siteSettings.id, "default"));
+        }
+      }
+
       await transaction
         .insert(services)
         .values(serviceRows)
@@ -90,10 +120,9 @@ async function runSeed(): Promise<void> {
         .insert(reviews)
         .values(reviewRows)
         .onConflictDoNothing();
-      await transaction
-        .insert(certificates)
-        .values(certificateRows)
-        .onConflictDoNothing();
+      // Сертификаты — контент сида: полностью перезаписываем (убрали плейсхолдеры).
+      await transaction.delete(certificates);
+      await transaction.insert(certificates).values(certificateRows);
     });
 
     const env = getServerEnv();

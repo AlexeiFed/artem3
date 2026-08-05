@@ -15,6 +15,8 @@ export interface ServiceEditorItem {
   trustNote: string;
   priceFromKopecks: number;
   isHighValue: boolean;
+  isHidden: boolean;
+  ctaLabel: string;
 }
 
 interface ServicesEditorProps {
@@ -28,6 +30,17 @@ function rublesFromKopecks(kopecks: number): number {
 
 function kopecksFromRubles(rubles: number): number {
   return Math.round(rubles * 100);
+}
+
+function situationsToText(situations: string[]): string {
+  return situations.join("\n");
+}
+
+function textToSituations(value: unknown): string[] {
+  return String(value ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
 }
 
 export function ServicesEditor({
@@ -67,6 +80,8 @@ export function ServicesEditor({
                 trustNote: "Короткое пояснение для клиента.",
                 priceFromKopecks: 0,
                 isHighValue: false,
+                isHidden: false,
+                ctaLabel: "Получить оценку ситуации",
               }),
             });
             if (!response.ok) {
@@ -92,7 +107,10 @@ export function ServicesEditor({
           Добавить услугу
         </button>
         <SortableEntityList
-          items={items.map((item) => ({ id: item.id, label: item.title }))}
+          items={items.map((item) => ({
+            id: item.id,
+            label: item.isHidden ? `${item.title} (скрыта)` : item.title,
+          }))}
           {...(selectedId ? { selectedId } : {})}
           onSelect={setSelectedId}
           onReorder={async (orderedIds) => {
@@ -130,30 +148,46 @@ export function ServicesEditor({
           initialValue={{
             title: selected.title,
             description: selected.description,
+            situationsText: situationsToText(selected.situations),
             trustNote: selected.trustNote,
             priceFromRubles: rublesFromKopecks(selected.priceFromKopecks),
             isHighValue: selected.isHighValue,
+            ctaLabel: selected.ctaLabel,
           }}
           fields={[
             { name: "title", label: "Название", type: "text" },
-            { name: "description", label: "Описание", type: "textarea" },
-            { name: "trustNote", label: "Заметка доверия", type: "text" },
+            {
+              name: "description",
+              label: "Короткое описание (2–3 строки над списком)",
+              type: "textarea",
+            },
+            {
+              name: "situationsText",
+              label:
+                "Пункты списка на карточке — каждый с новой строки (3–6 пунктов)",
+              type: "textarea",
+            },
+            { name: "trustNote", label: "Заметка «Важно»", type: "text" },
             {
               name: "priceFromRubles",
               label: "Цена от (₽)",
               type: "number",
             },
             {
+              name: "ctaLabel",
+              label: "Текст кнопки на карточке",
+              type: "text",
+            },
+            {
               name: "isHighValue",
               label:
-                "Высокий чек — на карточке услуги появится метка «Высокий чек» и более сильный акцент цены (для сложных/дорогих дел)",
+                "Высокий чек — флаг для сложных/дорогих дел (используется в админке и аналитике)",
               type: "checkbox",
             },
           ]}
-          onSave={async (value) => {
-            const priceFromKopecks = kopecksFromRubles(
-              Number(value.priceFromRubles ?? 0),
-            );
+          visibilityLabel={selected.isHidden ? "Показать на сайте" : "Скрыть с сайта"}
+          onToggleVisibility={async () => {
+            const nextHidden = !selected.isHidden;
             const response = await fetch(
               `/api/admin/content/services/${selected.id}`,
               {
@@ -162,11 +196,62 @@ export function ServicesEditor({
                 body: JSON.stringify({
                   slug: selected.slug,
                   situations: selected.situations,
+                  title: selected.title,
+                  description: selected.description,
+                  trustNote: selected.trustNote,
+                  priceFromKopecks: selected.priceFromKopecks,
+                  isHighValue: selected.isHighValue,
+                  isHidden: nextHidden,
+                  ctaLabel: selected.ctaLabel,
+                }),
+              },
+            );
+            if (!response.ok) {
+              const parsed = AdminApiErrorSchema.safeParse(
+                await response.json(),
+              );
+              setError(
+                parsed.success
+                  ? parsed.data.error.message
+                  : "Не удалось изменить видимость",
+              );
+              return;
+            }
+            setItems((current) =>
+              current.map((item) =>
+                item.id === selected.id
+                  ? { ...item, isHidden: nextHidden }
+                  : item,
+              ),
+            );
+            setError(null);
+          }}
+          onSave={async (value) => {
+            const priceFromKopecks = kopecksFromRubles(
+              Number(value.priceFromRubles ?? 0),
+            );
+            const ctaLabel = String(
+              value.ctaLabel ?? selected.ctaLabel ?? "Получить оценку ситуации",
+            );
+            const situations = textToSituations(value.situationsText);
+            if (situations.length < 3 || situations.length > 6) {
+              throw new Error("Нужно от 3 до 6 пунктов списка (по одному в строке)");
+            }
+            const response = await fetch(
+              `/api/admin/content/services/${selected.id}`,
+              {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  slug: selected.slug,
+                  situations,
                   title: value.title,
                   description: value.description,
                   trustNote: value.trustNote,
                   priceFromKopecks,
                   isHighValue: value.isHighValue,
+                  isHidden: selected.isHidden,
+                  ctaLabel,
                 }),
               },
             );
@@ -189,11 +274,13 @@ export function ServicesEditor({
                       description: String(
                         value.description ?? item.description,
                       ),
+                      situations,
                       trustNote: String(value.trustNote ?? item.trustNote),
                       priceFromKopecks,
                       isHighValue: Boolean(
                         value.isHighValue ?? item.isHighValue,
                       ),
+                      ctaLabel,
                     }
                   : item,
               ),

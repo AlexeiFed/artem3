@@ -1,4 +1,4 @@
-import { AdminPageFrame } from "../layout";
+import { AdminPageFrame } from "@/components/admin/AdminPageFrame";
 import { ServicesEditor } from "@/components/admin/ServicesEditor";
 
 export default async function AdminServicesPage() {

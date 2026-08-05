@@ -1,23 +1,46 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { useModal } from "@/components/forms/ModalProvider";
+import { designTokens } from "@/lib/design-tokens";
 import type { LandingData } from "@/modules/content/content.types";
+
+type ServiceLink = {
+  slug: string;
+  label: string;
+  href: string;
+};
+
+function ChevronIcon() {
+  return (
+    <svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M2.2 4.2 6 8l3.8-3.8 1.1 1.1L6 10.2 1.1 5.3z"
+      />
+    </svg>
+  );
+}
 
 export function Header({
   data,
   address,
   workHours,
+  hoursNote,
+  serviceLinks,
 }: {
   data: LandingData["header"];
   address: string;
   workHours: string;
+  hoursNote: string;
+  serviceLinks: ServiceLink[];
 }) {
   const { openModal } = useModal();
   const [menuOpen, setMenuOpen] = useState(false);
   const firstLink = useRef<HTMLAnchorElement>(null);
+  const { durationBase, easeCinematic } = designTokens.motion;
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -34,6 +57,81 @@ export function Header({
     };
   }, [menuOpen]);
 
+  function renderDesktopNavItem(item: LandingData["header"]["nav"][number]) {
+    if (item.href === "#uslugi" && serviceLinks.length > 0) {
+      return (
+        <div key={item.href} className="nav-dropdown">
+          <a href={item.href} aria-haspopup="true" aria-expanded="false">
+            {item.label}
+            <span className="nav-chevron" aria-hidden="true">
+              <ChevronIcon />
+            </span>
+          </a>
+          <div className="nav-dropdown-menu" role="menu">
+            {serviceLinks.map((link) => (
+              <a key={link.slug} href={link.href} role="menuitem">
+                {link.label}
+              </a>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <a key={item.href} href={item.href}>
+        {item.label}
+      </a>
+    );
+  }
+
+  function renderMobileNavItem(
+    item: LandingData["header"]["nav"][number],
+    index: number,
+  ) {
+    const linkProps = {
+      ref: index === 0 ? firstLink : undefined,
+      href: item.href,
+      initial: { opacity: 0, y: 10 },
+      animate: { opacity: 1, y: 0 },
+      transition: { delay: 0.04 + index * 0.035, duration: durationBase * 0.55 },
+      onClick: () => setMenuOpen(false),
+    } as const;
+
+    if (item.href === "#uslugi" && serviceLinks.length > 0) {
+      return (
+        <Fragment key={item.href}>
+          <motion.a className="mobile-nav-link" {...linkProps}>
+            {item.label}
+          </motion.a>
+          <div className="mobile-nav-services">
+            {serviceLinks.map((link, serviceIndex) => (
+              <motion.a
+                key={link.slug}
+                href={link.href}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  delay: 0.08 + index * 0.035 + (serviceIndex + 1) * 0.025,
+                  duration: durationBase * 0.5,
+                }}
+                onClick={() => setMenuOpen(false)}
+              >
+                {link.label}
+              </motion.a>
+            ))}
+          </div>
+        </Fragment>
+      );
+    }
+
+    return (
+      <motion.a key={item.href} className="mobile-nav-link" {...linkProps}>
+        {item.label}
+      </motion.a>
+    );
+  }
+
   return (
     <header className="site-header">
       <div className="header-inner shell">
@@ -43,15 +141,13 @@ export function Header({
         </a>
         <p className="header-meta">
           <span>{address}</span>
-          <span aria-hidden="true">·</span>
           <span>{workHours}</span>
+          {hoursNote ? (
+            <span className="header-meta-note">{hoursNote}</span>
+          ) : null}
         </p>
         <nav className="desktop-nav" aria-label="Основная навигация">
-          {data.nav.map((item) => (
-            <a key={item.href} href={item.href}>
-              {item.label}
-            </a>
-          ))}
+          {data.nav.map((item) => renderDesktopNavItem(item))}
         </nav>
         <button
           type="button"
@@ -77,39 +173,50 @@ export function Header({
           <motion.div
             id="mobile-menu"
             className="mobile-menu"
-            initial={{ opacity: 0, clipPath: "circle(0% at 90% 4%)" }}
-            animate={{ opacity: 1, clipPath: "circle(150% at 90% 4%)" }}
-            exit={{ opacity: 0, clipPath: "circle(0% at 90% 4%)" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: designTokens.motion.durationFast }}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) setMenuOpen(false);
+            }}
           >
-            <nav aria-label="Мобильная навигация">
-              {data.nav.map((item, index) => (
-                <motion.a
-                  ref={index === 0 ? firstLink : undefined}
-                  key={item.href}
-                  href={item.href}
-                  initial={{ opacity: 0, y: 18 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.055 }}
-                  onClick={() => setMenuOpen(false)}
-                >
-                  {item.label}
-                </motion.a>
-              ))}
-              <p className="header-meta header-meta-mobile">
-                <span>{address}</span>
-                <span>{workHours}</span>
+            <motion.div
+              className="mobile-menu-panel"
+              initial={{ opacity: 0, x: 28 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 16 }}
+              transition={{ duration: durationBase * 0.7, ease: easeCinematic }}
+            >
+              <p className="mobile-menu-brand">
+                {data.logo.text}
+                <small>Семейный юрист</small>
               </p>
-              <button
-                type="button"
-                className="button button-light"
-                onClick={() => {
-                  setMenuOpen(false);
-                  openModal("Шапка сайта");
-                }}
-              >
-                {data.cta.label}
-              </button>
-            </nav>
+              <nav aria-label="Мобильная навигация">
+                {data.nav.map((item, index) =>
+                  renderMobileNavItem(item, index),
+                )}
+              </nav>
+              <div className="mobile-menu-footer">
+                <p className="mobile-menu-meta">
+                  <span>{address}</span>
+                  <span>{workHours}</span>
+                  {hoursNote ? (
+                    <span className="mobile-menu-meta-note">{hoursNote}</span>
+                  ) : null}
+                </p>
+                <button
+                  type="button"
+                  className="button button-light"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    openModal("Шапка сайта");
+                  }}
+                >
+                  {data.cta.label}
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         ) : null}
       </AnimatePresence>

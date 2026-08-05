@@ -1,0 +1,1 @@
+ALTER TABLE "site_settings" ADD COLUMN "analytics" jsonb DEFAULT '{}'::jsonb NOT NULL;

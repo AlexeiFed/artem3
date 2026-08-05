@@ -1,6 +1,6 @@
 import { FaqEditor } from "@/components/admin/FaqEditor";
 
-import { AdminPageFrame } from "../layout";
+import { AdminPageFrame } from "@/components/admin/AdminPageFrame";
 
 export default async function AdminFaqPage() {
   let initialItems: Parameters<typeof FaqEditor>[0]["initialItems"] = [];

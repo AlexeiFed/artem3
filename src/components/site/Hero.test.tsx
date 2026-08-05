@@ -63,7 +63,9 @@ describe("Hero", () => {
       screen.getByRole("button", { name: "Получить оценку ситуации" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Первая консультация — бесплатная.", { exact: false }),
+      screen.getByText("Опишите ваш вопрос — оценю перспективы и подскажу возможные действия.", {
+        exact: false,
+      }),
     ).toBeVisible();
   });
 
@@ -74,9 +76,9 @@ describe("Hero", () => {
       name: "Практика в цифрах",
     });
     expect(metrics).toHaveTextContent("11+");
-    expect(metrics).toHaveTextContent("200+");
-    expect(metrics).toHaveTextContent("0 ₽");
-    expect(metrics).toHaveTextContent("дел доведено до результата");
+    expect(metrics).toHaveTextContent("380+");
+    expect(metrics).toHaveTextContent("скрытых платежей");
+    expect(metrics).toHaveTextContent("клиентов получили помощь");
     expect(
       Array.from(
         metrics.querySelectorAll<HTMLElement>(".hero-metric-content"),
@@ -142,7 +144,7 @@ describe("Hero", () => {
     );
 
     expect(
-      screen.getByRole("dialog", { name: "Обсудить ситуацию" }),
+      screen.getByRole("dialog", { name: "Обсудить ваш вопрос" }),
     ).toBeVisible();
   });
 });

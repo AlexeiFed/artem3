@@ -2,7 +2,7 @@ import { HeroLandingEditor } from "@/components/admin/HeroLandingEditor";
 import { HeroSettingsSchema } from "@/modules/content/content.schemas";
 import type { HeroSettings } from "@/modules/content/content.types";
 
-import { AdminPageFrame } from "../layout";
+import { AdminPageFrame } from "@/components/admin/AdminPageFrame";
 
 export default async function AdminHeroPage() {
   let initialHero: HeroSettings | null = null;

@@ -8,7 +8,8 @@ describe("getPreviewLandingData", () => {
     const data = getPreviewLandingData();
 
     expect(LandingDataSchema.safeParse(data).success).toBe(true);
-    expect(data.services).toHaveLength(6);
+    expect(data.services).toHaveLength(5);
+    expect(data.services.map((item) => item.slug)).not.toContain("zemlya");
     expect(data.cases).toHaveLength(4);
     expect(data.faqs.length).toBeGreaterThanOrEqual(6);
   });

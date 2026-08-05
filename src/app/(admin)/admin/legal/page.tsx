@@ -1,6 +1,6 @@
 import { LegalEditor } from "@/components/admin/LegalEditor";
 
-import { AdminPageFrame } from "../layout";
+import { AdminPageFrame } from "@/components/admin/AdminPageFrame";
 
 export default async function AdminLegalPage() {
   let initialLegal: Record<string, unknown> = {};

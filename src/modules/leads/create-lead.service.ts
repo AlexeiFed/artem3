@@ -43,10 +43,19 @@ export interface CreateLeadResult {
   id: string;
 }
 
+export interface NotifyLeadPayload {
+  id: string;
+  name: string;
+  phone: string;
+  situation?: string | undefined;
+  serviceName?: string | undefined;
+}
+
 interface CreateLeadServiceDependencies {
   leadRepository: LeadRepository;
   rateLimitRepository: RateLimitRepository;
   sessionSecret: string;
+  notifyLead?: (payload: NotifyLeadPayload) => Promise<void>;
 }
 
 export interface CreateLeadService {
@@ -57,6 +66,7 @@ export function createLeadService({
   leadRepository,
   rateLimitRepository,
   sessionSecret,
+  notifyLead,
 }: CreateLeadServiceDependencies): CreateLeadService {
   return {
     async create(
@@ -141,6 +151,30 @@ export function createLeadService({
             ? {}
             : { serviceName: parsed.data.service }),
         });
+
+        if (notifyLead) {
+          try {
+            await notifyLead({
+              id,
+              name: parsed.data.name,
+              phone,
+              ...(parsed.data.situation === undefined
+                ? {}
+                : { situation: parsed.data.situation }),
+              ...(parsed.data.service === undefined
+                ? {}
+                : { serviceName: parsed.data.service }),
+            });
+          } catch (error) {
+            console.error({
+              event: "lead_notify_failed",
+              category: "external",
+              leadId: id,
+              errorClass:
+                error instanceof Error ? error.name : "UnknownError",
+            });
+          }
+        }
 
         return { id };
       } catch (error) {

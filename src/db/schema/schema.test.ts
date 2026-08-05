@@ -54,7 +54,25 @@ describe("database schema contracts", () => {
     expect(columns.trustBanner?.notNull).toBe(true);
     expect(columns.workflow?.name).toBe("workflow");
     expect(columns.workflow?.notNull).toBe(true);
+    expect(columns.analytics?.name).toBe("analytics");
+    expect(columns.analytics?.notNull).toBe(true);
     expect(columns).not.toHaveProperty("trustWorkflow");
+  });
+
+  it("stores services.is_hidden as required boolean with default false", () => {
+    const columns = getTableColumns(services);
+
+    expect(columns.isHidden?.name).toBe("is_hidden");
+    expect(columns.isHidden?.notNull).toBe(true);
+    expect(columns.isHidden?.hasDefault).toBe(true);
+  });
+
+  it("stores services.cta_label as required text with default", () => {
+    const columns = getTableColumns(services);
+
+    expect(columns.ctaLabel?.name).toBe("cta_label");
+    expect(columns.ctaLabel?.notNull).toBe(true);
+    expect(columns.ctaLabel?.hasDefault).toBe(true);
   });
 
   it.each(sortableTables)(

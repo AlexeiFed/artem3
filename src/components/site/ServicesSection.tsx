@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { motion } from "motion/react";
 
 import { useModal } from "@/components/forms/ModalProvider";
@@ -21,6 +21,12 @@ export function ServicesSection({
     services[0]?.slug ?? "razvod",
   );
   const { openModal } = useModal();
+  const pickLockUntil = useRef(0);
+
+  const syncActiveFromScroll = useEffectEvent((slug: string) => {
+    if (performance.now() < pickLockUntil.current) return;
+    setActive(slug);
+  });
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -33,9 +39,9 @@ export function ServicesSection({
         const match = services.find(
           (service) => serviceAnchorId(service.slug) === domId,
         );
-        if (match) setActive(match.slug);
+        if (match) syncActiveFromScroll(match.slug);
       },
-      { rootMargin: "-30% 0px -55%", threshold: [0.15, 0.5] },
+      { rootMargin: "-20% 0px -50%", threshold: [0.1, 0.25, 0.5] },
     );
     for (const service of services) {
       const element = document.getElementById(serviceAnchorId(service.slug));
@@ -45,7 +51,7 @@ export function ServicesSection({
   }, [services]);
 
   return (
-    <section id="uslugi" className="services section shell">
+    <section className="services section shell">
       <p className="eyebrow">{intro.eyebrow}</p>
       <h2>{intro.title}</h2>
       <nav className="service-tabs" aria-label="Разделы услуг">
@@ -54,18 +60,21 @@ export function ServicesSection({
             key={service.slug}
             href={serviceAnchorHref(service.slug)}
             aria-current={active === service.slug ? "location" : undefined}
+            onClick={() => {
+              pickLockUntil.current = performance.now() + 900;
+              setActive(service.slug);
+            }}
           >
             {service.title}
           </a>
         ))}
       </nav>
-      <div className="service-list">
+      <div id="uslugi" className="service-list">
         {services.map((service, index) => (
           <article
             id={serviceAnchorId(service.slug)}
             key={service.slug}
-            tabIndex={service.isHighValue ? 0 : undefined}
-            className={`service-card${service.isHighValue ? " high-value" : ""}`}
+            className="service-card"
           >
             <div className="service-number">
               {String(index + 1).padStart(2, "0")}
@@ -81,9 +90,6 @@ export function ServicesSection({
             </div>
             <aside>
               <JusticeScales />
-              {service.isHighValue ? (
-                <p className="service-high-value-badge">Высокий чек</p>
-              ) : null}
               <p>
                 <strong>Важно</strong>
                 {service.trustNote}
@@ -100,7 +106,7 @@ export function ServicesSection({
                 className="text-button"
                 onClick={() => openModal(service.title)}
               >
-                Обсудить эту услугу ↗
+                {service.ctaLabel} ↗
               </button>
             </aside>
           </article>

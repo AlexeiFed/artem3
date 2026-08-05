@@ -59,15 +59,14 @@ describe("buildLandingData", () => {
 
     expect(data.hero.metrics).toEqual([
       { value: "11+", label: "лет практики" },
-      { value: "200+", label: "дел доведено до результата" },
-      { value: "0 ₽", label: "первая консультация" },
+      { value: "380+", label: "клиентов получили помощь" },
+      { value: "0 ₽", label: "скрытых платежей" },
     ]);
     expect(data.services.map((item) => item.slug)).toEqual([
       "razvod",
       "alimenty",
       "imushchestvo",
       "deti",
-      "zemlya",
       "uslugi",
     ]);
     expect(data.services[0]).toEqual({
@@ -78,6 +77,7 @@ describe("buildLandingData", () => {
       trustNote: seedContent.services[0]?.trustNote,
       priceFromKopecks: seedContent.services[0]?.priceFromKopecks,
       isHighValue: seedContent.services[0]?.isHighValue,
+      ctaLabel: seedContent.services[0]?.ctaLabel,
     });
     expect(data.cases).toHaveLength(4);
     expect(data.faqs.length).toBeGreaterThanOrEqual(6);
@@ -132,6 +132,36 @@ describe("buildLandingData", () => {
     );
     expect(data.services[0]?.slug).toBe(second.slug);
     expect(data.services[1]?.slug).toBe(first.slug);
+  });
+
+  it("omits hidden services from public landing services and quick links", async () => {
+    const baseRepository = createFakeRepository();
+    const serviceRows = await baseRepository.listServices();
+    const hidden = serviceRows.find((item) => item.slug === "zemlya");
+    if (!hidden) throw new Error("Missing zemlya fixture");
+    const withHidden = serviceRows.map((item) =>
+      item.slug === "zemlya" ? { ...item, isHidden: true } : item,
+    );
+
+    const data = await buildLandingData(
+      createFakeRepository(undefined, withHidden),
+    );
+
+    expect(data.services.map((item) => item.slug)).toEqual([
+      "razvod",
+      "alimenty",
+      "imushchestvo",
+      "deti",
+      "uslugi",
+    ]);
+    expect(data.quickLinks.map((item) => item.slug)).toEqual([
+      "razvod",
+      "alimenty",
+      "imushchestvo",
+      "deti",
+      "uslugi",
+    ]);
+    expect(data.services.some((item) => item.slug === "zemlya")).toBe(false);
   });
 
   it("preserves the original internal failure as ContentDataError cause", async () => {

@@ -40,7 +40,7 @@ const ENTITY_LIMITS = {
   cases: { min: 1, max: 12 },
   faqs: { min: 6, max: 20 },
   reviews: { min: 3, max: 6 },
-  certificates: { min: 2, max: 4 },
+  certificates: { min: 1, max: 4 },
   services: { min: 1, max: 12 },
 } as const;
 
@@ -63,6 +63,9 @@ export class DrizzleAdminContentRepository implements AdminContentRepository {
         ...(input.map === undefined ? {} : { map: input.map }),
         ...(input.ratings === undefined ? {} : { ratings: input.ratings }),
         ...(input.vkEmbed === undefined ? {} : { vkEmbed: input.vkEmbed }),
+        ...(input.analytics === undefined
+          ? {}
+          : { analytics: input.analytics }),
         updatedAt: new Date(),
       })
       .where(eq(siteSettings.id, "default"))
@@ -91,6 +94,8 @@ export class DrizzleAdminContentRepository implements AdminContentRepository {
         trustNote: input.trustNote,
         priceFromKopecks: input.priceFromKopecks,
         isHighValue: input.isHighValue,
+        isHidden: input.isHidden,
+        ctaLabel: input.ctaLabel,
         updatedAt: new Date(),
       })
       .where(eq(services.id, id))
@@ -119,6 +124,8 @@ export class DrizzleAdminContentRepository implements AdminContentRepository {
           trustNote: input.trustNote,
           priceFromKopecks: input.priceFromKopecks,
           isHighValue: input.isHighValue,
+          isHidden: input.isHidden,
+          ctaLabel: input.ctaLabel,
           sortOrder,
         })
         .returning();

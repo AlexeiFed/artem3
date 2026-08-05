@@ -3,18 +3,44 @@
 import { useState } from "react";
 
 import { EntityEditor } from "@/components/admin/EntityEditor";
-import { AdminApiErrorSchema } from "@/modules/content/admin-content.schemas";
+import { formatAdminApiError } from "@/components/admin/format-admin-error";
 
 interface ContactsEditorProps {
   initialContacts: Record<string, unknown>;
   loadError: string | null;
 }
 
+const CONTACTS_FIELD_MAP: Record<string, string> = {
+  eyebrow: "eyebrow",
+  header: "header",
+  address: "address",
+  workHours: "workHours",
+  hoursNote: "hoursNote",
+  responseSla: "responseSla",
+  "phone.display": "phoneDisplay",
+  "phone.href": "phoneHref",
+  "phone.label": "phoneDisplay",
+  "email.label": "emailLabel",
+  "email.address": "emailAddress",
+  "telegram.label": "telegramLabel",
+  "telegram.url": "telegramUrl",
+  "whatsapp.label": "whatsappLabel",
+  "whatsapp.url": "whatsappUrl",
+  "max.label": "maxLabel",
+  "max.url": "maxUrl",
+};
+
 function asLink(
   value: unknown,
-): { label?: string; url?: string; display?: string; href?: string } {
+): { label?: string; url?: string; display?: string; href?: string; address?: string } {
   return typeof value === "object" && value !== null
-    ? (value as { label?: string; url?: string; display?: string; href?: string })
+    ? (value as {
+        label?: string;
+        url?: string;
+        display?: string;
+        href?: string;
+        address?: string;
+      })
     : {};
 }
 
@@ -28,6 +54,7 @@ export function ContactsEditor({
   const telegram = asLink(contacts.telegram);
   const whatsapp = asLink(contacts.whatsapp);
   const max = asLink(contacts.max);
+  const email = asLink(contacts.email);
 
   return (
     <>
@@ -38,6 +65,9 @@ export function ContactsEditor({
           header: String(contacts.header ?? ""),
           address: String(contacts.address ?? ""),
           workHours: String(contacts.workHours ?? ""),
+          hoursNote: String(
+            contacts.hoursNote ?? "(по предварительной записи)",
+          ),
           phoneDisplay: String(phone.display ?? ""),
           phoneHref: String(phone.href ?? ""),
           telegramLabel: String(telegram.label ?? "Telegram"),
@@ -46,14 +76,41 @@ export function ContactsEditor({
           whatsappUrl: String(whatsapp.url ?? ""),
           maxLabel: String(max.label ?? "MAX"),
           maxUrl: String(max.url ?? ""),
+          emailLabel: String(email.label ?? "Email"),
+          emailAddress: String(email.address ?? ""),
+          responseSla: String(contacts.responseSla ?? ""),
         }}
         fields={[
           { name: "eyebrow", label: "Надзаголовок", type: "text" },
           { name: "header", label: "Заголовок", type: "text" },
           { name: "address", label: "Адрес", type: "text" },
           { name: "workHours", label: "Часы работы", type: "text" },
+          {
+            name: "hoursNote",
+            label: "Пометка под часами",
+            type: "text",
+            hint: "В шапке и в контактах под часами. Пример: (по предварительной записи). Оставь пустым — строка скроется.",
+          },
+          {
+            name: "responseSla",
+            label: "Срок ответа",
+            type: "text",
+            hint: "В блоке контактов под списком каналов связи",
+          },
           { name: "phoneDisplay", label: "Телефон (отображение)", type: "text" },
-          { name: "phoneHref", label: "Телефон (tel:)", type: "text" },
+          {
+            name: "phoneHref",
+            label: "Телефон (tel:)",
+            type: "text",
+            hint: "Формат: tel:+74212931547",
+          },
+          { name: "emailLabel", label: "Email — подпись", type: "text" },
+          {
+            name: "emailAddress",
+            label: "Email — адрес",
+            type: "text",
+            hint: "Обязательно: валидный адрес вида name@domain.ru",
+          },
           { name: "telegramLabel", label: "Telegram — подпись", type: "text" },
           {
             name: "telegramUrl",
@@ -76,6 +133,7 @@ export function ContactsEditor({
             header: value.header,
             address: value.address,
             workHours: value.workHours,
+            hoursNote: String(value.hoursNote ?? "").trim(),
             phone: {
               ...phone,
               label: phone.label ?? "Телефон",
@@ -94,6 +152,11 @@ export function ContactsEditor({
               label: value.maxLabel,
               url: value.maxUrl,
             },
+            email: {
+              label: value.emailLabel,
+              address: value.emailAddress,
+            },
+            responseSla: value.responseSla,
           };
           const response = await fetch("/api/admin/content/settings", {
             method: "PATCH",
@@ -101,19 +164,17 @@ export function ContactsEditor({
             body: JSON.stringify({ contacts: nextContacts }),
           });
           if (!response.ok) {
-            const parsed = AdminApiErrorSchema.safeParse(await response.json());
-            throw new Error(
-              parsed.success
-                ? parsed.data.error.message
-                : "Ошибка сохранения",
-            );
+            throw formatAdminApiError(await response.json(), {
+              stripPrefix: "contacts.",
+              fieldMap: CONTACTS_FIELD_MAP,
+            });
           }
           setContacts(nextContacts);
           setError(null);
         }}
       />
       {error ? (
-        <p className="mt-4 text-sm text-secondary" role="alert">
+        <p className="mt-4 text-sm text-error" role="alert">
           {error}
         </p>
       ) : null}

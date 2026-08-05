@@ -42,11 +42,29 @@ export function LoginForm({ nextPath }: LoginFormProps) {
 
       if (!response.ok) {
         const parsed = AuthErrorResponseSchema.safeParse(await response.json());
-        setError(
-          parsed.success
-            ? parsed.data.error.message
-            : "Не удалось выполнить вход. Попробуйте ещё раз.",
-        );
+        if (!parsed.success) {
+          setError("Не удалось выполнить вход. Попробуйте ещё раз.");
+          return;
+        }
+        const { message, attemptsRemaining, attemptsLimit, retryAfterSeconds, resetsAt } =
+          parsed.data.error;
+        const details: string[] = [message];
+        if (
+          attemptsRemaining !== undefined &&
+          attemptsLimit !== undefined &&
+          !message.includes("Осталось попыток")
+        ) {
+          details.push(
+            `Осталось попыток: ${attemptsRemaining} из ${attemptsLimit}.`,
+          );
+        }
+        if (retryAfterSeconds !== undefined && !message.includes("Повторите через")) {
+          details.push(`Повтор через ${retryAfterSeconds} с.`);
+        }
+        if (resetsAt && !message.includes("сброс")) {
+          details.push(`Сброс лимита: ${new Date(resetsAt).toLocaleTimeString("ru-RU")}.`);
+        }
+        setError(details.join(" "));
         return;
       }
 

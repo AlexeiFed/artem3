@@ -1,6 +1,13 @@
 "use client";
 
 import Image from "next/image";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { motion, useReducedMotion } from "motion/react";
 
 import type { LandingData } from "@/modules/content/content.types";
@@ -45,16 +52,110 @@ export function HonestyBanner({
 }: {
   data: LandingData["honesty"];
 }) {
+  const reduced = useReducedMotion();
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const isDesktop = useSyncExternalStore(
+    subscribeDesktop,
+    getDesktopSnapshot,
+    getServerDesktopSnapshot,
+  );
+
+  const syncActiveIndex = useCallback(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    const cards = Array.from(track.querySelectorAll<HTMLElement>(".honesty-card"));
+    if (cards.length === 0) return;
+    const trackLeft = track.getBoundingClientRect().left;
+    let closest = 0;
+    let closestDistance = Number.POSITIVE_INFINITY;
+    cards.forEach((card, index) => {
+      const distance = Math.abs(card.getBoundingClientRect().left - trackLeft);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closest = index;
+      }
+    });
+    setActiveIndex(closest);
+  }, []);
+
+  useEffect(() => {
+    if (isDesktop) return;
+    const track = trackRef.current;
+    if (!track) return;
+    track.addEventListener("scroll", syncActiveIndex, { passive: true });
+    return () => track.removeEventListener("scroll", syncActiveIndex);
+  }, [isDesktop, syncActiveIndex]);
+
+  function scrollToIndex(index: number) {
+    const track = trackRef.current;
+    const card = track?.querySelector<HTMLElement>(
+      `.honesty-card:nth-child(${index + 1})`,
+    );
+    card?.scrollIntoView({
+      behavior: reduced ? "auto" : "smooth",
+      inline: "start",
+      block: "nearest",
+    });
+    setActiveIndex(index);
+  }
+
+  const cards = data.items.map((item) => (
+    <article key={item.title} className="honesty-card">
+      <strong>{item.title}</strong>
+      <p>{item.copy}</p>
+    </article>
+  ));
+
   return (
     <section className="honesty section">
       <div className="shell">
         <p className="eyebrow">{data.theme}</p>
         <h2>{data.title}</h2>
-        <p>{data.copy}</p>
+        {isDesktop ? (
+          <div className="honesty-grid">{cards}</div>
+        ) : (
+          <>
+            <motion.div
+              ref={trackRef}
+              className="honesty-track"
+              initial={reduced ? false : { opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true, amount: 0.3 }}
+            >
+              {cards}
+            </motion.div>
+            <div className="honesty-dots" aria-label="Слайды">
+              {data.items.map((item, index) => (
+                <button
+                  key={item.title}
+                  type="button"
+                  className="honesty-dot"
+                  aria-label={`Показать: ${item.title}`}
+                  aria-current={activeIndex === index ? "true" : undefined}
+                  onClick={() => scrollToIndex(index)}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </section>
   );
 }
+
+const DESKTOP_QUERY = "(min-width: 48rem)";
+const subscribeDesktop = (onChange: () => void) => {
+  const mediaQuery = window.matchMedia(DESKTOP_QUERY);
+  if (typeof mediaQuery.addEventListener === "function") {
+    mediaQuery.addEventListener("change", onChange);
+    return () => mediaQuery.removeEventListener("change", onChange);
+  }
+  mediaQuery.addListener(onChange);
+  return () => mediaQuery.removeListener(onChange);
+};
+const getDesktopSnapshot = () => window.matchMedia(DESKTOP_QUERY).matches;
+const getServerDesktopSnapshot = () => false;
 
 export function CasesStack({ cases }: { cases: LandingData["cases"] }) {
   const reduced = useReducedMotion();
@@ -79,7 +180,9 @@ export function CasesStack({ cases }: { cases: LandingData["cases"] }) {
               key={item.situation}
               className="case-card"
               data-testid="case-card"
-              style={{ top: `${5 + index * 1.1}rem` }}
+              style={{
+                top: `calc(var(--cases-sticky-top) + ${index} * var(--cases-sticky-step))`,
+              }}
               initial={reduced ? false : { scale: 0.97, opacity: 0.7 }}
               whileInView={{ scale: 1, opacity: 1 }}
               viewport={{ amount: 0.4 }}
@@ -160,12 +263,27 @@ export function Reviews({
             </article>
           ))}
         </div>
-        <div className="certificates" aria-label="Сертификаты">
-          {certificates.map((certificate, index) => (
-            <article key={certificate.title} aria-label={certificate.altText}>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              <strong>{certificate.title}</strong>
-              <small>Документ будет добавлен после верификации</small>
+        <div className="certificates" aria-label="Документы об образовании">
+          {certificates.map((certificate) => (
+            <article key={certificate.title}>
+              <div className="certificate-copy">
+                <small>Документ</small>
+                <strong>{certificate.title}</strong>
+              </div>
+              <a
+                className="certificate-scan"
+                href={certificate.imageUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Image
+                  src={certificate.imageUrl}
+                  alt={certificate.altText}
+                  width={1200}
+                  height={800}
+                  sizes="(max-width: 900px) 100vw, 36rem"
+                />
+              </a>
             </article>
           ))}
         </div>

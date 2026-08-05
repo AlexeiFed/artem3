@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq, lte } from "drizzle-orm";
+import { and, eq, lte, ne } from "drizzle-orm";
 
 import { getDb } from "@/db/client";
 import { adminSessions, adminUsers } from "@/db/schema";
@@ -36,12 +36,18 @@ export interface InsertSessionInput {
 
 export interface AuthRepository {
   findUserByEmail(email: string): Promise<AdminUserRecord | null>;
+  findUserById(id: string): Promise<AdminUserRecord | null>;
   insertSession(input: InsertSessionInput): Promise<void>;
   findSessionByTokenHash(
     tokenHash: string,
   ): Promise<AdminSessionRecord | null>;
   deleteSessionByTokenHash(tokenHash: string): Promise<void>;
   touchSessionActivity(tokenHash: string, now: Date): Promise<void>;
+  updatePasswordAndRevokeOtherSessions(input: {
+    userId: string;
+    passwordHash: string;
+    keepTokenHash: string;
+  }): Promise<void>;
 }
 
 export class DrizzleAuthRepository implements AuthRepository {
@@ -57,6 +63,21 @@ export class DrizzleAuthRepository implements AuthRepository {
       })
       .from(adminUsers)
       .where(eq(adminUsers.email, email))
+      .limit(1);
+
+    return user ?? null;
+  }
+
+  async findUserById(id: string): Promise<AdminUserRecord | null> {
+    const [user] = await this.db
+      .select({
+        id: adminUsers.id,
+        email: adminUsers.email,
+        passwordHash: adminUsers.passwordHash,
+        active: adminUsers.active,
+      })
+      .from(adminUsers)
+      .where(eq(adminUsers.id, id))
       .limit(1);
 
     return user ?? null;
@@ -118,5 +139,26 @@ export class DrizzleAuthRepository implements AuthRepository {
           lte(adminSessions.lastActivityAt, activityCutoff),
         ),
       );
+  }
+
+  async updatePasswordAndRevokeOtherSessions(input: {
+    userId: string;
+    passwordHash: string;
+    keepTokenHash: string;
+  }): Promise<void> {
+    await this.db.transaction(async (transaction) => {
+      await transaction
+        .update(adminUsers)
+        .set({ passwordHash: input.passwordHash, updatedAt: new Date() })
+        .where(eq(adminUsers.id, input.userId));
+      await transaction
+        .delete(adminSessions)
+        .where(
+          and(
+            eq(adminSessions.userId, input.userId),
+            ne(adminSessions.tokenHash, input.keepTokenHash),
+          ),
+        );
+    });
   }
 }

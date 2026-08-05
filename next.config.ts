@@ -37,6 +37,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Turbopack иначе внешняет argon2 как argon2-<hash> → 500 на /api/admin/login
+  serverExternalPackages: ["argon2"],
   // Dev: браузер на 127.0.0.1 ≠ localhost → без этого блокируются HMR и шрифты
   allowedDevOrigins: ["127.0.0.1"],
   async headers() {

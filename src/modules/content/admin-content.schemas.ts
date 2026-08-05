@@ -14,6 +14,7 @@ import {
   TrustBannerSettingsSchema,
   VkEmbedSettingsSchema,
   WorkflowSettingsSchema,
+  AnalyticsSettingsSchema,
 } from "./content.schemas";
 
 export const ReorderableEntitySchema = z.enum([
@@ -41,6 +42,7 @@ export const UpdateSiteSettingsInputSchema = z
     map: MapSettingsSchema.optional(),
     ratings: RatingsSettingsSchema.optional(),
     vkEmbed: VkEmbedSettingsSchema.optional(),
+    analytics: AnalyticsSettingsSchema.optional(),
   })
   .strict()
   .refine((value) => Object.values(value).some((field) => field !== undefined), {

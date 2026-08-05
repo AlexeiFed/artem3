@@ -40,6 +40,7 @@ export const siteSettings = pgTable(
     map: jsonb("map").$type<ContentSection>().default({}).notNull(),
     ratings: jsonb("ratings").$type<ContentSection>().default({}).notNull(),
     vkEmbed: jsonb("vk_embed").$type<ContentSection>().default({}).notNull(),
+    analytics: jsonb("analytics").$type<ContentSection>().default({}).notNull(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -62,6 +63,10 @@ export const services = pgTable(
     trustNote: text("trust_note").notNull(),
     priceFromKopecks: integer("price_from_kopecks").notNull(),
     isHighValue: boolean("is_high_value").default(false).notNull(),
+    isHidden: boolean("is_hidden").default(false).notNull(),
+    ctaLabel: text("cta_label")
+      .default("Получить оценку ситуации")
+      .notNull(),
     sortOrder: integer("sort_order").notNull(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

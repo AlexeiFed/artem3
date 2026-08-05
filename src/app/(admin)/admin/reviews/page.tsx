@@ -1,6 +1,6 @@
 import { ReviewsEditor } from "@/components/admin/ReviewsEditor";
 
-import { AdminPageFrame } from "../layout";
+import { AdminPageFrame } from "@/components/admin/AdminPageFrame";
 
 export default async function AdminReviewsPage() {
   let initialItems: Parameters<typeof ReviewsEditor>[0]["initialItems"] = [];

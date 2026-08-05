@@ -24,7 +24,7 @@ function Trigger() {
 
 function openAndFill() {
   fireEvent.click(screen.getByRole("button", { name: "Открыть форму" }));
-  fireEvent.change(screen.getByLabelText("Имя"), {
+  fireEvent.change(screen.getByLabelText("Ваше имя"), {
     target: { value: "Алексей" },
   });
   fireEvent.change(screen.getByLabelText("Телефон"), {
@@ -35,7 +35,7 @@ function openAndFill() {
 function checkConsent() {
   fireEvent.click(
     screen.getByRole("checkbox", {
-      name: /соглашаюсь на обработку моих персональных данных/i,
+      name: /соглашаетесь на обработку персональных данных/i,
     }),
   );
 }
@@ -60,7 +60,7 @@ describe("global lead modal", () => {
 
     openAndFill();
 
-    const submit = screen.getByRole("button", { name: "Отправить заявку" });
+    const submit = screen.getByRole("button", { name: "Получить план действий" });
     expect(submit).toBeDisabled();
     expect(
       screen.queryByRole("checkbox", { name: /получение рассылки/i }),
@@ -70,9 +70,9 @@ describe("global lead modal", () => {
     expect(submit).toBeEnabled();
 
     fireEvent.click(submit);
-    expect(await screen.findByText("Заявка принята")).toBeVisible();
+    expect(await screen.findByText("Спасибо за обращение! Заявка принята.")).toBeVisible();
     expect(
-      screen.getByText(/Обычно отвечаю в течение 15–30 минут/),
+      screen.getByText(/Свяжусь с вами в течение 1 часа в рабочее время/),
     ).toBeVisible();
   });
 
@@ -91,7 +91,7 @@ describe("global lead modal", () => {
     fireEvent.click(screen.getByRole("button", { name: "Открыть форму" }));
     expect(screen.getByText("Раздел имущества")).toBeVisible();
 
-    const submit = screen.getByRole("button", { name: "Отправить заявку" });
+    const submit = screen.getByRole("button", { name: "Получить план действий" });
     expect(submit).toBeDisabled();
 
     checkConsent();
@@ -103,16 +103,16 @@ describe("global lead modal", () => {
     ).toBeVisible();
     expect(window.ym).not.toHaveBeenCalled();
 
-    fireEvent.change(screen.getByLabelText("Имя"), {
+    fireEvent.change(screen.getByLabelText("Ваше имя"), {
       target: { value: "Алексей" },
     });
     fireEvent.change(screen.getByLabelText("Телефон"), {
       target: { value: "9991234567" },
     });
     expect(screen.getByLabelText("Телефон")).toHaveValue("+7 (999) 123-45-67");
-    fireEvent.click(screen.getByRole("button", { name: "Отправить заявку" }));
+    fireEvent.click(screen.getByRole("button", { name: "Получить план действий" }));
 
-    expect(await screen.findByText("Заявка принята")).toBeVisible();
+    expect(await screen.findByText("Спасибо за обращение! Заявка принята.")).toBeVisible();
     const body = JSON.parse(
       String((fetchMock.mock.calls[0]?.[1] as RequestInit).body),
     ) as Record<string, unknown>;
@@ -137,13 +137,13 @@ describe("global lead modal", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Открыть форму" }));
     checkConsent();
-    fireEvent.change(screen.getByLabelText("Имя"), {
+    fireEvent.change(screen.getByLabelText("Ваше имя"), {
       target: { value: "Тест" },
     });
     fireEvent.change(screen.getByLabelText("Телефон"), {
       target: { value: "9999999999" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Отправить заявку" }));
+    fireEvent.click(screen.getByRole("button", { name: "Получить план действий" }));
 
     expect(screen.getByText("Введите корректный российский номер")).toBeVisible();
   });

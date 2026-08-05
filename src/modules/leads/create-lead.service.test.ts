@@ -242,6 +242,76 @@ describe("createLeadService", () => {
     });
   });
 
+  it("calls notifyLead after successful repository create", async () => {
+    const repositories = createRepositories();
+    const notifyLead = vi.fn().mockResolvedValue(undefined);
+    const service = createLeadService({
+      ...repositories,
+      sessionSecret: SESSION_SECRET,
+      notifyLead,
+    });
+
+    const result = await service.create(
+      validLeadInput({
+        situation: "Нужна консультация",
+        service: "Раздел имущества",
+      }),
+      { clientIp: "203.0.113.42", now: NOW },
+    );
+
+    expect(result).toEqual({ id: "11111111-1111-4111-8111-111111111111" });
+    expect(repositories.leadCalls).toHaveLength(1);
+    expect(notifyLead).toHaveBeenCalledOnce();
+    expect(notifyLead).toHaveBeenCalledWith({
+      id: "11111111-1111-4111-8111-111111111111",
+      name: "Алексей",
+      phone: "+79991234567",
+      situation: "Нужна консультация",
+      serviceName: "Раздел имущества",
+    });
+  });
+
+  it("returns lead id when notifyLead rejects", async () => {
+    const repositories = createRepositories();
+    const notifyLead = vi.fn().mockRejectedValue(new Error("telegram down"));
+    const service = createLeadService({
+      ...repositories,
+      sessionSecret: SESSION_SECRET,
+      notifyLead,
+    });
+
+    const result = await service.create(validLeadInput(), {
+      clientIp: "203.0.113.42",
+      now: NOW,
+    });
+
+    expect(result).toEqual({ id: "11111111-1111-4111-8111-111111111111" });
+    expect(notifyLead).toHaveBeenCalledOnce();
+  });
+
+  it("does not call notifyLead when repository create fails", async () => {
+    const repositories = createRepositories();
+    const notifyLead = vi.fn().mockResolvedValue(undefined);
+    const service = createLeadService({
+      ...repositories,
+      sessionSecret: SESSION_SECRET,
+      notifyLead,
+      leadRepository: {
+        create: async () => {
+          throw new Error("insert failed");
+        },
+      },
+    });
+
+    await expect(
+      service.create(validLeadInput(), {
+        clientIp: "203.0.113.42",
+        now: NOW,
+      }),
+    ).rejects.toMatchObject({ code: "PERSISTENCE" });
+    expect(notifyLead).not.toHaveBeenCalled();
+  });
+
   it("preserves a rate-limit repository Error as persistence cause", async () => {
     const repositories = createRepositories();
     const repositoryError = new Error("rate_limits SQL failed");

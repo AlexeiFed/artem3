@@ -90,8 +90,8 @@ describe("GET /api/landing-data", () => {
     );
     expect(body.data.hero.metrics).toEqual([
       { value: "11+", label: "лет практики" },
-      { value: "200+", label: "дел доведено до результата" },
-      { value: "0 ₽", label: "первая консультация" },
+      { value: "380+", label: "клиентов получили помощь" },
+      { value: "0 ₽", label: "скрытых платежей" },
     ]);
     expect(response.headers.get("Cache-Control")).toBe(
       "public, s-maxage=300, stale-while-revalidate=86400",

@@ -22,6 +22,20 @@
       "when": 1784011718928,
       "tag": "0002_flashy_ink",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1784170562441,
+      "tag": "0003_brief_the_phantom",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785823113993,
+      "tag": "0004_spooky_swordsman",
+      "breakpoints": true
     }
   ]
 }

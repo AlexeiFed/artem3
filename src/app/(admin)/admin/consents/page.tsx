@@ -1,6 +1,6 @@
 import { ConsentsPanel } from "@/components/admin/ConsentsPanel";
 
-import { AdminPageFrame } from "../layout";
+import { AdminPageFrame } from "@/components/admin/AdminPageFrame";
 
 export default async function AdminConsentsPage() {
   let initialItems: Parameters<typeof ConsentsPanel>[0]["initialItems"] = [];

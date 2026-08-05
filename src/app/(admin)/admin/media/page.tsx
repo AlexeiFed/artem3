@@ -2,7 +2,7 @@
 
 import { MediaUploader } from "@/components/admin/MediaUploader";
 
-import { AdminPageFrame } from "../layout";
+import { AdminPageFrame } from "@/components/admin/AdminPageFrame";
 
 export default function AdminMediaPage() {
   return (

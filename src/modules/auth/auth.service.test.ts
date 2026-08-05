@@ -71,10 +71,12 @@ function dependencies(
 } {
   const authRepository: AuthRepository = {
     findUserByEmail: vi.fn().mockResolvedValue(USER),
+    findUserById: vi.fn().mockResolvedValue(USER),
     insertSession: vi.fn().mockResolvedValue(undefined),
     findSessionByTokenHash: vi.fn().mockResolvedValue(null),
     deleteSessionByTokenHash: vi.fn().mockResolvedValue(undefined),
     touchSessionActivity: vi.fn().mockResolvedValue(undefined),
+    updatePasswordAndRevokeOtherSessions: vi.fn().mockResolvedValue(undefined),
   };
   const rateLimitRepository: RateLimitRepository = {
     increment: vi.fn().mockResolvedValue(1),
@@ -165,6 +167,36 @@ describe("auth service", () => {
       expect.stringMatching(/^\$argon2id\$/),
       "wrong-password-value",
     );
+  });
+
+  it("attaches remaining login attempts on invalid credentials", async () => {
+    const verifyPassword = vi.fn().mockResolvedValue(false);
+    const deps = dependencies({
+      rateLimitRepository: {
+        increment: vi
+          .fn()
+          .mockResolvedValueOnce(2)
+          .mockResolvedValueOnce(2),
+        deleteOlderThan: vi.fn().mockResolvedValue(undefined),
+      },
+      verifyPassword,
+    });
+
+    await expect(
+      createAuthService(deps).login(
+        { email: "admin@example.com", password: "wrong-password-xx" },
+        {
+          clientIp: "203.0.113.5",
+          now: new Date("2026-07-12T10:01:00.000Z"),
+        },
+      ),
+    ).rejects.toMatchObject({
+      code: "INVALID_CREDENTIALS",
+      rateLimit: {
+        attemptsRemaining: 3,
+        attemptsLimit: 5,
+      },
+    });
   });
 
   it("returns generic rate limiting when either bucket exceeds five attempts", async () => {
@@ -274,5 +306,45 @@ describe("auth service", () => {
     expect(deps.authRepository.deleteSessionByTokenHash).toHaveBeenCalledWith(
       hashSessionToken("A".repeat(43)),
     );
+  });
+});
+
+describe("changePassword", () => {
+  const sessionToken = "B".repeat(43);
+
+  it("rejects wrong current password", async () => {
+    const deps = dependencies({
+      verifyPassword: vi.fn().mockResolvedValue(false),
+    });
+
+    await expect(
+      createAuthService(deps).changePassword(USER.id, sessionToken, {
+        currentPassword: "wrong-password-xx",
+        newPassword: "brand-new-password",
+      }),
+    ).rejects.toMatchObject({ code: "INVALID_CREDENTIALS" });
+    expect(
+      deps.authRepository.updatePasswordAndRevokeOtherSessions,
+    ).not.toHaveBeenCalled();
+  });
+
+  it("hashes the new password and keeps the current session", async () => {
+    const deps = dependencies({
+      verifyPassword: vi.fn().mockResolvedValue(true),
+      hashPassword: vi.fn().mockResolvedValue("$argon2id$new"),
+    });
+
+    await createAuthService(deps).changePassword(USER.id, sessionToken, {
+      currentPassword: "a-strong-password",
+      newPassword: "brand-new-password",
+    });
+
+    expect(
+      deps.authRepository.updatePasswordAndRevokeOtherSessions,
+    ).toHaveBeenCalledWith({
+      userId: USER.id,
+      passwordHash: "$argon2id$new",
+      keepTokenHash: hashSessionToken(sessionToken),
+    });
   });
 });

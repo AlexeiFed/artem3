@@ -1,6 +1,6 @@
 import { CasesEditor } from "@/components/admin/CasesEditor";
 
-import { AdminPageFrame } from "../layout";
+import { AdminPageFrame } from "@/components/admin/AdminPageFrame";
 
 export default async function AdminCasesPage() {
   let initialItems: Parameters<typeof CasesEditor>[0]["initialItems"] = [];

@@ -1,6 +1,6 @@
 import { LeadsPanel } from "@/components/admin/LeadsPanel";
 
-import { AdminPageFrame } from "../layout";
+import { AdminPageFrame } from "@/components/admin/AdminPageFrame";
 
 export default async function AdminLeadsPage() {
   let initialItems: Parameters<typeof LeadsPanel>[0]["initialItems"] = [];

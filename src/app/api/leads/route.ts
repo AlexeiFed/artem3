@@ -141,16 +141,19 @@ async function createLeadFromDatabase(
     { createLeadService },
     { DrizzleLeadRepository },
     { DrizzleRateLimitRepository },
+    { notifyLeadTelegram },
   ] = await Promise.all([
     import("@/lib/env/server"),
     import("@/modules/leads/create-lead.service"),
     import("@/modules/leads/lead.repository"),
     import("@/modules/leads/rate-limit.repository"),
+    import("@/modules/leads/telegram-notify"),
   ]);
   const service = createLeadService({
     leadRepository: new DrizzleLeadRepository(),
     rateLimitRepository: new DrizzleRateLimitRepository(),
     sessionSecret: getServerEnv().SESSION_SECRET,
+    notifyLead: notifyLeadTelegram,
   });
 
   return service.create(input, context);

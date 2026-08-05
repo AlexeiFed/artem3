@@ -1,6 +1,6 @@
 import { ContactsEditor } from "@/components/admin/ContactsEditor";
 
-import { AdminPageFrame } from "../layout";
+import { AdminPageFrame } from "@/components/admin/AdminPageFrame";
 
 export default async function AdminContactsPage() {
   let initialContacts: Record<string, unknown> = {};

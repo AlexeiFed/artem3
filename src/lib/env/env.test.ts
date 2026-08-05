@@ -79,6 +79,60 @@ describe("server environment", () => {
     },
   );
 
+  it("parses without optional telegram credentials", async () => {
+    const { parseServerEnv } = await import("./server");
+
+    expect(parseServerEnv(validLocalEnv)).toEqual({
+      ...validLocalEnv,
+      TRUSTED_PROXY_HOPS: 1,
+    });
+  });
+
+  it("parses optional telegram credentials on local and s3 drivers", async () => {
+    const { parseServerEnv } = await import("./server");
+
+    expect(
+      parseServerEnv({
+        ...validLocalEnv,
+        TELEGRAM_BOT_TOKEN: "123:ABC",
+        TELEGRAM_CHAT_ID: "-1001234567890",
+      }),
+    ).toEqual({
+      ...validLocalEnv,
+      TRUSTED_PROXY_HOPS: 1,
+      TELEGRAM_BOT_TOKEN: "123:ABC",
+      TELEGRAM_CHAT_ID: "-1001234567890",
+    });
+
+    expect(
+      parseServerEnv({
+        ...validS3Env,
+        TELEGRAM_BOT_TOKEN: "456:DEF",
+        TELEGRAM_CHAT_ID: "-999",
+      }),
+    ).toEqual({
+      ...validS3Env,
+      TRUSTED_PROXY_HOPS: 1,
+      TELEGRAM_BOT_TOKEN: "456:DEF",
+      TELEGRAM_CHAT_ID: "-999",
+    });
+  });
+
+  it("treats empty telegram env values as absent", async () => {
+    const { parseServerEnv } = await import("./server");
+
+    expect(
+      parseServerEnv({
+        ...validLocalEnv,
+        TELEGRAM_BOT_TOKEN: "",
+        TELEGRAM_CHAT_ID: "",
+      }),
+    ).toEqual({
+      ...validLocalEnv,
+      TRUSTED_PROXY_HOPS: 1,
+    });
+  });
+
   it("rejects weak credentials", async () => {
     const { parseServerEnv } = await import("./server");
 

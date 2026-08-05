@@ -80,19 +80,35 @@ export function createLoginHandler({
           );
         }
         if (error.code === "INVALID_CREDENTIALS") {
+          const rateLimit = error.rateLimit;
+          const remaining = rateLimit?.attemptsRemaining;
+          const limit = rateLimit?.attemptsLimit;
+          const message =
+            remaining === undefined || limit === undefined || !rateLimit
+              ? "Неверная почта или пароль."
+              : `Неверная почта или пароль. Осталось попыток: ${remaining} из ${limit}. Лимит сбросится ${formatResetsAt(rateLimit.resetsAt)}.`;
           return errorResponse(
             401,
             "INVALID_CREDENTIALS",
-            "Неверная почта или пароль.",
+            message,
+            undefined,
+            undefined,
+            rateLimit,
           );
         }
         if (error.code === "RATE_LIMITED") {
+          const rateLimit = error.rateLimit;
+          const retryAfter =
+            error.retryAfterSeconds ?? rateLimit?.retryAfterSeconds ?? 1;
+          const limit = rateLimit?.attemptsLimit ?? 5;
+          const message = `Слишком много попыток: лимит ${limit} за 15 минут. Повторите через ${formatDuration(retryAfter)} (сброс ${formatResetsAt(rateLimit?.resetsAt ?? new Date(Date.now() + retryAfter * 1000).toISOString())}).`;
           return errorResponse(
             429,
             "RATE_LIMITED",
-            "Слишком много попыток. Попробуйте позже.",
+            message,
             undefined,
-            error.retryAfterSeconds,
+            retryAfter,
+            rateLimit,
           );
         }
       }
@@ -114,6 +130,27 @@ export function createLoginHandler({
       );
     }
   };
+}
+
+function formatDuration(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (minutes <= 0) return `${seconds} с`;
+  if (seconds === 0) return `${minutes} мин`;
+  return `${minutes} мин ${seconds} с`;
+}
+
+function formatResetsAt(iso: string): string {
+  try {
+    return new Intl.DateTimeFormat("ru-RU", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      timeZoneName: "short",
+    }).format(new Date(iso));
+  } catch {
+    return iso;
+  }
 }
 
 function serializeSessionCookie(token: string, production: boolean): string {
@@ -139,12 +176,30 @@ function errorResponse(
   message: string,
   fields?: Record<string, string[]>,
   retryAfterSeconds?: number,
+  rateLimit?: {
+    attemptsRemaining: number;
+    attemptsLimit: number;
+    retryAfterSeconds: number;
+    resetsAt: string;
+  },
 ): Response {
   const body = AuthErrorResponseSchema.parse({
     error: {
       code,
       message,
       ...(fields === undefined ? {} : { fields }),
+      ...(retryAfterSeconds === undefined
+        ? {}
+        : { retryAfterSeconds }),
+      ...(rateLimit === undefined
+        ? {}
+        : {
+            attemptsRemaining: rateLimit.attemptsRemaining,
+            attemptsLimit: rateLimit.attemptsLimit,
+            retryAfterSeconds:
+              retryAfterSeconds ?? rateLimit.retryAfterSeconds,
+            resetsAt: rateLimit.resetsAt,
+          }),
     },
   });
 

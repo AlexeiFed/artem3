@@ -12,12 +12,19 @@ const postgresUrlSchema = z
     },
   );
 
+const optionalNonEmptyStringSchema = z.preprocess(
+  (value) => (value === "" || value === undefined ? undefined : value),
+  z.string().min(1).optional(),
+);
+
 const commonServerEnvSchema = z.object({
   DATABASE_URL: postgresUrlSchema,
   SESSION_SECRET: z.string().min(32),
   ADMIN_EMAIL: z.email(),
   ADMIN_PASSWORD: z.string().min(14),
   TRUSTED_PROXY_HOPS: z.coerce.number().int().min(1).max(5).default(1),
+  TELEGRAM_BOT_TOKEN: optionalNonEmptyStringSchema,
+  TELEGRAM_CHAT_ID: optionalNonEmptyStringSchema,
 });
 
 const localMediaEnvSchema = commonServerEnvSchema.extend({

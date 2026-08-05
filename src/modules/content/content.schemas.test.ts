@@ -3,22 +3,26 @@ import { describe, expect, it } from "vitest";
 import { seedContent } from "../../db/seed-data";
 
 import {
+  CertificateSchema,
   HeroSettingsSchema,
+  LandingDataSchema,
   RatingSchema,
   RatingsSettingsSchema,
+  TrustBannerSettingsSchema,
   VkEmbedSchema,
 } from "./content.schemas";
 import type {
   HeroSettings,
   RatingsSettings,
 } from "./content.types";
+import { normalizeHonestySettings } from "./map-landing-data";
 
 const APPROVED_SUBTITLE =
-  "Помогаю решить семейные и имущественные споры без лишнего стресса и затяжных судов";
+  "Нахожу оптимальное решение в семейных и имущественных спорах — через переговоры или в суде. Стоимость работы известна заранее.";
 const APPROVED_METRICS = [
   { value: "11+", label: "лет практики" },
-  { value: "200+", label: "дел доведено до результата" },
-  { value: "0 ₽", label: "первая консультация" },
+  { value: "380+", label: "клиентов получили помощь" },
+  { value: "0 ₽", label: "скрытых платежей" },
 ];
 
 function createValidHeroSettings(): HeroSettings {
@@ -186,5 +190,136 @@ describe("external URL security", () => {
     expect(HeroSettingsSchema.safeParse(createValidHeroSettings()).success).toBe(
       true,
     );
+  });
+});
+
+describe("CertificateSchema", () => {
+  it("accepts a single local diploma scan path", () => {
+    const result = CertificateSchema.safeParse({
+      title: "Диплом юриста, ХГТУ, 2004",
+      imageUrl: "/media/artem-diploma.png",
+      altText: "Диплом о высшем образовании Сысуева Артёма Артуровича",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("allows exactly one certificate in landing data", () => {
+    const landing = structuredClone({
+      ...seedContent.settings.hero,
+      consultation: seedContent.settings.trustBanner.consultation,
+      workflow: seedContent.settings.workflow,
+      honesty: seedContent.settings.trustBanner.honesty,
+      cases: seedContent.cases.map(({ situation, action, result }) => ({
+        situation,
+        action,
+        result,
+      })),
+      ratings: seedContent.settings.ratings,
+      reviews: seedContent.reviews.map(
+        ({ author, quote, imageUrl, source, sourceUrl }) => ({
+          author,
+          quote,
+          imageUrl,
+          source,
+          sourceUrl,
+        }),
+      ),
+      certificates: [
+        {
+          title: "Диплом юриста, ХГТУ, 2004",
+          imageUrl: "/media/artem-diploma.png",
+          altText: "Диплом о высшем образовании Сысуева Артёма Артуровича",
+        },
+      ],
+      faqs: seedContent.faqs.map(({ question, answer }) => ({
+        question,
+        answer,
+      })),
+      contacts: {
+        ...seedContent.settings.contacts,
+        map: seedContent.settings.map,
+      },
+      legal: seedContent.settings.legal,
+      quickLinks: seedContent.services
+        .filter((item) => !item.isHidden)
+        .map(({ slug, title }) => ({
+          slug,
+          label: title,
+          href: `#${slug}`,
+        })),
+      hiddenRisks: seedContent.settings.hero.hiddenRisks,
+      servicesIntro: seedContent.settings.hero.servicesIntro,
+      services: seedContent.services
+        .filter((item) => !item.isHidden)
+        .map(
+          ({
+            slug,
+            title,
+            description,
+            situations,
+            trustNote,
+            priceFromKopecks,
+            isHighValue,
+            ctaLabel,
+          }) => ({
+            slug,
+            title,
+            description,
+            situations,
+            trustNote,
+            priceFromKopecks,
+            isHighValue,
+            ctaLabel,
+          }),
+        ),
+      meta: seedContent.settings.hero.meta,
+      header: seedContent.settings.hero.header,
+      hero: seedContent.settings.hero.hero,
+    });
+
+    expect(LandingDataSchema.safeParse(landing).success).toBe(true);
+  });
+});
+
+describe("normalizeHonestySettings", () => {
+  it("upgrades exact production legacy trust_banner from Postgres", () => {
+    const legacyFromDb = {
+      honesty: {
+        copy:
+          "Я заранее называю сильные и слабые стороны позиции, возможные расходы и процессуальные риски. Если спор экономически невыгоден, скажу об этом до заключения договора.",
+        theme: "Честно о результате",
+        title: "Юрист не может обещать решение суда",
+      },
+      consultation: {
+        cta: {
+          label: "Записаться на разбор",
+          target: "#contacts",
+        },
+        title: "Не общие советы, а рабочая карта дела",
+        eyebrow: "Что будет на консультации",
+        benefits: [
+          "Разберём документы и восстановим хронологию событий.",
+          "Отделим юридически значимые факты от эмоций и предположений.",
+          "Сравним переговорный и судебный сценарии по срокам и затратам.",
+          "Составим список ближайших действий и недостающих доказательств.",
+        ],
+      },
+    };
+
+    const parsed = TrustBannerSettingsSchema.safeParse(
+      normalizeHonestySettings(legacyFromDb),
+    );
+
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.honesty.items).toHaveLength(3);
+      expect(parsed.data.honesty.title).toBe(
+        "Юрист не может обещать решение суда",
+      );
+      expect(parsed.data.consultation.title).toBe(
+        "Не общие советы, а рабочая карта дела",
+      );
+    }
   });
 });

@@ -28,6 +28,7 @@ export interface SiteSettingsRow {
   map: unknown;
   ratings: unknown;
   vkEmbed: unknown;
+  analytics: unknown;
   createdAt: Date;
   updatedAt: Date;
 }

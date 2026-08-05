@@ -1,5 +1,7 @@
 import "server-only";
 
+import { redirect } from "next/navigation";
+
 import type { SafeAdminUser } from "./auth.schemas";
 import { AuthDomainError } from "./auth.service";
 import { ADMIN_SESSION_COOKIE } from "./cookie";
@@ -31,6 +33,24 @@ export async function requireAdmin(
 
   const authenticate = dependencies.authenticate ?? authenticateFromDatabase;
   return authenticate(token, (dependencies.now ?? (() => new Date()))());
+}
+
+/** Для RSC-страниц: битая/протухшая сессия → редирект на логин (cookie чистит proxy/login). */
+export async function requireAdminOrRedirect(
+  nextPath: string,
+  dependencies: RequireAdminDependencies = {},
+): Promise<SafeAdminUser> {
+  try {
+    return await requireAdmin(dependencies);
+  } catch (error) {
+    if (error instanceof AuthDomainError && error.code === "UNAUTHORIZED") {
+      // cookies().delete в RSC нельзя — только redirect; stale cookie сбросит login Set-Cookie.
+      const login = new URL("/admin/login", "http://local.invalid");
+      login.searchParams.set("next", nextPath);
+      redirect(`${login.pathname}${login.search}`);
+    }
+    throw error;
+  }
 }
 
 async function authenticateFromDatabase(

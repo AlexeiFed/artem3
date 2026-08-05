@@ -29,7 +29,7 @@ export const PublicHttpsUrlSchema = z
   });
 
 export const APPROVED_HERO_SUBTITLE =
-  "Помогаю решить семейные и имущественные споры без лишнего стресса и затяжных судов";
+  "Нахожу оптимальное решение в семейных и имущественных спорах — через переговоры или в суде. Стоимость работы известна заранее.";
 
 export const ServiceSlugSchema = z
   .string()
@@ -71,8 +71,8 @@ export const HeroBadgeSchema = z.object({
 
 export const DEFAULT_HERO_METRICS = [
   { value: "11+", label: "лет практики" },
-  { value: "200+", label: "дел доведено до результата" },
-  { value: "0 ₽", label: "первая консультация" },
+  { value: "380+", label: "клиентов получили помощь" },
+  { value: "0 ₽", label: "скрытых платежей" },
 ];
 
 export const HeroMetricSchema = z.object({
@@ -183,10 +183,15 @@ export const ConsultationSchema = z.object({
   cta: CtaSchema,
 });
 
+export const HonestyItemSchema = z.object({
+  title: shortText,
+  copy: longText,
+});
+
 export const HonestyBannerSchema = z.object({
   theme: shortText,
   title: shortText,
-  copy: longText,
+  items: z.array(HonestyItemSchema).length(3),
 });
 
 export const TrustBannerSettingsSchema = z.object({
@@ -213,7 +218,11 @@ export const ContactsSettingsSchema = z.object({
   phone: z.object({
     label: shortText,
     display: shortText,
-    href: z.string().regex(/^tel:\+7\d{10}$/),
+    href: z
+      .string()
+      .regex(/^tel:\+7\d{10}$/, {
+        error: "Формат: tel:+7 и 10 цифр, например tel:+74212931547",
+      }),
   }),
   telegram: z.object({
     label: shortText,
@@ -227,8 +236,17 @@ export const ContactsSettingsSchema = z.object({
     label: shortText,
     url: PublicHttpsUrlSchema,
   }),
+  email: z.object({
+    label: shortText,
+    address: z.email({
+      error: "Укажите корректный email, например artem@vibespace27.ru",
+    }),
+  }),
+  responseSla: mediumText,
   address: mediumText,
   workHours: mediumText,
+  /** Под часами в шапке и контактах; пустая строка — скрыть */
+  hoursNote: z.string().trim().max(160),
 });
 
 export const MapSettingsSchema = z.object({
@@ -280,33 +298,70 @@ export const VkEmbedSettingsSchema = z.discriminatedUnion("enabled", [
   }),
 ]);
 
+/** Public marketing counters — editable in admin, safe to expose on the page. */
+export const AnalyticsSettingsSchema = z.object({
+  metrikaCounterId: z
+    .string()
+    .trim()
+    .regex(/^(\d{0,15})$/u, "Номер счётчика — только цифры")
+    .default(""),
+  /** content=… from Yandex Webmaster / Direct site verification meta */
+  yandexVerificationContent: z
+    .string()
+    .trim()
+    .max(128)
+    .regex(/^[A-Za-z0-9_-]*$/u, "Только латиница, цифры, _ и -")
+    .default(""),
+});
+
+export const DEFAULT_ANALYTICS_SETTINGS: z.infer<typeof AnalyticsSettingsSchema> =
+  {
+    metrikaCounterId: "",
+    yandexVerificationContent: "",
+  };
+
 export const ServiceSchema = z.object({
   slug: ServiceSlugSchema,
   title: shortText,
   description: longText,
-  situations: z.array(mediumText).length(3),
+  situations: z.array(mediumText).min(3).max(6),
   trustNote: mediumText,
   priceFromKopecks: z.number().int().min(0).max(100_000_000),
   isHighValue: z.boolean(),
+  isHidden: z.boolean().default(false),
+  ctaLabel: shortText.default("Получить оценку ситуации"),
 });
+
+export const PublicServiceSchema = ServiceSchema.omit({ isHidden: true });
+
+function assertUniqueServiceSlugs<T extends { slug: string }>(
+  items: T[],
+  context: z.RefinementCtx,
+): void {
+  const seen = new Set<string>();
+  items.forEach((item, index) => {
+    if (seen.has(item.slug)) {
+      context.addIssue({
+        code: "custom",
+        path: [index, "slug"],
+        message: "Slug услуги должен быть уникальным",
+      });
+    }
+    seen.add(item.slug);
+  });
+}
 
 export const ServicesSchema = z
   .array(ServiceSchema)
   .min(1, "Нужна хотя бы одна услуга")
   .max(12)
-  .superRefine((items, context) => {
-    const seen = new Set<string>();
-    items.forEach((item, index) => {
-      if (seen.has(item.slug)) {
-        context.addIssue({
-          code: "custom",
-          path: [index, "slug"],
-          message: "Slug услуги должен быть уникальным",
-        });
-      }
-      seen.add(item.slug);
-    });
-  });
+  .superRefine(assertUniqueServiceSlugs);
+
+export const PublicServicesSchema = z
+  .array(PublicServiceSchema)
+  .min(1, "Нужна хотя бы одна услуга")
+  .max(12)
+  .superRefine(assertUniqueServiceSlugs);
 
 export const CaseSchema = z.object({
   situation: longText,
@@ -329,7 +384,7 @@ export const ReviewSchema = z.object({
 
 export const CertificateSchema = z.object({
   title: mediumText,
-  imageUrl: PublicHttpsUrlSchema,
+  imageUrl: z.union([localAssetUrl, PublicHttpsUrlSchema]),
   altText: mediumText,
 });
 
@@ -344,14 +399,14 @@ export const LandingDataSchema = z.object({
   quickLinks: QuickLinksSchema,
   hiddenRisks: HiddenRisksSchema,
   servicesIntro: ServicesIntroSchema,
-  services: ServicesSchema,
+  services: PublicServicesSchema,
   consultation: ConsultationSchema,
   workflow: WorkflowSettingsSchema,
   honesty: HonestyBannerSchema,
   cases: z.array(CaseSchema).min(1).max(12),
   ratings: RatingsSettingsSchema,
   reviews: z.array(ReviewSchema).min(3).max(6),
-  certificates: z.array(CertificateSchema).min(2).max(4),
+  certificates: z.array(CertificateSchema).min(1).max(4),
   faqs: z.array(FaqSchema).min(6).max(20),
   contacts: ContactsSchema,
   legal: LegalSettingsSchema,

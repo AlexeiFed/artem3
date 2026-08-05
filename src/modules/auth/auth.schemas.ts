@@ -7,6 +7,22 @@ export const LoginInputSchema = z
   })
   .strict();
 
+export const ChangePasswordInputSchema = z
+  .object({
+    currentPassword: z.string().min(14).max(200),
+    newPassword: z.string().min(14).max(200),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (value.currentPassword === value.newPassword) {
+      context.addIssue({
+        code: "custom",
+        path: ["newPassword"],
+        message: "Новый пароль должен отличаться от текущего",
+      });
+    }
+  });
+
 export const SafeAdminUserSchema = z
   .object({
     id: z.uuid(),
@@ -36,11 +52,16 @@ export const AuthErrorResponseSchema = z
         ]),
         message: z.string(),
         fields: z.record(z.string(), z.array(z.string())).optional(),
+        retryAfterSeconds: z.number().int().positive().optional(),
+        attemptsRemaining: z.number().int().min(0).optional(),
+        attemptsLimit: z.number().int().positive().optional(),
+        resetsAt: z.string().datetime().optional(),
       })
       .strict(),
   })
   .strict();
 
 export type LoginInput = z.infer<typeof LoginInputSchema>;
+export type ChangePasswordInput = z.infer<typeof ChangePasswordInputSchema>;
 export type SafeAdminUser = z.infer<typeof SafeAdminUserSchema>;
 export type AuthErrorResponse = z.infer<typeof AuthErrorResponseSchema>;

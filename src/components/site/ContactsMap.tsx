@@ -7,6 +7,7 @@ interface ContactsMapProps {
   longitude: number;
   externalUrl: string;
   apiKey: string | undefined;
+  address?: string;
 }
 
 declare global {
@@ -23,11 +24,18 @@ declare global {
         options?: { suppressMapOpenBlock?: boolean },
       ) => {
         geoObjects: { add(object: unknown): void };
+        setCenter(center: [number, number], zoom?: number): void;
+        container: { fitToViewport(): void };
         destroy(): void;
       };
       Placemark: new (
         geometry: [number, number],
-        properties?: { balloonContent?: string },
+        properties?: {
+          balloonContentHeader?: string;
+          balloonContentBody?: string;
+          hintContent?: string;
+          iconCaption?: string;
+        },
         options?: {
           preset?: string;
           iconColor?: string;
@@ -44,6 +52,7 @@ export function ContactsMap({
   longitude,
   externalUrl,
   apiKey,
+  address = "г. Хабаровск, ул. Ленина, 22, офис 12",
 }: ContactsMapProps) {
   const mapId = useId().replace(/:/g, "");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -54,32 +63,49 @@ export function ContactsMap({
     if (!apiKey || !containerRef.current) return;
 
     let cancelled = false;
+    let resizeObserver: ResizeObserver | null = null;
 
     function initMap() {
       if (cancelled || !window.ymaps || !containerRef.current) return;
       window.ymaps.ready(() => {
         if (cancelled || !containerRef.current) return;
         mapRef.current?.destroy();
+        resizeObserver?.disconnect();
+        const center: [number, number] = [latitude, longitude];
         const map = new window.ymaps!.Map(
           containerRef.current,
           {
-            center: [latitude, longitude],
-            zoom: 16,
+            center,
+            zoom: 17,
             controls: ["zoomControl"],
           },
           { suppressMapOpenBlock: true },
         );
         map.geoObjects.add(
           new window.ymaps!.Placemark(
-            [latitude, longitude],
-            {},
+            center,
             {
-              preset: "islands#circleDotIcon",
+              iconCaption: "Офис",
+              hintContent: "Офис Артёма Сысуева",
+              balloonContentHeader: "Офис Артёма Сысуева",
+              balloonContentBody: address,
+            },
+            {
+              preset: "islands#darkGreenStretchyIcon",
               iconColor: "#3B5942",
             },
           ),
         );
+        map.container.fitToViewport();
+        map.setCenter(center, 17);
         mapRef.current = map;
+
+        if (typeof ResizeObserver !== "undefined" && containerRef.current) {
+          resizeObserver = new ResizeObserver(() => {
+            map.container.fitToViewport();
+          });
+          resizeObserver.observe(containerRef.current);
+        }
       });
     }
 
@@ -102,10 +128,11 @@ export function ContactsMap({
 
     return () => {
       cancelled = true;
+      resizeObserver?.disconnect();
       mapRef.current?.destroy();
       mapRef.current = null;
     };
-  }, [apiKey, latitude, longitude]);
+  }, [address, apiKey, latitude, longitude]);
 
   if (failed || !apiKey) {
     return (

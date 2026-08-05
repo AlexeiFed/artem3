@@ -20,7 +20,9 @@ for (const viewport of viewports) {
         name: "Развод, алименты и раздел имущества в Хабаровске",
       }),
       page.getByRole("button", { name: "Получить оценку ситуации" }),
-      page.getByText("Первая консультация — бесплатная.", { exact: false }),
+      page.getByText("Опишите ваш вопрос — оценю перспективы и подскажу возможные действия.", {
+        exact: false,
+      }),
       page.getByRole("list", { name: "Практика в цифрах" }),
     ];
 

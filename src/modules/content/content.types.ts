@@ -15,6 +15,7 @@ import {
   TrustBannerSettingsSchema,
   VkEmbedSettingsSchema,
   WorkflowSettingsSchema,
+  AnalyticsSettingsSchema,
 } from "./content.schemas";
 
 export type LandingData = z.infer<typeof LandingDataSchema>;
@@ -26,6 +27,7 @@ export type LegalSettings = z.infer<typeof LegalSettingsSchema>;
 export type MapSettings = z.infer<typeof MapSettingsSchema>;
 export type RatingsSettings = z.infer<typeof RatingsSettingsSchema>;
 export type VkEmbedSettings = z.infer<typeof VkEmbedSettingsSchema>;
+export type AnalyticsSettings = z.infer<typeof AnalyticsSettingsSchema>;
 export type ServiceContent = z.infer<typeof ServiceSchema>;
 export type CaseContent = z.infer<typeof CaseSchema>;
 export type FaqContent = z.infer<typeof FaqSchema>;

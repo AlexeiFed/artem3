@@ -26,6 +26,8 @@ export default async function HomePage() {
         data={data.header}
         address={data.contacts.address}
         workHours={data.contacts.workHours}
+        hoursNote={data.contacts.hoursNote}
+        serviceLinks={data.quickLinks}
       />
       <main>
         <Hero data={data.hero} />

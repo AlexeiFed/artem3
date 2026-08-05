@@ -25,8 +25,17 @@ interface ModalFormProps {
 const FOCUSABLE =
   'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), a[href]';
 
+const SUCCESS_TITLE = "Спасибо за обращение! Заявка принята.";
 const SUCCESS_COPY =
-  "Спасибо, заявка принята! Я изучу вашу ситуацию и свяжусь с вами в ближайшее время. Обычно отвечаю в течение 15–30 минут в рабочее время.";
+  "Свяжусь с вами в течение 1 часа в рабочее время (с 9:00 до 18:00 по Хабаровску), чтобы уточнить детали обращения.";
+
+const HIDDEN_SERVICE_BADGES = new Set([
+  "Шапка сайта",
+  "Контакты",
+  "Главный экран",
+  "Hero",
+  "FAQ",
+]);
 
 export function ModalForm({
   service,
@@ -47,6 +56,8 @@ export function ModalForm({
   );
 
   const canSubmit = isDataAgreed && status !== "sending";
+  const serviceBadge =
+    service && !HIDDEN_SERVICE_BADGES.has(service) ? service : undefined;
 
   useEffect(() => {
     const previousFocus = document.activeElement;
@@ -183,7 +194,7 @@ export function ModalForm({
               animate={{ opacity: 1, y: 0 }}
             >
               <p className="eyebrow">Заявка отправлена</p>
-              <h2 id={titleId}>Заявка принята</h2>
+              <h2 id={titleId}>{SUCCESS_TITLE}</h2>
               <p>{SUCCESS_COPY}</p>
               <button type="button" className="button" onClick={onClose}>
                 Хорошо
@@ -198,21 +209,24 @@ export function ModalForm({
               noValidate
             >
               <p className="eyebrow">Конфиденциально</p>
-              <h2 id={titleId}>Обсудить ситуацию</h2>
+              <h2 id={titleId}>Обсудить ваш вопрос</h2>
               <p className="modal-subtitle">
-                Без обязательств. Я свяжусь с вами и скажу возможные варианты
-                решения ситуации.
+                Без обязательств. Уточню детали обращения и помогу разобраться в
+                возможных вариантах действий.
               </p>
-              {service ? <p className="modal-service">{service}</p> : null}
+              {serviceBadge ? (
+                <p className="modal-service">{serviceBadge}</p>
+              ) : null}
 
               <div className="modal-field-row">
                 <div className="modal-field">
-                  <label htmlFor="lead-name">Имя</label>
+                  <label htmlFor="lead-name">Ваше имя</label>
                   <input
                     id="lead-name"
                     ref={nameRef}
                     name="name"
                     autoComplete="name"
+                    placeholder="Введите имя"
                     value={name}
                     onChange={onNameChange}
                     aria-invalid={errors.name ? true : undefined}
@@ -232,7 +246,7 @@ export function ModalForm({
                     type="tel"
                     inputMode="tel"
                     autoComplete="tel"
-                    placeholder="+7 (___) ___-__-__"
+                    placeholder="Введите номер телефона"
                     value={phone}
                     onChange={onPhoneChange}
                     aria-invalid={errors.phone ? true : undefined}
@@ -249,11 +263,12 @@ export function ModalForm({
               </div>
 
               <label className="modal-field" htmlFor="lead-situation">
-                Ситуация <span>(необязательно)</span>
+                Суть вопроса <span>(необязательно)</span>
                 <textarea
                   id="lead-situation"
                   name="situation"
                   rows={3}
+                  placeholder="Например: развод, есть ребёнок, квартира в ипотеке. Хочу понять свои варианты."
                   value={situation}
                   onChange={(event) => setSituation(event.target.value)}
                 />
@@ -271,15 +286,10 @@ export function ModalForm({
                     onChange={(event) => setIsDataAgreed(event.target.checked)}
                   />
                   <span>
-                    Нажимая кнопку &laquo;Отправить заявку&raquo;, я соглашаюсь на
-                    обработку моих персональных данных в соотв. с ФЗ от 27.07.2006
-                    №152-ФЗ на условиях и для целей, определенных{" "}
-                    <a href="/personal-data" target="_blank" rel="noreferrer">
-                      Согласием на обработку персональных данных
-                    </a>
-                    , на условиях и для целей, определенных{" "}
+                    Нажимая кнопку, вы соглашаетесь на обработку персональных
+                    данных согласно{" "}
                     <a href="/privacy" target="_blank" rel="noreferrer">
-                      Политикой конфиденциальности
+                      Политике конфиденциальности
                     </a>
                     .
                   </span>
@@ -297,7 +307,7 @@ export function ModalForm({
                 type="submit"
                 disabled={!canSubmit}
               >
-                {status === "sending" ? "Отправляем…" : "Отправить заявку"}
+                {status === "sending" ? "Отправляем…" : "Получить план действий"}
               </button>
             </motion.form>
           )}
