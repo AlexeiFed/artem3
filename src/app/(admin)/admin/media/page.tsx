@@ -1,19 +1,38 @@
-"use client";
-
-import { MediaUploader } from "@/components/admin/MediaUploader";
+import { MediaLibrary } from "@/components/admin/MediaLibrary";
+import type { MediaLibraryItem } from "@/components/admin/MediaLibrary";
 
 import { AdminPageFrame } from "@/components/admin/AdminPageFrame";
 
-export default function AdminMediaPage() {
+export default async function AdminMediaPage() {
+  let initialItems: MediaLibraryItem[] = [];
+  let loadError: string | null = null;
+
+  try {
+    const { requireAdminOrRedirect } = await import(
+      "@/modules/auth/require-admin"
+    );
+    const { DrizzleMediaRepository } = await import(
+      "@/modules/media/media.service"
+    );
+    await requireAdminOrRedirect("/admin/media");
+    const rows = await new DrizzleMediaRepository().list();
+    initialItems = rows.map((row) => ({
+      id: row.id,
+      url: row.url,
+      altText: row.altText,
+      mimeType: row.mimeType,
+      size: row.size,
+      createdAt: row.createdAt.toISOString(),
+    }));
+  } catch (error) {
+    console.error("[admin/media] load failed", error);
+    loadError =
+      "Не удалось загрузить список медиа. Проверьте PostgreSQL и сессию.";
+  }
+
   return (
     <AdminPageFrame title="Медиа" currentPath="/admin/media">
-      <div className="grid max-w-xl gap-6">
-        <p className="font-sans text-secondary">
-          JPEG/PNG/WebP до 12 МБ, MP4 до 100 МБ. Загрузка идёт напрямую в
-          Timeweb S3 по presigned URL.
-        </p>
-        <MediaUploader />
-      </div>
+      <MediaLibrary initialItems={initialItems} loadError={loadError} />
     </AdminPageFrame>
   );
 }

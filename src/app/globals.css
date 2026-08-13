@@ -1998,6 +1998,7 @@ h2 {
 }
 
 .modal-panel h2 {
+  max-width: none;
   margin-bottom: 0.4rem;
   font-size: clamp(1.55rem, 4.5vw, 2rem);
   line-height: 1.1;
@@ -2254,22 +2255,32 @@ h2 {
 
 .modal-success {
   display: grid;
+  justify-items: stretch;
   gap: 0;
   padding-block: 1.5rem 0.5rem;
+  text-align: center;
 }
 
 .modal-success .eyebrow {
   margin-bottom: 0.85rem;
 }
 
-.modal-success h2 {
-  margin-bottom: 1.25rem;
+.modal-panel .modal-success h2.modal-success-title {
+  width: 100%;
+  max-width: none;
+  margin: 0 0 1.25rem;
+  font-size: clamp(1.25rem, 3.2vw, 1.5rem);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  text-align: center;
 }
 
 .modal-success p {
-  margin: 0;
+  margin: 0 auto;
+  max-width: 22rem;
   color: var(--token-color-text-secondary);
   line-height: 1.65;
+  text-align: center;
 }
 
 .modal-success .button {
@@ -2431,16 +2442,17 @@ h2 {
   }
 
   .hero-dossier {
-    right: 2rem;
+    /* Align with .shell content column — side gutters from shell, not full-bleed */
+    right: 0;
     bottom: 2.75rem;
-    left: 2rem;
+    left: 0;
     width: auto;
   }
 
   .hero-dossier-rule {
-    right: 2rem;
+    right: 0;
     bottom: 2.75rem;
-    left: 2rem;
+    left: 0;
     width: auto;
   }
 

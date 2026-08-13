@@ -1,16 +1,42 @@
 import { describe, expect, it, vi } from "vitest";
 
+const getPublicEnvMock = vi.fn(() => ({
+  NEXT_PUBLIC_SITE_URL: "https://vibespace27.ru",
+  NEXT_PUBLIC_ALLOW_INDEXING: false,
+}));
+
 vi.mock("@/lib/env/public", () => ({
-  getPublicEnv: () => ({
-    NEXT_PUBLIC_SITE_URL: "https://vibespace27.ru",
-  }),
+  getPublicEnv: () => getPublicEnvMock(),
 }));
 
 import robots from "./robots";
 import sitemap from "./sitemap";
 
 describe("robots.txt metadata route", () => {
-  it("allows public pages and points to sitemap", () => {
+  it("blocks all crawlers when indexing is disabled", () => {
+    getPublicEnvMock.mockReturnValue({
+      NEXT_PUBLIC_SITE_URL: "https://vibespace27.ru",
+      NEXT_PUBLIC_ALLOW_INDEXING: false,
+    });
+
+    const result = robots();
+
+    expect(result.host).toBeUndefined();
+    expect(result.sitemap).toBeUndefined();
+    expect(result.rules).toEqual([
+      {
+        userAgent: "*",
+        disallow: "/",
+      },
+    ]);
+  });
+
+  it("allows public pages and points to sitemap when indexing is enabled", () => {
+    getPublicEnvMock.mockReturnValue({
+      NEXT_PUBLIC_SITE_URL: "https://vibespace27.ru",
+      NEXT_PUBLIC_ALLOW_INDEXING: true,
+    });
+
     const result = robots();
 
     expect(result.host).toBe("https://vibespace27.ru");
@@ -26,7 +52,21 @@ describe("robots.txt metadata route", () => {
 });
 
 describe("sitemap.xml metadata route", () => {
-  it("lists public legal and landing URLs", () => {
+  it("returns empty list when indexing is disabled", () => {
+    getPublicEnvMock.mockReturnValue({
+      NEXT_PUBLIC_SITE_URL: "https://vibespace27.ru",
+      NEXT_PUBLIC_ALLOW_INDEXING: false,
+    });
+
+    expect(sitemap()).toEqual([]);
+  });
+
+  it("lists public legal and landing URLs when indexing is enabled", () => {
+    getPublicEnvMock.mockReturnValue({
+      NEXT_PUBLIC_SITE_URL: "https://vibespace27.ru",
+      NEXT_PUBLIC_ALLOW_INDEXING: true,
+    });
+
     const urls = sitemap().map((entry) => entry.url);
 
     expect(urls).toEqual([

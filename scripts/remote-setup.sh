@@ -64,6 +64,7 @@ MEDIA_DRIVER=local
 NEXT_PUBLIC_SITE_URL=${SITE_URL}
 NEXT_PUBLIC_YANDEX_METRIKA_ID=${METRIKA_ID}
 NEXT_PUBLIC_YANDEX_MAPS_API_KEY=${MAPS_KEY}
+NEXT_PUBLIC_ALLOW_INDEXING=${ALLOW_INDEXING:-false}
 ENV
   echo "CREATED_ADMIN_EMAIL=admin@vibespace27.ru"
   echo "CREATED_ADMIN_PASSWORD=${ADMIN_PASSWORD}"
@@ -77,6 +78,7 @@ path = Path(os.environ["ENV_STORE"])
 site = os.environ["SITE_URL"]
 metrika = os.environ.get("METRIKA_ID", "")
 maps = os.environ.get("MAPS_KEY", "")
+allow_indexing = os.environ.get("ALLOW_INDEXING", "false")
 lines = [
     line
     for line in path.read_text().splitlines()
@@ -85,6 +87,7 @@ lines = [
             "NEXT_PUBLIC_SITE_URL=",
             "NEXT_PUBLIC_YANDEX_METRIKA_ID=",
             "NEXT_PUBLIC_YANDEX_MAPS_API_KEY=",
+            "NEXT_PUBLIC_ALLOW_INDEXING=",
         )
     )
 ]
@@ -93,12 +96,32 @@ lines.extend(
         f"NEXT_PUBLIC_SITE_URL={site}",
         f"NEXT_PUBLIC_YANDEX_METRIKA_ID={metrika}",
         f"NEXT_PUBLIC_YANDEX_MAPS_API_KEY={maps}",
+        f"NEXT_PUBLIC_ALLOW_INDEXING={allow_indexing}",
     ]
 )
 path.write_text("\n".join(lines) + "\n")
 print("REUSED_EXISTING_ENV_STORE")
 PY
 fi
+
+# Timeweb: DNS api.telegram.org часто мёртвый — форсим живой DC в ENV_STORE
+python3 - <<'PY'
+import os
+from pathlib import Path
+
+path = Path(os.environ["ENV_STORE"])
+fallback = "149.154.167.220"
+lines = path.read_text().splitlines()
+keys = ("TELEGRAM_API_IP=", "TELEGRAM_API_IPS=", "TELEGRAM_API_BASE=")
+has_override = any(line.startswith(keys) and line.split("=", 1)[1].strip() for line in lines)
+if not has_override:
+    lines = [line for line in lines if not line.startswith("TELEGRAM_API_IP=")]
+    lines.append(f"TELEGRAM_API_IP={fallback}")
+    path.write_text("\n".join(lines) + "\n")
+    print(f"ENSURED_TELEGRAM_API_IP={fallback}")
+else:
+    print("TELEGRAM_API_OVERRIDE_PRESENT")
+PY
 
 cp "${ENV_STORE}" "${REMOTE_DIR}/.env"
 chmod 600 "${REMOTE_DIR}/.env"
@@ -277,6 +300,13 @@ from pathlib import Path
 import json
 import os
 
+def pick(*keys: str, default: str | None = None) -> str | None:
+    for key in keys:
+        value = os.environ.get(key)
+        if value is not None and value != "":
+            return value
+    return default
+
 env = {
     "NODE_ENV": "production",
     "PORT": "${port}",
@@ -285,10 +315,24 @@ env = {
     "SESSION_SECRET": os.environ.get("SESSION_SECRET", ""),
     "TRUSTED_PROXY_HOPS": os.environ.get("TRUSTED_PROXY_HOPS") or "1",
     "MEDIA_DRIVER": os.environ.get("MEDIA_DRIVER") or "local",
+    "ADMIN_EMAIL": os.environ.get("ADMIN_EMAIL", ""),
+    "ADMIN_PASSWORD": os.environ.get("ADMIN_PASSWORD", ""),
     "NEXT_PUBLIC_SITE_URL": os.environ.get("NEXT_PUBLIC_SITE_URL") or "${SITE_URL}",
     "NEXT_PUBLIC_YANDEX_METRIKA_ID": os.environ.get("NEXT_PUBLIC_YANDEX_METRIKA_ID") or "",
     "NEXT_PUBLIC_YANDEX_MAPS_API_KEY": os.environ.get("NEXT_PUBLIC_YANDEX_MAPS_API_KEY") or "",
+    "NEXT_PUBLIC_ALLOW_INDEXING": os.environ.get("NEXT_PUBLIC_ALLOW_INDEXING") or "false",
 }
+# Не кладём пустые TELEGRAM_* — иначе PM2 "" перебьёт значения из .env
+for key, value in {
+    "TELEGRAM_BOT_TOKEN": pick("TELEGRAM_BOT_TOKEN"),
+    "TELEGRAM_CHAT_ID": pick("TELEGRAM_CHAT_ID"),
+    "TELEGRAM_API_IP": pick("TELEGRAM_API_IP", default="149.154.167.220"),
+    "TELEGRAM_API_IPS": pick("TELEGRAM_API_IPS"),
+    "TELEGRAM_API_BASE": pick("TELEGRAM_API_BASE"),
+}.items():
+    if value is not None:
+        env[key] = value
+
 cfg = {
     "apps": [
         {

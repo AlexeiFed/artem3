@@ -74,4 +74,24 @@ describe("Header", () => {
       "#alimenty",
     );
   });
+
+  it("shows Главная in desktop nav and mobile menu", () => {
+    renderHeader();
+
+    const desktopNav = document.querySelector(".desktop-nav");
+    expect(desktopNav).toBeTruthy();
+    expect(
+      desktopNav?.querySelector('a[href="#main"]'),
+    ).toHaveTextContent("Главная");
+
+    fireEvent.click(screen.getByRole("button", { name: "Открыть меню" }));
+
+    const mobileNav = document.querySelector(
+      '[aria-label="Мобильная навигация"]',
+    );
+    expect(mobileNav).toBeTruthy();
+    expect(
+      mobileNav?.querySelector('a[href="#main"]'),
+    ).toHaveTextContent("Главная");
+  });
 });

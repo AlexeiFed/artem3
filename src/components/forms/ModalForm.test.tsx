@@ -70,7 +70,11 @@ describe("global lead modal", () => {
     expect(submit).toBeEnabled();
 
     fireEvent.click(submit);
-    expect(await screen.findByText("Спасибо за обращение! Заявка принята.")).toBeVisible();
+    expect(
+      await screen.findByRole("heading", {
+        name: /Спасибо за обращение!\s*Заявка принята\./,
+      }),
+    ).toBeVisible();
     expect(
       screen.getByText(/Свяжусь с вами в течение 1 часа в рабочее время/),
     ).toBeVisible();
@@ -112,7 +116,11 @@ describe("global lead modal", () => {
     expect(screen.getByLabelText("Телефон")).toHaveValue("+7 (999) 123-45-67");
     fireEvent.click(screen.getByRole("button", { name: "Получить план действий" }));
 
-    expect(await screen.findByText("Спасибо за обращение! Заявка принята.")).toBeVisible();
+    expect(
+      await screen.findByRole("heading", {
+        name: /Спасибо за обращение!\s*Заявка принята\./,
+      }),
+    ).toBeVisible();
     const body = JSON.parse(
       String((fetchMock.mock.calls[0]?.[1] as RequestInit).body),
     ) as Record<string, unknown>;

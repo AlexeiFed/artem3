@@ -25,7 +25,6 @@ interface ModalFormProps {
 const FOCUSABLE =
   'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), a[href]';
 
-const SUCCESS_TITLE = "Спасибо за обращение! Заявка принята.";
 const SUCCESS_COPY =
   "Свяжусь с вами в течение 1 часа в рабочее время (с 9:00 до 18:00 по Хабаровску), чтобы уточнить детали обращения.";
 
@@ -194,7 +193,11 @@ export function ModalForm({
               animate={{ opacity: 1, y: 0 }}
             >
               <p className="eyebrow">Заявка отправлена</p>
-              <h2 id={titleId}>{SUCCESS_TITLE}</h2>
+              <h2 id={titleId} className="modal-success-title">
+                Спасибо за обращение!
+                <br />
+                Заявка принята.
+              </h2>
               <p>{SUCCESS_COPY}</p>
               <button type="button" className="button" onClick={onClose}>
                 Хорошо

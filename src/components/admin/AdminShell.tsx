@@ -2,17 +2,19 @@
 
 import Link from "next/link";
 
+/** Content sections in landing order, then ops/settings below. */
 const NAV_ITEMS = [
-  { href: "/admin", label: "Обзор" },
   { href: "/admin/hero", label: "Hero" },
-  { href: "/admin/services", label: "Услуги" },
   { href: "/admin/xray", label: "Рентген" },
+  { href: "/admin/services", label: "Услуги" },
+  { href: "/admin/workflow", label: "Работа" },
   { href: "/admin/honesty", label: "Честно" },
   { href: "/admin/cases", label: "Кейсы" },
-  { href: "/admin/faq", label: "FAQ" },
   { href: "/admin/reviews", label: "Отзывы" },
-  { href: "/admin/media", label: "Медиа" },
+  { href: "/admin/certificates", label: "Документы" },
+  { href: "/admin/faq", label: "FAQ" },
   { href: "/admin/contacts", label: "Контакты" },
+  { href: "/admin/media", label: "Медиа" },
   { href: "/admin/analytics", label: "Метрика" },
   { href: "/admin/account", label: "Аккаунт" },
   { href: "/admin/legal", label: "Правовые" },
@@ -35,10 +37,7 @@ export function AdminShell({ children, title, currentPath }: AdminShellProps) {
         <nav aria-label="Разделы админки">
           <ul className="grid gap-2">
             {NAV_ITEMS.map((item) => {
-              const active =
-                item.href === "/admin"
-                  ? currentPath === "/admin"
-                  : currentPath.startsWith(item.href);
+              const active = currentPath.startsWith(item.href);
               return (
                 <li key={item.href}>
                   <Link

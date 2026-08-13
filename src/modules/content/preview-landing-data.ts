@@ -1,5 +1,7 @@
 import "server-only";
 
+import { connection } from "next/server";
+
 import { seedContent } from "@/db/seed-data";
 
 import type { LandingData } from "./content.types";
@@ -31,6 +33,10 @@ export function getPreviewLandingData(): LandingData {
 export async function getLandingPageData(): Promise<LandingData> {
   if (!process.env.DATABASE_URL) return getPreviewLandingData();
 
+  // Request-time read so CMS edits appear without a rebuild.
+  // Static prerender was baking build-time DB/seed into HTML forever.
+  await connection();
+
   try {
     const [{ DrizzleContentRepository }, { buildLandingData }] =
       await Promise.all([
@@ -38,7 +44,12 @@ export async function getLandingPageData(): Promise<LandingData> {
         import("./landing-data.service"),
       ]);
     return await buildLandingData(new DrizzleContentRepository());
-  } catch {
+  } catch (error) {
+    console.error({
+      event: "landing_page_data_fallback",
+      category: "persistence",
+      errorClass: error instanceof Error ? error.name : "UnknownError",
+    });
     return getPreviewLandingData();
   }
 }

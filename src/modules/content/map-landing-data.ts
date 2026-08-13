@@ -15,6 +15,7 @@ import {
   WorkflowSettingsSchema,
 } from "./content.schemas";
 import type { LandingData } from "./content.types";
+import { ensureHomeNavItem } from "./ensure-home-nav";
 import { serviceAnchorHref } from "./service-anchors";
 
 export interface LandingContentSource {
@@ -170,7 +171,10 @@ export function mapLandingData(source: LandingContentSource): LandingData {
 
   return LandingDataSchema.parse({
     meta: hero.meta,
-    header: hero.header,
+    header: {
+      ...hero.header,
+      nav: ensureHomeNavItem(hero.header.nav).slice(0, 8),
+    },
     hero: {
       ...hero.hero,
       video: {

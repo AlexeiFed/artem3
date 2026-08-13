@@ -1,5 +1,3 @@
-import { revalidateTag } from "next/cache";
-
 import { errorResponse, okResponse } from "@/lib/http/api-response";
 import { isSameOrigin } from "@/lib/http/origin";
 import {
@@ -12,9 +10,13 @@ import {
   AdminContentDomainError,
   type AdminContentService,
 } from "@/modules/content/admin-content.service";
+import {
+  LANDING_DATA_CACHE_TAG,
+  revalidateLandingDataTag,
+} from "@/modules/content/landing-data-cache";
 
 const ADMIN_BODY_MAXIMUM_BYTES = 64 * 1_024;
-export const LANDING_DATA_CACHE_TAG = "landing-data";
+export { LANDING_DATA_CACHE_TAG };
 
 export interface AdminMutationGuardDependencies {
   requireAdmin(): Promise<SafeAdminUser>;
@@ -111,9 +113,7 @@ export function mapAdminContentError(error: unknown): Response {
   );
 }
 
-export function revalidateLandingDataTag(): void {
-  revalidateTag(LANDING_DATA_CACHE_TAG, "max");
-}
+export { revalidateLandingDataTag };
 
 export async function createDefaultAdminContentService(): Promise<AdminContentService> {
   const [

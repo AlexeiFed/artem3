@@ -96,12 +96,14 @@ describe("server environment", () => {
         ...validLocalEnv,
         TELEGRAM_BOT_TOKEN: "123:ABC",
         TELEGRAM_CHAT_ID: "-1001234567890",
+        TELEGRAM_API_IP: "149.154.167.220",
       }),
     ).toEqual({
       ...validLocalEnv,
       TRUSTED_PROXY_HOPS: 1,
       TELEGRAM_BOT_TOKEN: "123:ABC",
       TELEGRAM_CHAT_ID: "-1001234567890",
+      TELEGRAM_API_IP: "149.154.167.220",
     });
 
     expect(
@@ -109,12 +111,14 @@ describe("server environment", () => {
         ...validS3Env,
         TELEGRAM_BOT_TOKEN: "456:DEF",
         TELEGRAM_CHAT_ID: "-999",
+        TELEGRAM_API_BASE: "https://tg.example",
       }),
     ).toEqual({
       ...validS3Env,
       TRUSTED_PROXY_HOPS: 1,
       TELEGRAM_BOT_TOKEN: "456:DEF",
       TELEGRAM_CHAT_ID: "-999",
+      TELEGRAM_API_BASE: "https://tg.example",
     });
   });
 
@@ -126,6 +130,9 @@ describe("server environment", () => {
         ...validLocalEnv,
         TELEGRAM_BOT_TOKEN: "",
         TELEGRAM_CHAT_ID: "",
+        TELEGRAM_API_IP: "",
+        TELEGRAM_API_IPS: "",
+        TELEGRAM_API_BASE: "",
       }),
     ).toEqual({
       ...validLocalEnv,
@@ -158,6 +165,7 @@ describe("public environment", () => {
     ).toEqual({
       NEXT_PUBLIC_SITE_URL: "https://example.com",
       NEXT_PUBLIC_YANDEX_METRIKA_ID: 12345678,
+      NEXT_PUBLIC_ALLOW_INDEXING: false,
     });
   });
 
@@ -173,7 +181,25 @@ describe("public environment", () => {
     ).toEqual({
       NEXT_PUBLIC_SITE_URL: "https://example.com",
       NEXT_PUBLIC_YANDEX_MAPS_API_KEY: "6e97c31d-b90e-4697-915a-958bace9b546",
+      NEXT_PUBLIC_ALLOW_INDEXING: false,
     });
+  });
+
+  it("defaults indexing to blocked and accepts true flag", async () => {
+    const { parsePublicEnv } = await import("./public");
+
+    expect(
+      parsePublicEnv({
+        NEXT_PUBLIC_SITE_URL: "https://example.com",
+      }).NEXT_PUBLIC_ALLOW_INDEXING,
+    ).toBe(false);
+
+    expect(
+      parsePublicEnv({
+        NEXT_PUBLIC_SITE_URL: "https://example.com",
+        NEXT_PUBLIC_ALLOW_INDEXING: "true",
+      }).NEXT_PUBLIC_ALLOW_INDEXING,
+    ).toBe(true);
   });
 
   it("rejects a non-numeric Metrika id", async () => {

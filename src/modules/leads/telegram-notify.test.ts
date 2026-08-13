@@ -6,8 +6,16 @@ const { getServerEnv } = vi.hoisted(() => ({
   getServerEnv: vi.fn(),
 }));
 
+const { telegramBotCall } = vi.hoisted(() => ({
+  telegramBotCall: vi.fn(),
+}));
+
 vi.mock("@/lib/env/server", () => ({
   getServerEnv,
+}));
+
+vi.mock("./telegram-bot-api", () => ({
+  telegramBotCall,
 }));
 
 import { notifyLeadTelegram } from "./telegram-notify";
@@ -22,11 +30,10 @@ const LEAD_INPUT = {
 
 describe("notifyLeadTelegram", () => {
   beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn());
+    telegramBotCall.mockReset();
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
     vi.clearAllMocks();
   });
 
@@ -35,7 +42,7 @@ describe("notifyLeadTelegram", () => {
 
     await notifyLeadTelegram(LEAD_INPUT);
 
-    expect(fetch).not.toHaveBeenCalled();
+    expect(telegramBotCall).not.toHaveBeenCalled();
   });
 
   it("no-ops when only token is present", async () => {
@@ -43,7 +50,7 @@ describe("notifyLeadTelegram", () => {
 
     await notifyLeadTelegram(LEAD_INPUT);
 
-    expect(fetch).not.toHaveBeenCalled();
+    expect(telegramBotCall).not.toHaveBeenCalled();
   });
 
   it("sends a message when credentials are configured", async () => {
@@ -51,31 +58,29 @@ describe("notifyLeadTelegram", () => {
       TELEGRAM_BOT_TOKEN: "123:ABC",
       TELEGRAM_CHAT_ID: "-1001234567890",
     });
-    vi.mocked(fetch).mockResolvedValue(new Response("{}", { status: 200 }));
+    telegramBotCall.mockResolvedValue({ ok: true, result: { message_id: 1 } });
 
     await notifyLeadTelegram(LEAD_INPUT);
 
-    expect(fetch).toHaveBeenCalledOnce();
-    expect(fetch).toHaveBeenCalledWith(
-      "https://api.telegram.org/bot123:ABC/sendMessage",
+    expect(telegramBotCall).toHaveBeenCalledOnce();
+    expect(telegramBotCall).toHaveBeenCalledWith(
+      "123:ABC",
+      "sendMessage",
       expect.objectContaining({
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        chat_id: "-1001234567890",
+        parse_mode: "HTML",
+        disable_web_page_preview: true,
       }),
     );
 
-    const body = JSON.parse(
-      vi.mocked(fetch).mock.calls[0]?.[1]?.body as string,
-    );
-    expect(body).toMatchObject({
-      chat_id: "-1001234567890",
-      disable_web_page_preview: true,
-    });
-    expect(body.text).toContain("Алексей");
-    expect(body.text).toContain("+79991234567");
-    expect(body.text).toContain("Нужна консультация");
-    expect(body.text).toContain("Раздел имущества");
-    expect(body.text).toContain(LEAD_INPUT.id);
+    const payload = telegramBotCall.mock.calls[0]?.[2] as {
+      text: string;
+    };
+    expect(payload.text).toContain("Алексей");
+    expect(payload.text).toContain("+79991234567");
+    expect(payload.text).toContain("Нужна консультация");
+    expect(payload.text).toContain("Раздел имущества");
+    expect(payload.text).toContain(LEAD_INPUT.id);
   });
 
   it("logs and does not throw when telegram API returns an error", async () => {
@@ -83,9 +88,11 @@ describe("notifyLeadTelegram", () => {
       TELEGRAM_BOT_TOKEN: "123:ABC",
       TELEGRAM_CHAT_ID: "-1001234567890",
     });
-    vi.mocked(fetch).mockResolvedValue(
-      new Response("bad request", { status: 400 }),
-    );
+    telegramBotCall.mockResolvedValue({
+      ok: false,
+      description: "bad request",
+      error_code: 400,
+    });
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     await expect(notifyLeadTelegram(LEAD_INPUT)).resolves.toBeUndefined();
@@ -93,12 +100,12 @@ describe("notifyLeadTelegram", () => {
     errorSpy.mockRestore();
   });
 
-  it("logs and does not throw when fetch rejects", async () => {
+  it("logs and does not throw when telegramBotCall rejects", async () => {
     getServerEnv.mockReturnValue({
       TELEGRAM_BOT_TOKEN: "123:ABC",
       TELEGRAM_CHAT_ID: "-1001234567890",
     });
-    vi.mocked(fetch).mockRejectedValue(new Error("network down"));
+    telegramBotCall.mockRejectedValue(new Error("network down"));
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     await expect(notifyLeadTelegram(LEAD_INPUT)).resolves.toBeUndefined();

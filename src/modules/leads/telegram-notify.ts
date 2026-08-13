@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getServerEnv } from "@/lib/env/server";
+import { telegramBotCall } from "@/modules/leads/telegram-bot-api";
 
 export interface NotifyLeadTelegramInput {
   id: string;
@@ -20,25 +21,19 @@ export async function notifyLeadTelegram(
   }
 
   try {
-    const response = await fetch(
-      `https://api.telegram.org/bot${token}/sendMessage`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: formatLeadMessage(input),
-          parse_mode: "HTML",
-          disable_web_page_preview: true,
-        }),
-      },
-    );
+    const response = await telegramBotCall(token, "sendMessage", {
+      chat_id: chatId,
+      text: formatLeadMessage(input),
+      parse_mode: "HTML",
+      disable_web_page_preview: true,
+    });
 
     if (!response.ok) {
       console.error({
         event: "telegram_notify_failed",
         category: "external",
-        status: response.status,
+        status: response.error_code ?? "ok_false",
+        description: response.description,
         leadId: input.id,
       });
     }

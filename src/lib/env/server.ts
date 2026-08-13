@@ -25,6 +25,12 @@ const commonServerEnvSchema = z.object({
   TRUSTED_PROXY_HOPS: z.coerce.number().int().min(1).max(5).default(1),
   TELEGRAM_BOT_TOKEN: optionalNonEmptyStringSchema,
   TELEGRAM_CHAT_ID: optionalNonEmptyStringSchema,
+  /** Живой DC IP Telegram (обход блокировки DNS на Timeweb). */
+  TELEGRAM_API_IP: optionalNonEmptyStringSchema,
+  /** Список IP через запятую/пробел; приоритетнее одиночного TELEGRAM_API_IP. */
+  TELEGRAM_API_IPS: optionalNonEmptyStringSchema,
+  /** Полный base URL прокси/Worker, напр. https://xxx.workers.dev */
+  TELEGRAM_API_BASE: optionalNonEmptyStringSchema,
 });
 
 const localMediaEnvSchema = commonServerEnvSchema.extend({

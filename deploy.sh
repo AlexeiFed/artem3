@@ -78,6 +78,9 @@ fi
 export NEXT_PUBLIC_SITE_URL="$SITE_URL"
 : "${NEXT_PUBLIC_YANDEX_METRIKA_ID:=}"
 : "${NEXT_PUBLIC_YANDEX_MAPS_API_KEY:=}"
+# Временный домен: по умолчанию закрыт от индексации. На проде: NEXT_PUBLIC_ALLOW_INDEXING=true
+: "${NEXT_PUBLIC_ALLOW_INDEXING:=false}"
+export NEXT_PUBLIC_ALLOW_INDEXING
 
 echo "==> Host: $HOST"
 echo "==> Live: $LIVE_LINK"
@@ -85,6 +88,7 @@ echo "==> Release: $RELEASE_DIR"
 echo "==> Port: $APP_PORT (probe $PROBE_PORT)  pm2: $PM2_NAME"
 echo "==> Site: $SITE_URL"
 echo "==> Metrika ID: ${NEXT_PUBLIC_YANDEX_METRIKA_ID:-empty}"
+echo "==> Allow indexing: $NEXT_PUBLIC_ALLOW_INDEXING"
 echo "==> RESET_DB=${RESET_DB:-0} FORCE_SEED=${FORCE_SEED:-0} FORCE_NPM_CI=${FORCE_NPM_CI:-0}"
 
 if [[ "${REMOTE_BUILD:-0}" != "1" && "${SKIP_BUILD:-0}" != "1" ]]; then
@@ -144,6 +148,7 @@ ssh -o ServerAliveInterval=15 -o ServerAliveCountMax=40 -o ConnectTimeout=20 "$H
   ENV_STORE="$ENV_STORE" \
   METRIKA_ID="${NEXT_PUBLIC_YANDEX_METRIKA_ID}" \
   MAPS_KEY="${NEXT_PUBLIC_YANDEX_MAPS_API_KEY}" \
+  ALLOW_INDEXING="${NEXT_PUBLIC_ALLOW_INDEXING}" \
   REMOTE_BUILD="${REMOTE_BUILD:-0}" \
   RESET_DB="${RESET_DB:-0}" \
   FORCE_SEED="${FORCE_SEED:-0}" \
@@ -157,6 +162,11 @@ if [[ "$HTTP_CODE" != "200" && "$HTTP_CODE" != "304" ]]; then
   echo "WARN: HTTPS smoke не 200 — проверь nginx/PM2 вручную" >&2
   exit 1
 fi
+
+echo "==> nginx upload limit (client_max_body_size)"
+ssh -o ConnectTimeout=20 "$HOST" \
+  "bash '${RELEASE_DIR}/scripts/ensure-nginx-upload-limit.sh'" \
+  || echo "WARN: не удалось обновить nginx body size — загрузки >1MB могут давать 413" >&2
 
 echo "==> Готово: ${SITE_URL}"
 echo "    Админка: ${SITE_URL}/admin/login"

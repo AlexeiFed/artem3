@@ -4,8 +4,10 @@ import { errorResponse } from "@/lib/http/api-response";
 import { isSameOrigin } from "@/lib/http/origin";
 
 import { writeLocalMediaObject } from "./local.storage";
+import { VIDEO_MAX_BYTES } from "./media.schemas";
 
-const BODY_LIMIT = 25 * 1_024 * 1_024;
+/** Must cover the largest allowed media (MP4). Nginx must allow the same. */
+const BODY_LIMIT = VIDEO_MAX_BYTES;
 
 interface LocalUploadDependencies {
   requireAdmin(): Promise<SafeAdminUser>;

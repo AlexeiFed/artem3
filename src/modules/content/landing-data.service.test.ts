@@ -96,6 +96,23 @@ describe("buildLandingData", () => {
     );
   });
 
+  it("restores Главная in header nav when CMS dropped it", async () => {
+    const base = createFakeRepository();
+    const settings = await base.getSiteSettings();
+    if (!settings) throw new Error("Missing settings fixture");
+    const hero = structuredClone(settings.hero) as {
+      header: { nav: Array<{ label: string; href: string }> };
+    };
+    hero.header.nav = hero.header.nav.filter((item) => item.href !== "#main");
+
+    const data = await buildLandingData(createFakeRepository({ hero }));
+
+    expect(data.header.nav[0]).toEqual({ label: "Главная", href: "#main" });
+    expect(data.header.nav.filter((item) => item.href === "#main")).toHaveLength(
+      1,
+    );
+  });
+
   it("maps nullable review images and disabled VK embed exactly", async () => {
     const repository = createFakeRepository({
       vkEmbed: { enabled: false },

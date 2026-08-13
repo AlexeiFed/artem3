@@ -10,6 +10,7 @@ import {
   designTokenCssVariables,
   type DesignTokenCssVariables,
 } from "@/lib/design-tokens";
+import { getPublicEnv } from "@/lib/env/public";
 import { getPublicAnalytics } from "@/modules/content/public-analytics";
 import "./globals.css";
 
@@ -35,6 +36,7 @@ const rootStyle: CSSProperties & DesignTokenCssVariables = {
 
 export async function generateMetadata(): Promise<Metadata> {
   const analytics = await getPublicAnalytics();
+  const allowIndexing = getPublicEnv().NEXT_PUBLIC_ALLOW_INDEXING;
 
   return {
     title: {
@@ -43,6 +45,9 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description:
       "Юридическая помощь по семейным и имущественным спорам в Хабаровске.",
+    robots: allowIndexing
+      ? { index: true, follow: true }
+      : { index: false, follow: false, nocache: true },
     ...(analytics.yandexVerificationContent
       ? {
           verification: {
