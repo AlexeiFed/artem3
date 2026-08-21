@@ -7,7 +7,7 @@ REMOTE_DIR="${REMOTE_DIR:?}"
 LIVE_LINK="${LIVE_LINK:?}"
 SHARED_ROOT="${SHARED_ROOT:?}"
 RELEASES_ROOT="${RELEASES_ROOT:?}"
-KEEP_RELEASES="${KEEP_RELEASES:-3}"
+KEEP_RELEASES="${KEEP_RELEASES:-1}"
 APP_PORT="${APP_PORT:?}"
 PROBE_PORT="${PROBE_PORT:-3011}"
 PM2_NAME="${PM2_NAME:?}"
@@ -423,24 +423,28 @@ if [[ "${live_ok}" != "1" ]]; then
 fi
 echo "local_http=200"
 
-# Keep last N releases
+# KEEP_RELEASES = сколько каталогов оставить, включая текущий.
+# 1 = только live (старый удаляется после health-check). 2 = live + 1 предыдущий.
 python3 - <<PY
 import os
+import shutil
 from pathlib import Path
 
 root = Path(os.environ["RELEASES_ROOT"])
-keep = int(os.environ.get("KEEP_RELEASES", "3"))
+keep = max(1, int(os.environ.get("KEEP_RELEASES", "1")))
 current = Path(os.environ["REMOTE_DIR"]).resolve()
 releases = sorted(
     [p for p in root.iterdir() if p.is_dir() and not p.name.startswith("pre-symlink")],
     key=lambda p: p.name,
 )
-# never delete current
-extra = [p for p in releases if p.resolve() != current]
-to_drop = extra[:-keep] if len(extra) > keep else []
+others = [p for p in releases if p.resolve() != current]
+keep_others = keep - 1
+to_drop = others if keep_others <= 0 else others[:-keep_others]
+for p in root.iterdir():
+    if p.is_dir() and p.name.startswith("pre-symlink"):
+        to_drop.append(p)
 for p in to_drop:
     print(f"PRUNE_RELEASE={p}")
-    import shutil
     shutil.rmtree(p, ignore_errors=True)
 PY
 

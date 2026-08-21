@@ -35,7 +35,7 @@ function openAndFill() {
 function checkConsent() {
   fireEvent.click(
     screen.getByRole("checkbox", {
-      name: /соглашаетесь на обработку персональных данных/i,
+      name: /согласие на обработку персональных данных/i,
     }),
   );
 }
@@ -65,6 +65,17 @@ describe("global lead modal", () => {
     expect(
       screen.queryByRole("checkbox", { name: /получение рассылки/i }),
     ).toBeNull();
+
+    expect(
+      screen.getByRole("link", { name: /согласию на обработку персональных данных/i }),
+    ).toHaveAttribute("href", "/personal-data");
+    expect(
+      screen.getByRole("link", { name: /политике конфиденциальности/i }),
+    ).toHaveAttribute("href", "/privacy");
+    expect(
+      screen.getByText(/Не указывайте ФИО детей, паспортные данные/i),
+    ).toBeVisible();
+    expect(screen.getByText(/ред\. от 19\.08\.2026/i)).toBeVisible();
 
     checkConsent();
     expect(submit).toBeEnabled();

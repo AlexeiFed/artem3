@@ -13,6 +13,8 @@ export interface CreateLeadRecord {
   isDataAgreed: true;
   isMarketingAgreed: boolean;
   consentAt: Date;
+  consentDocumentVersion: string;
+  consentCheckboxText: string;
 }
 
 export interface LeadRepository {
@@ -31,6 +33,8 @@ export class DrizzleLeadRepository implements LeadRepository {
         isDataAgreed: input.isDataAgreed,
         isMarketingAgreed: input.isMarketingAgreed,
         consentAt: input.consentAt,
+        consentDocumentVersion: input.consentDocumentVersion,
+        consentCheckboxText: input.consentCheckboxText,
         ...(input.situation === undefined
           ? {}
           : { situation: input.situation }),

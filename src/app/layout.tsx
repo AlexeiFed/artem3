@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import type { CSSProperties, ReactNode } from "react";
 
-import { YandexMetrika } from "@/components/analytics/YandexMetrika";
+import { ConsentGatedMetrika } from "@/components/analytics/ConsentGatedMetrika";
 import { CookieBanner } from "@/components/CookieBanner";
 import { ModalProvider } from "@/components/forms/ModalProvider";
 import { LenisProvider } from "@/components/motion/LenisProvider";
@@ -69,7 +69,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
       style={rootStyle}
     >
       <body>
-        {metrikaId ? <YandexMetrika counterId={metrikaId} /> : null}
+        {metrikaId ? <ConsentGatedMetrika counterId={metrikaId} /> : null}
         <LenisProvider>
           <ModalProvider metrikaId={metrikaId}>
             {children}

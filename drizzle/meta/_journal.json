@@ -36,6 +36,13 @@
       "when": 1785823113993,
       "tag": "0004_spooky_swordsman",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787094079335,
+      "tag": "0005_famous_whizzer",
+      "breakpoints": true
     }
   ]
 }

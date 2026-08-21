@@ -7,6 +7,7 @@ const STATIC_PATHS = [
   "/privacy",
   "/personal-data",
   "/cookies",
+  "/usloviya",
 ] as const;
 
 /** https://vibespace27.ru/sitemap.xml — для Яндекс.Вебмастера / Директа */

@@ -20,7 +20,6 @@ describe("POST /api/admin/logout", () => {
     const handler = createLogoutHandler({
       logout,
       siteUrl: "https://example.test",
-      production: true,
     });
 
     const response = await handler(

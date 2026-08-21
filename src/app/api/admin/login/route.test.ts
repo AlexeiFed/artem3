@@ -36,7 +36,6 @@ describe("POST /api/admin/login", () => {
     const handler = createLoginHandler({
       login,
       siteUrl: "https://example.test",
-      production: true,
       now: () => new Date("2026-07-12T10:00:00.000Z"),
     });
 
@@ -53,6 +52,38 @@ describe("POST /api/admin/login", () => {
     expect(cookie).toMatch(/Path=\//i);
     expect(cookie).toMatch(/Max-Age=604800/i);
     expect(cookie).toMatch(/Secure/i);
+  });
+
+  it("does not set Secure when the configured site URL is http", async () => {
+    const login = vi.fn().mockResolvedValue({
+      token: "A".repeat(43),
+      expiresAt: new Date("2026-07-19T10:00:00.000Z"),
+      user: USER,
+    });
+    const handler = createLoginHandler({
+      login,
+      siteUrl: "http://213.171.15.166",
+    });
+
+    const response = await handler(
+      new Request("http://213.171.15.166/api/admin/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Origin: "http://213.171.15.166",
+          "x-real-ip": "203.0.113.5",
+        },
+        body: JSON.stringify({
+          email: "admin@example.com",
+          password: "correct-password",
+        }),
+      }),
+    );
+    const cookie = response.headers.get("set-cookie");
+
+    expect(response.status).toBe(200);
+    expect(cookie).toContain(`admin_session=${"A".repeat(43)}`);
+    expect(cookie).not.toMatch(/;\s*Secure/i);
   });
 
   it("rejects a mismatched or absent Origin before login", async () => {

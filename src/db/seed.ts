@@ -84,6 +84,14 @@ async function runSeed(): Promise<void> {
         .values(settings)
         .onConflictDoNothing();
 
+      await transaction
+        .update(siteSettings)
+        .set({
+          legal: settings.legal,
+          updatedAt: new Date(),
+        })
+        .where(eq(siteSettings.id, "default"));
+
       // Legacy honesty.copy → items (не трогаем остальные settings).
       const [existingSettings] = await transaction
         .select({ trustBanner: siteSettings.trustBanner })
@@ -114,7 +122,26 @@ async function runSeed(): Promise<void> {
         .insert(services)
         .values(serviceRows)
         .onConflictDoNothing();
+
+      const razvod = serviceRows[0];
+      if (razvod) {
+        await transaction
+          .update(services)
+          .set({ trustNote: razvod.trustNote, updatedAt: new Date() })
+          .where(eq(services.id, razvod.id));
+      }
       await transaction.insert(cases).values(caseRows).onConflictDoNothing();
+      for (const row of caseRows) {
+        await transaction
+          .update(cases)
+          .set({
+            situation: row.situation,
+            action: row.action,
+            result: row.result,
+            updatedAt: new Date(),
+          })
+          .where(eq(cases.id, row.id));
+      }
       await transaction.insert(faqs).values(faqRows).onConflictDoNothing();
       await transaction
         .insert(reviews)

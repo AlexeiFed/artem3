@@ -2,6 +2,12 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 
+import {
+  readCookieConsent,
+  subscribeCookieConsent,
+} from "@/lib/cookie-consent";
+import { designTokens } from "@/lib/design-tokens";
+
 interface ContactsMapProps {
   latitude: number;
   longitude: number;
@@ -58,9 +64,16 @@ export function ContactsMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<{ destroy(): void } | null>(null);
   const [failed, setFailed] = useState(!apiKey);
+  const [trackingAllowed, setTrackingAllowed] = useState(false);
 
   useEffect(() => {
-    if (!apiKey || !containerRef.current) return;
+    const sync = () => setTrackingAllowed(readCookieConsent());
+    sync();
+    return subscribeCookieConsent(sync);
+  }, []);
+
+  useEffect(() => {
+    if (!trackingAllowed || !apiKey || !containerRef.current) return;
 
     let cancelled = false;
     let resizeObserver: ResizeObserver | null = null;
@@ -92,7 +105,7 @@ export function ContactsMap({
             },
             {
               preset: "islands#darkGreenStretchyIcon",
-              iconColor: "#3B5942",
+              iconColor: designTokens.color.accentSage,
             },
           ),
         );
@@ -132,9 +145,9 @@ export function ContactsMap({
       mapRef.current?.destroy();
       mapRef.current = null;
     };
-  }, [address, apiKey, latitude, longitude]);
+  }, [address, apiKey, latitude, longitude, trackingAllowed]);
 
-  if (failed || !apiKey) {
+  if (!trackingAllowed || failed || !apiKey) {
     return (
       <a
         className="map-panel map-panel-fallback"

@@ -46,6 +46,10 @@ export function Contacts({
                 </a>
               </div>
               <p className="contacts-sla">{contacts.responseSla}</p>
+              <p className="contacts-sla">
+                Переписка в MAX, Telegram и WhatsApp идёт по правилам этих
+                платформ.
+              </p>
             </div>
             <div className="contacts-location">
               <address>{contacts.address}</address>
@@ -81,6 +85,7 @@ export function Contacts({
             <a href="/personal-data">
               Согласие на обработку персональных данных
             </a>
+            <a href="/usloviya">Условия обращения через сайт</a>
           </nav>
           <a
             href="https://vk.com/tvoe_pravo_tut"

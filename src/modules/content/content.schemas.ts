@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { DEFAULT_TERMS_TEXT } from "./legal-copy";
+
 const shortText = z.string().trim().min(1).max(160);
 const mediumText = z.string().trim().min(1).max(500);
 const longText = z.string().trim().min(1).max(2_500);
@@ -288,6 +290,7 @@ export const LegalSettingsSchema = z.object({
   cookiesConsentText: legalPageText,
   nonPublicOfferText: mediumText,
   personalDataText: legalPageText,
+  termsText: legalPageText.default(DEFAULT_TERMS_TEXT),
 });
 
 export const VkEmbedSettingsSchema = z.discriminatedUnion("enabled", [

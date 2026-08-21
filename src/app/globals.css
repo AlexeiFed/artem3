@@ -1456,6 +1456,14 @@ h2 {
   );
 }
 
+.reviews-disclaimer {
+  max-width: 40rem;
+  margin: 0 0 1.5rem;
+  color: var(--token-color-text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
 .rating-row {
   display: grid;
   gap: 0.8rem;
@@ -2122,6 +2130,13 @@ h2 {
     width: min(100%, 30rem);
     max-height: calc(100dvh - 2rem);
   }
+}
+
+.form-legal-hint {
+  margin: 0.35rem 0 0;
+  color: var(--token-color-text-secondary);
+  font-size: 0.68rem;
+  line-height: 1.5;
 }
 
 .form-legal {

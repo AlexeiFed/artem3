@@ -8,6 +8,10 @@ import {
   type LeadFieldErrors,
 } from "./lead.schemas";
 import type { LeadRepository } from "./lead.repository";
+import {
+  PERSONAL_DATA_CONSENT_CHECKBOX_TEXT,
+  PERSONAL_DATA_CONSENT_VERSION,
+} from "./personal-data-consent";
 import { InvalidRussianPhoneError, normalizeRussianPhone } from "./phone";
 import type { RateLimitRepository } from "./rate-limit.repository";
 
@@ -144,6 +148,8 @@ export function createLeadService({
           isDataAgreed: parsed.data.isDataAgreed,
           isMarketingAgreed: parsed.data.isMarketingAgreed,
           consentAt: context.now,
+          consentDocumentVersion: PERSONAL_DATA_CONSENT_VERSION,
+          consentCheckboxText: PERSONAL_DATA_CONSENT_CHECKBOX_TEXT,
           ...(parsed.data.situation === undefined
             ? {}
             : { situation: parsed.data.situation }),

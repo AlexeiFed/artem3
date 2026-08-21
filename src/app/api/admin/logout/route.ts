@@ -8,13 +8,11 @@ import {
 interface LogoutHandlerDependencies {
   logout(token: string): Promise<void>;
   siteUrl: string;
-  production?: boolean;
 }
 
 export function createLogoutHandler({
   logout,
   siteUrl,
-  production = false,
 }: LogoutHandlerDependencies): (request: Request) => Promise<Response> {
   return async function handleLogout(request: Request): Promise<Response> {
     if (!isSameOrigin(request, siteUrl)) {
@@ -27,7 +25,9 @@ export function createLogoutHandler({
       });
     }
 
-    const cookie = expiredSessionCookie(production);
+    const cookie = expiredSessionCookie(
+      new URL(siteUrl).protocol === "https:",
+    );
     const token = readSessionToken(request.headers.get("cookie"));
     if (token) {
       try {
@@ -69,6 +69,5 @@ export async function POST(request: Request): Promise<Response> {
   return createLogoutHandler({
     logout: logoutFromDatabase,
     siteUrl: getPublicEnv().NEXT_PUBLIC_SITE_URL,
-    production: process.env.NODE_ENV === "production",
   })(request);
 }

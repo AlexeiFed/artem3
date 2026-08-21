@@ -74,6 +74,7 @@ describe("sitemap.xml metadata route", () => {
       "https://vibespace27.ru/privacy",
       "https://vibespace27.ru/personal-data",
       "https://vibespace27.ru/cookies",
+      "https://vibespace27.ru/usloviya",
     ]);
   });
 });

@@ -7,6 +7,7 @@ const PUBLIC_LANDING_PATHS = [
   "/privacy",
   "/cookies",
   "/personal-data",
+  "/usloviya",
 ] as const;
 
 /** Invalidates tagged landing data and public pages after CMS mutations. */

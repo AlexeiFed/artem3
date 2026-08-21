@@ -23,6 +23,7 @@ export function LegalEditor({ initialLegal, loadError }: LegalEditorProps) {
           privacyText: String(legal.privacyText ?? ""),
           cookiesConsentText: String(legal.cookiesConsentText ?? ""),
           personalDataText: String(legal.personalDataText ?? ""),
+          termsText: String(legal.termsText ?? ""),
           nonPublicOfferText: String(legal.nonPublicOfferText ?? ""),
         }}
         fields={[
@@ -43,6 +44,11 @@ export function LegalEditor({ initialLegal, loadError }: LegalEditorProps) {
             type: "textarea",
           },
           {
+            name: "termsText",
+            label: "Условия обращения через сайт (/usloviya)",
+            type: "textarea",
+          },
+          {
             name: "nonPublicOfferText",
             label: "Отказ от оферты",
             type: "textarea",
@@ -54,6 +60,7 @@ export function LegalEditor({ initialLegal, loadError }: LegalEditorProps) {
             privacyText: value.privacyText,
             cookiesConsentText: value.cookiesConsentText,
             personalDataText: value.personalDataText,
+            termsText: value.termsText,
             nonPublicOfferText: value.nonPublicOfferText,
           };
           const response = await fetch("/api/admin/content/settings", {

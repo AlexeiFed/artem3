@@ -3,24 +3,17 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
+import {
+  COOKIE_CONSENT_KEY,
+  acceptCookieConsent,
+  readCookieConsent,
+  subscribeCookieConsent,
+} from "@/lib/cookie-consent";
 import { designTokens } from "@/lib/design-tokens";
 
-export const COOKIE_CONSENT_KEY = "artem-cookie-consent";
+export { COOKIE_CONSENT_KEY };
 
 const SHOW_DELAY_MS = 650;
-
-function subscribeConsent(onStoreChange: () => void) {
-  window.addEventListener("storage", onStoreChange);
-  return () => window.removeEventListener("storage", onStoreChange);
-}
-
-function readConsent(): boolean {
-  try {
-    return localStorage.getItem(COOKIE_CONSENT_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
 
 function getServerConsentSnapshot() {
   return true;
@@ -29,8 +22,8 @@ function getServerConsentSnapshot() {
 export function CookieBanner() {
   const reduced = useReducedMotion();
   const hasConsent = useSyncExternalStore(
-    subscribeConsent,
-    readConsent,
+    subscribeCookieConsent,
+    readCookieConsent,
     getServerConsentSnapshot,
   );
   const [visible, setVisible] = useState(false);
@@ -44,11 +37,7 @@ export function CookieBanner() {
   }, [hasConsent]);
 
   function accept() {
-    try {
-      localStorage.setItem(COOKIE_CONSENT_KEY, "1");
-    } catch {
-      // ignore quota / private mode
-    }
+    acceptCookieConsent();
     setVisible(false);
   }
 
@@ -68,10 +57,11 @@ export function CookieBanner() {
           }}
         >
           <p className="cookie-banner-text">
-            Мы используем файлы cookie. Это помогает нам анализировать
-            взаимодействие посетителей с сайтом и делать его лучше. Продолжая
-            пользоваться сайтом, вы соглашаетесь с{" "}
-            <a href="/cookies">использованием cookie</a>.
+            Сайт использует файлы cookie, Яндекс.Карты и при подключении —
+            Яндекс.Метрику, чтобы карта и аналитика работали. Нажимая «ОК», вы
+            даёте ИП Сысуеву А.А. согласие на это. Подробности — в{" "}
+            <a href="/cookies">Согласии на cookie</a>. Если не согласны —
+            отключите cookie в браузере или покиньте сайт.
           </p>
           <button type="button" className="cookie-banner-ok" onClick={accept}>
             ОК

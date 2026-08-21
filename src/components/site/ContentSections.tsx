@@ -234,6 +234,10 @@ export function Reviews({
       <div className="shell">
         <p className="eyebrow">Доверие</p>
         <h2>{ratings.heading}</h2>
+        <p className="reviews-disclaimer">
+          Отзывы перепечатаны с публичных страниц 2ГИС и Яндекса. Формулировки
+          авторов сохранены.
+        </p>
         <div className="rating-row">
           {ratings.items.map((rating) => (
             <a

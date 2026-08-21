@@ -17,7 +17,6 @@ import { extractTrustedClientIp } from "@/modules/leads/client-ip";
 interface LoginHandlerDependencies {
   login(input: unknown, context: LoginContext): Promise<LoginResult>;
   siteUrl: string;
-  production?: boolean;
   trustedProxyHops?: number;
   now?: () => Date;
 }
@@ -29,7 +28,6 @@ const LOGIN_BODY_MAXIMUM_BYTES = 8 * 1_024;
 export function createLoginHandler({
   login,
   siteUrl,
-  production = false,
   trustedProxyHops = 1,
   now = () => new Date(),
 }: LoginHandlerDependencies): (request: Request) => Promise<Response> {
@@ -66,7 +64,7 @@ export function createLoginHandler({
         status: 200,
         headers: {
           ...NO_STORE_HEADERS,
-          "Set-Cookie": serializeSessionCookie(result.token, production),
+          "Set-Cookie": serializeSessionCookie(result.token, siteUrl),
         },
       });
     } catch (error) {
@@ -153,14 +151,15 @@ function formatResetsAt(iso: string): string {
   }
 }
 
-function serializeSessionCookie(token: string, production: boolean): string {
+function serializeSessionCookie(token: string, siteUrl: string): string {
+  const secure = new URL(siteUrl).protocol === "https:";
   return [
     `admin_session=${token}`,
     "HttpOnly",
     "SameSite=Strict",
     "Path=/",
     `Max-Age=${COOKIE_MAX_AGE_SECONDS}`,
-    ...(production ? ["Secure"] : []),
+    ...(secure ? ["Secure"] : []),
   ].join("; ");
 }
 
@@ -245,7 +244,6 @@ export async function POST(request: Request): Promise<Response> {
   const handler = createLoginHandler({
     login: loginWithDatabase,
     siteUrl: getPublicEnv().NEXT_PUBLIC_SITE_URL,
-    production: process.env.NODE_ENV === "production",
     trustedProxyHops: getServerEnv().TRUSTED_PROXY_HOPS,
   });
   return handler(request);

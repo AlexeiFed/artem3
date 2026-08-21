@@ -15,6 +15,7 @@ import {
   validatePersonName,
   validateRussianPhoneInput,
 } from "@/modules/leads/lead-form.validation";
+import { PERSONAL_DATA_CONSENT_VERSION } from "@/modules/leads/personal-data-consent";
 
 interface ModalFormProps {
   service: string | undefined;
@@ -276,6 +277,10 @@ export function ModalForm({
                   onChange={(event) => setSituation(event.target.value)}
                 />
               </label>
+              <p className="form-legal-hint">
+                Не указывайте ФИО детей, паспортные данные, диагнозы и сведения
+                о третьих лицах — достаточно общей фабулы.
+              </p>
 
               <fieldset className="form-legal" aria-labelledby={consentHeadingId}>
                 <legend id={consentHeadingId} className="form-legal-heading">
@@ -289,8 +294,13 @@ export function ModalForm({
                     onChange={(event) => setIsDataAgreed(event.target.checked)}
                   />
                   <span>
-                    Нажимая кнопку, вы соглашаетесь на обработку персональных
-                    данных согласно{" "}
+                    Даю согласие на обработку персональных данных согласно{" "}
+                    <a href="/personal-data" target="_blank" rel="noreferrer">
+                      Согласию на обработку персональных данных
+                    </a>{" "}
+                    (ред. от{" "}
+                    {PERSONAL_DATA_CONSENT_VERSION.split("-").reverse().join(".")}
+                    ) и{" "}
                     <a href="/privacy" target="_blank" rel="noreferrer">
                       Политике конфиденциальности
                     </a>

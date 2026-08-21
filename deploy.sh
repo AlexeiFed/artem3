@@ -14,19 +14,20 @@
 #   - при ошибке старый процесс остаётся
 #
 # Опции:
-#   DEPLOY_HOST=root@147.45.161.75
+#   DEPLOY_HOST=root@213.171.15.166
 #   DEPLOY_PATH=/var/www/vibespace          # symlink «текущий»
 #   DEPLOY_RELEASES=/var/www/vibespace-releases
 #   DEPLOY_SHARED=/var/www/vibespace-shared # uploads и пр.
 #   DEPLOY_PORT=3001
 #   DEPLOY_PROBE_PORT=3011                  # временный порт для проверки
-#   DEPLOY_SITE_URL=https://vibespace27.ru
+#   DEPLOY_SITE_URL=http://213.171.15.166
 #   SKIP_BUILD=1
+#   SKIP_HTTPS_SMOKE=1                      # пока DNS не смотрит на этот VPS
 #   REMOTE_BUILD=1
 #   FORCE_NPM_CI=1                          # принудительно npm ci (локально и на сервере)
 #   RESET_DB=1                              # ЯВНО снести и пересоздать БД (опасно)
 #   FORCE_SEED=1                            # принудительный seed (onConflictDoNothing)
-#   KEEP_RELEASES=3
+#   KEEP_RELEASES=1                         # всего релизов после switch (текущий). 2 = текущий + 1 предыдущий
 #
 # Секреты: /root/.config/artem-vibespace.env
 
@@ -35,17 +36,17 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
 
-HOST="${DEPLOY_HOST:-root@147.45.161.75}"
+HOST="${DEPLOY_HOST:-root@213.171.15.166}"
 LIVE_LINK="${DEPLOY_PATH:-/var/www/vibespace}"
 RELEASES_ROOT="${DEPLOY_RELEASES:-/var/www/vibespace-releases}"
 SHARED_ROOT="${DEPLOY_SHARED:-/var/www/vibespace-shared}"
 APP_PORT="${DEPLOY_PORT:-3001}"
 PROBE_PORT="${DEPLOY_PROBE_PORT:-3011}"
-SITE_URL="${DEPLOY_SITE_URL:-https://vibespace27.ru}"
+SITE_URL="${DEPLOY_SITE_URL:-http://213.171.15.166}"
 NODE_VERSION="${DEPLOY_NODE_VERSION:-22}"
 PM2_NAME="${DEPLOY_PM2_NAME:-vibespace}"
 ENV_STORE="/root/.config/artem-vibespace.env"
-KEEP_RELEASES="${KEEP_RELEASES:-3}"
+KEEP_RELEASES="${KEEP_RELEASES:-1}"
 RELEASE_ID="$(date -u +%Y%m%d-%H%M%S)"
 RELEASE_DIR="${RELEASES_ROOT}/${RELEASE_ID}"
 
@@ -155,11 +156,11 @@ ssh -o ServerAliveInterval=15 -o ServerAliveCountMax=40 -o ConnectTimeout=20 "$H
   FORCE_NPM_CI="${FORCE_NPM_CI:-0}" \
   bash "$RELEASE_DIR/scripts/remote-setup.sh"
 
-echo "==> HTTPS smoke"
-HTTP_CODE="$(curl -sS -o /dev/null -w "%{http_code}" "https://vibespace27.ru/" || echo 000)"
-echo "https_vibespace27=${HTTP_CODE}"
+echo "==> Smoke ${SITE_URL}/"
+HTTP_CODE="$(curl -sS -o /dev/null -w "%{http_code}" "${SITE_URL}/" || echo 000)"
+echo "smoke=${HTTP_CODE}"
 if [[ "$HTTP_CODE" != "200" && "$HTTP_CODE" != "304" ]]; then
-  echo "WARN: HTTPS smoke не 200 — проверь nginx/PM2 вручную" >&2
+  echo "WARN: smoke не 200 — проверь nginx/PM2 вручную" >&2
   exit 1
 fi
 

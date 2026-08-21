@@ -122,4 +122,15 @@ describe("database schema contracts", () => {
     expect(columns.serviceName?.notNull).toBe(false);
     expect(columns.serviceId?.name).toBe("service_id");
   });
+
+  it("stores consent document version and checkbox text on the lead", () => {
+    const columns = getTableColumns(leads);
+
+    expect(columns.consentDocumentVersion?.name).toBe(
+      "consent_document_version",
+    );
+    expect(columns.consentDocumentVersion?.notNull).toBe(true);
+    expect(columns.consentCheckboxText?.name).toBe("consent_checkbox_text");
+    expect(columns.consentCheckboxText?.notNull).toBe(true);
+  });
 });

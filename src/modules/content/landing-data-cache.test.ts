@@ -26,6 +26,7 @@ describe("revalidateLandingDataTag", () => {
     expect(revalidatePath).toHaveBeenCalledWith("/privacy", "page");
     expect(revalidatePath).toHaveBeenCalledWith("/cookies", "page");
     expect(revalidatePath).toHaveBeenCalledWith("/personal-data", "page");
-    expect(revalidatePath).toHaveBeenCalledTimes(4);
+    expect(revalidatePath).toHaveBeenCalledWith("/usloviya", "page");
+    expect(revalidatePath).toHaveBeenCalledTimes(5);
   });
 });

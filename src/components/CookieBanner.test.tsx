@@ -40,6 +40,10 @@ describe("CookieBanner", () => {
       name: /использование cookie/i,
     });
     expect(banner).toBeInTheDocument();
+    expect(banner).toHaveTextContent(/Яндекс\.Карты/);
+    expect(
+      screen.getByRole("link", { name: /согласии на cookie/i }),
+    ).toHaveAttribute("href", "/cookies");
 
     fireEvent.click(screen.getByRole("button", { name: "ОК" }));
     expect(localStorage.getItem(COOKIE_CONSENT_KEY)).toBe("1");

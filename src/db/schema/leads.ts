@@ -39,6 +39,10 @@ export const leads = pgTable(
     isDataAgreed: boolean("is_data_agreed").default(false).notNull(),
     isMarketingAgreed: boolean("is_marketing_agreed").default(false).notNull(),
     consentAt: timestampWithTimezone("consent_at").defaultNow().notNull(),
+    consentDocumentVersion: text("consent_document_version")
+      .default("")
+      .notNull(),
+    consentCheckboxText: text("consent_checkbox_text").default("").notNull(),
     createdAt: timestampWithTimezone("created_at").defaultNow().notNull(),
     updatedAt: timestampWithTimezone("updated_at").defaultNow().notNull(),
   },

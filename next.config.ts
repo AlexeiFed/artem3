@@ -13,13 +13,19 @@ const contentSecurityPolicy = [
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
-  "upgrade-insecure-requests",
-].join("; ");
+];
+
+// На http://IP браузер иначе апгрейдит /_next/* на https и стили умирают (TLS нет).
+if ((process.env.NEXT_PUBLIC_SITE_URL ?? "").startsWith("https://")) {
+  contentSecurityPolicy.push("upgrade-insecure-requests");
+}
+
+const contentSecurityPolicyHeader = contentSecurityPolicy.join("; ");
 
 const securityHeaders = [
   {
     key: "Content-Security-Policy",
-    value: contentSecurityPolicy,
+    value: contentSecurityPolicyHeader,
   },
   {
     key: "Referrer-Policy",
