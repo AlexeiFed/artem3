@@ -23,6 +23,7 @@ const STATUS_LABELS: Record<LeadStatus, string> = {
 
 interface LeadsPanelProps {
   initialItems: LeadRow[];
+  initialNextCursor: string | null;
   loadError: string | null;
 }
 
@@ -67,9 +68,15 @@ function SituationCell({ text }: { text: string | null }) {
   );
 }
 
-export function LeadsPanel({ initialItems, loadError }: LeadsPanelProps) {
+export function LeadsPanel({
+  initialItems,
+  initialNextCursor,
+  loadError,
+}: LeadsPanelProps) {
   const [items, setItems] = useState(initialItems);
+  const [nextCursor, setNextCursor] = useState(initialNextCursor);
   const [error, setError] = useState(loadError);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   async function downloadCsv(): Promise<void> {
     const response = await fetch("/api/admin/leads/export", {
@@ -185,6 +192,45 @@ export function LeadsPanel({ initialItems, loadError }: LeadsPanelProps) {
           </tbody>
         </table>
       </div>
+
+      {nextCursor ? (
+        <button
+          type="button"
+          className="mt-4 rounded-control border border-sage px-4 py-2 font-sans text-sm text-secondary disabled:opacity-50"
+          disabled={loadingMore}
+          onClick={() => {
+            void (async () => {
+              setLoadingMore(true);
+              const response = await fetch(
+                `/api/admin/leads?cursor=${encodeURIComponent(nextCursor)}`,
+                { cache: "no-store" },
+              );
+              setLoadingMore(false);
+              if (!response.ok) {
+                const parsed = AdminApiErrorSchema.safeParse(
+                  await response.json(),
+                );
+                setError(
+                  parsed.success
+                    ? parsed.data.error.message
+                    : "Не удалось загрузить ещё заявки",
+                );
+                return;
+              }
+              const body = (await response.json()) as {
+                data: {
+                  items: LeadRow[];
+                  nextCursor: string | null;
+                };
+              };
+              setItems((current) => [...current, ...body.data.items]);
+              setNextCursor(body.data.nextCursor);
+            })();
+          }}
+        >
+          {loadingMore ? "Загружаю…" : "Показать ещё"}
+        </button>
+      ) : null}
 
       {error ? (
         <p className="mt-4 text-sm text-error" role="alert">

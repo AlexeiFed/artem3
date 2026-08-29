@@ -1,6 +1,7 @@
 import "server-only";
 
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, lt, or } from "drizzle-orm";
+import { z } from "zod";
 
 import { getDb } from "@/db/client";
 import { leads } from "@/db/schema";
@@ -9,6 +10,30 @@ import {
   UpdateLeadStatusSchema,
   type LeadStatus,
 } from "./admin-leads.schemas";
+
+export const LEADS_PAGE_DEFAULT = 50;
+export const LEADS_PAGE_MAX = 100;
+export const LEADS_EXPORT_MAX_ROWS = 5_000;
+
+const LeadListQuerySchema = z.object({
+  limit: z.number().int().min(1).max(LEADS_PAGE_MAX).default(LEADS_PAGE_DEFAULT),
+  cursor: z
+    .string()
+    .transform((value, context) => {
+      const [iso, id] = value.split("|");
+      if (!iso || !id || !z.uuid().safeParse(id).success) {
+        context.addIssue({ code: "custom", message: "Некорректный курсор" });
+        return z.NEVER;
+      }
+      const createdAt = new Date(iso);
+      if (Number.isNaN(createdAt.getTime())) {
+        context.addIssue({ code: "custom", message: "Некорректный курсор" });
+        return z.NEVER;
+      }
+      return { createdAt, id };
+    })
+    .optional(),
+});
 
 export interface AdminLeadRecord {
   id: string;
@@ -38,15 +63,38 @@ export class AdminLeadsDomainError extends Error {
 }
 
 export interface AdminLeadsRepository {
-  list(): Promise<AdminLeadRecord[]>;
+  listPage(input: {
+    limit: number;
+    cursorCreatedAt?: Date;
+    cursorId?: string;
+  }): Promise<AdminLeadRecord[]>;
   updateStatus(id: string, status: LeadStatus): Promise<AdminLeadRecord>;
 }
 
 export class DrizzleAdminLeadsRepository implements AdminLeadsRepository {
   constructor(private readonly db = getDb()) {}
 
-  list(): Promise<AdminLeadRecord[]> {
-    return this.db.select().from(leads).orderBy(desc(leads.createdAt));
+  listPage(input: {
+    limit: number;
+    cursorCreatedAt?: Date;
+    cursorId?: string;
+  }): Promise<AdminLeadRecord[]> {
+    const cursor =
+      input.cursorCreatedAt && input.cursorId
+        ? or(
+            lt(leads.createdAt, input.cursorCreatedAt),
+            and(
+              eq(leads.createdAt, input.cursorCreatedAt),
+              lt(leads.id, input.cursorId),
+            ),
+          )
+        : undefined;
+    return this.db
+      .select()
+      .from(leads)
+      .where(cursor)
+      .orderBy(desc(leads.createdAt), desc(leads.id))
+      .limit(input.limit);
   }
 
   async updateStatus(
@@ -70,7 +118,10 @@ export class DrizzleAdminLeadsRepository implements AdminLeadsRepository {
 }
 
 export interface AdminLeadsService {
-  list(): Promise<AdminLeadRecord[]>;
+  listPage(input: unknown): Promise<{
+    items: AdminLeadRecord[];
+    nextCursor: string | null;
+  }>;
   updateStatus(id: string, input: unknown): Promise<AdminLeadRecord>;
   toCsv(rows: AdminLeadRecord[]): string;
 }
@@ -79,9 +130,36 @@ export function createAdminLeadsService(
   repository: AdminLeadsRepository,
 ): AdminLeadsService {
   return {
-    async list(): Promise<AdminLeadRecord[]> {
+    async listPage(input: unknown): Promise<{
+      items: AdminLeadRecord[];
+      nextCursor: string | null;
+    }> {
+      const parsed = LeadListQuerySchema.safeParse(input ?? {});
+      if (!parsed.success) {
+        throw new AdminLeadsDomainError("VALIDATION", {
+          cursor: ["Некорректный курсор"],
+        });
+      }
       try {
-        return await repository.list();
+        const rows = await repository.listPage({
+          limit: parsed.data.limit + 1,
+          ...(parsed.data.cursor === undefined
+            ? {}
+            : {
+                cursorCreatedAt: parsed.data.cursor.createdAt,
+                cursorId: parsed.data.cursor.id,
+              }),
+        });
+        const hasMore = rows.length > parsed.data.limit;
+        const items = hasMore ? rows.slice(0, parsed.data.limit) : rows;
+        const last = items[items.length - 1];
+        return {
+          items,
+          nextCursor:
+            hasMore && last
+              ? `${last.createdAt.toISOString()}|${last.id}`
+              : null,
+        };
       } catch (error) {
         throw new AdminLeadsDomainError(
           "PERSISTENCE",
@@ -92,6 +170,11 @@ export function createAdminLeadsService(
     },
 
     async updateStatus(id: string, input: unknown): Promise<AdminLeadRecord> {
+      if (!z.uuid().safeParse(id).success) {
+        throw new AdminLeadsDomainError("VALIDATION", {
+          id: ["Некорректный идентификатор"],
+        });
+      }
       const parsed = UpdateLeadStatusSchema.safeParse(input);
       if (!parsed.success) {
         const fields: Record<string, string[]> = {};
@@ -150,8 +233,10 @@ export function createAdminLeadsService(
 }
 
 function csvEscape(value: string): string {
-  if (/[",\n\r]/.test(value)) {
-    return `"${value.replaceAll('"', '""')}"`;
+  const formulaPrefix = /^[=+\-@\t\r]/u.test(value);
+  const safe = formulaPrefix ? `'${value}` : value;
+  if (/[",\n\r]/u.test(safe) || formulaPrefix) {
+    return `"${safe.replaceAll('"', '""')}"`;
   }
-  return value;
+  return safe;
 }

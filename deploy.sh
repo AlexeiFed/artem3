@@ -37,7 +37,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
 
-HOST="${DEPLOY_HOST:-root@213.171.15.166}"
+HOST="${DEPLOY_HOST:?set DEPLOY_HOST e.g. root@your-vps}"
 LIVE_LINK="${DEPLOY_PATH:-/var/www/vibespace}"
 RELEASES_ROOT="${DEPLOY_RELEASES:-/var/www/vibespace-releases}"
 SHARED_ROOT="${DEPLOY_SHARED:-/var/www/vibespace-shared}"

@@ -26,14 +26,27 @@ describe("admin proxy", () => {
     );
   });
 
-  it("only performs an early cookie-presence check", () => {
+  it("rejects a cookie that is not a session token", () => {
     const response = proxy(
       new NextRequest("https://example.test/admin", {
         headers: { Cookie: "admin_session=not-authoritative" },
       }),
     );
 
+    expect(response.status).toBe(307);
+  });
+
+  it("lets a well-formed session cookie through the presence check", () => {
+    const response = proxy(
+      new NextRequest("https://example.test/admin", {
+        headers: { Cookie: `admin_session=${"A".repeat(43)}` },
+      }),
+    );
+
     expect(response.headers.get("x-middleware-next")).toBe("1");
+    expect(response.headers.get("content-security-policy")).toContain(
+      "strict-dynamic",
+    );
   });
 
   it("does not expire the session cookie when opening the login page", () => {

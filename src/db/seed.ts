@@ -25,7 +25,6 @@ import { seedAdminUser } from "@/modules/auth/seed-admin";
 import { getDb, getPostgresClient } from "./client";
 import { seedContent } from "./seed-data";
 import {
-  adminSessions,
   adminUsers,
   cases,
   certificates,
@@ -186,20 +185,6 @@ async function runSeed(): Promise<void> {
               .insert(adminUsers)
               .values({ email, passwordHash, active })
               .onConflictDoNothing({ target: adminUsers.email });
-          },
-          rotatePasswordAndRevokeSessions: async ({
-            userId,
-            passwordHash,
-          }) => {
-            await db.transaction(async (transaction) => {
-              await transaction
-                .update(adminUsers)
-                .set({ passwordHash, updatedAt: new Date() })
-                .where(eq(adminUsers.id, userId));
-              await transaction
-                .delete(adminSessions)
-                .where(eq(adminSessions.userId, userId));
-            });
           },
         },
       },

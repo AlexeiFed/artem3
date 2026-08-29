@@ -179,6 +179,7 @@ export async function createDefaultMediaService(): Promise<MediaService> {
     return createMediaService({
       storage: createLocalObjectStorage({
         uploadEndpoint: "/api/admin/media/local-upload",
+        signSecret: env.SESSION_SECRET,
       }),
       repository: new DrizzleMediaRepository(),
       bucket: "local",

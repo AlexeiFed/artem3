@@ -25,6 +25,7 @@ mkdir -p "${SNIPPET_DIR}" "${UPLOADS_DIR}"
 cat > "${SNIPPET_PATH}" <<EOF
 # Managed by scripts/ensure-nginx-upload-limit.sh — do not hand-edit.
 client_max_body_size ${LIMIT};
+limit_req_zone \$binary_remote_addr zone=adminlogin:10m rate=10r/m;
 EOF
 
 if [[ -f "${SITE_CONFIG}" ]]; then
@@ -41,6 +42,8 @@ block = """
         access_log off;
         expires 7d;
         add_header Cache-Control "public";
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Robots-Tag "noindex, nofollow" always;
     }
 
 """

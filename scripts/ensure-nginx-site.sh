@@ -9,7 +9,7 @@ SITE_NAME="${DEPLOY_PM2_NAME:-vibespace}"
 SITE_CONFIG="${NGINX_SITE_CONFIG:-/etc/nginx/sites-available/${SITE_NAME}}"
 UPLOADS_DIR="${MEDIA_UPLOADS_DIR:-/var/www/vibespace-shared/public/media/uploads}"
 CERT_DIR="${CERT_DIR:-/etc/letsencrypt/live/${SITE_HOST}}"
-CERTBOT_EMAIL="${CERTBOT_EMAIL:-artem-sysuev@yandex.ru}"
+CERTBOT_EMAIL="${CERTBOT_EMAIL:-}"
 SKIP_CERTBOT="${SKIP_CERTBOT:-0}"
 
 if ! command -v nginx >/dev/null 2>&1; then
@@ -24,34 +24,13 @@ fi
 
 mkdir -p "${UPLOADS_DIR}" /etc/nginx/sites-available /etc/nginx/sites-enabled
 
-write_http_only() {
   cat > "${SITE_CONFIG}" <<NGINX
 # Managed by scripts/ensure-nginx-site.sh — do not hand-edit.
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
     server_name _;
-
-    client_max_body_size 105m;
-
-    location ^~ /media/uploads/ {
-        alias ${UPLOADS_DIR}/;
-        access_log off;
-        expires 7d;
-        add_header Cache-Control "public";
-    }
-
-    location / {
-        proxy_pass http://127.0.0.1:${APP_PORT};
-        proxy_http_version 1.1;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_read_timeout 60s;
-    }
+    return 404;
 }
 
 server {
@@ -66,6 +45,31 @@ server {
         access_log off;
         expires 7d;
         add_header Cache-Control "public";
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Robots-Tag "noindex, nofollow" always;
+    }
+
+    location = /api/leads {
+        client_max_body_size 16k;
+        proxy_pass http://127.0.0.1:${APP_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 60s;
+    }
+
+    location = /api/admin/login {
+        limit_req zone=adminlogin burst=5 nodelay;
+        client_max_body_size 16k;
+        proxy_pass http://127.0.0.1:${APP_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 60s;
     }
 
     location / {
@@ -101,27 +105,7 @@ server {
     listen 80 default_server;
     listen [::]:80 default_server;
     server_name _;
-
-    client_max_body_size 105m;
-
-    location ^~ /media/uploads/ {
-        alias ${UPLOADS_DIR}/;
-        access_log off;
-        expires 7d;
-        add_header Cache-Control "public";
-    }
-
-    location / {
-        proxy_pass http://127.0.0.1:${APP_PORT};
-        proxy_http_version 1.1;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_read_timeout 60s;
-    }
+    return 404;
 }
 
 server {
@@ -152,6 +136,7 @@ server {
     ssl_certificate_key ${CERT_DIR}/privkey.pem;
 ${ssl_extras}
 
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
     client_max_body_size 105m;
 
     location ^~ /media/uploads/ {
@@ -159,6 +144,31 @@ ${ssl_extras}
         access_log off;
         expires 7d;
         add_header Cache-Control "public";
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Robots-Tag "noindex, nofollow" always;
+    }
+
+    location = /api/leads {
+        client_max_body_size 16k;
+        proxy_pass http://127.0.0.1:${APP_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 60s;
+    }
+
+    location = /api/admin/login {
+        limit_req zone=adminlogin burst=5 nodelay;
+        client_max_body_size 16k;
+        proxy_pass http://127.0.0.1:${APP_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 60s;
     }
 
     location / {
@@ -198,7 +208,9 @@ reload_nginx
 if [[ "${SKIP_CERTBOT}" != "1" ]] && command -v certbot >/dev/null 2>&1; then
   if [[ ! -f "${CERT_DIR}/fullchain.pem" ]]; then
     echo "==> certbot ${SITE_HOST} www.${SITE_HOST}"
-    if certbot certonly --nginx \
+    if [[ -z "${CERTBOT_EMAIL}" ]]; then
+      echo "WARN: CERTBOT_EMAIL пуст — skip certbot" >&2
+    elif certbot certonly --nginx \
       -d "${SITE_HOST}" -d "www.${SITE_HOST}" \
       --non-interactive --agree-tos \
       --email "${CERTBOT_EMAIL}" \

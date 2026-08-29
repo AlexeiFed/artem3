@@ -3,6 +3,10 @@ import type {
   CreateLeadResult,
 } from "@/modules/leads/create-lead.service";
 import { LeadDomainError } from "@/modules/leads/create-lead.service";
+import {
+  PayloadTooLargeError,
+  readLimitedJson,
+} from "@/lib/http/read-limited-json";
 import { extractTrustedClientIp } from "@/modules/leads/client-ip";
 import {
   LeadPersistenceErrorResponseSchema,
@@ -33,6 +37,7 @@ interface LeadFailureDiagnostic {
 }
 
 const NO_STORE_HEADERS = { "Cache-Control": "no-store" };
+const LEAD_BODY_MAXIMUM_BYTES = 16 * 1_024;
 
 export function createLeadHandler({
   createLead,
@@ -44,8 +49,13 @@ export function createLeadHandler({
     let input: unknown;
 
     try {
-      input = await request.json();
-    } catch {
+      input = await readLimitedJson(request, LEAD_BODY_MAXIMUM_BYTES);
+    } catch (error) {
+      if (error instanceof PayloadTooLargeError) {
+        return validationResponse({
+          _form: ["Размер запроса превышает допустимый"],
+        });
+      }
       return validationResponse({ _form: ["Некорректный JSON"] });
     }
 

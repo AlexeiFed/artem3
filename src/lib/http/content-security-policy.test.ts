@@ -1,6 +1,3 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
-
 import { describe, expect, it } from "vitest";
 
 import { buildContentSecurityPolicy } from "../../../content-security-policy";
@@ -20,12 +17,10 @@ describe("buildContentSecurityPolicy", () => {
     expect(policy).toContain("worker-src 'self' blob:");
   });
 
-  it("keeps the same worker-src directive inlined in next.config.ts", () => {
-    const source = readFileSync(
-      path.join(process.cwd(), "next.config.ts"),
-      "utf8",
-    );
-    expect(source).toContain("worker-src 'self' blob:");
-    expect(source).toContain("blob: https://api-maps.yandex.ru");
+  it("uses a per-request nonce instead of script-src unsafe-inline", () => {
+    const policy = buildContentSecurityPolicy("https://artemsysuev.ru", "abc123");
+
+    expect(policy).toContain("script-src 'self' 'nonce-abc123' 'strict-dynamic'");
+    expect(policy).not.toContain("'unsafe-inline' blob: https://api-maps.yandex.ru");
   });
 });

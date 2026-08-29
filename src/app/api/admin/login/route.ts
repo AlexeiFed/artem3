@@ -12,6 +12,7 @@ import {
   type LoginContext,
   type LoginResult,
 } from "@/modules/auth/auth.service";
+import { serializeSessionCookie } from "@/modules/auth/cookie";
 import { extractTrustedClientIp } from "@/modules/leads/client-ip";
 
 interface LoginHandlerDependencies {
@@ -22,7 +23,6 @@ interface LoginHandlerDependencies {
 }
 
 const NO_STORE_HEADERS = { "Cache-Control": "no-store" };
-const COOKIE_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
 const LOGIN_BODY_MAXIMUM_BYTES = 8 * 1_024;
 
 export function createLoginHandler({
@@ -64,7 +64,10 @@ export function createLoginHandler({
         status: 200,
         headers: {
           ...NO_STORE_HEADERS,
-          "Set-Cookie": serializeSessionCookie(result.token, siteUrl),
+          "Set-Cookie": serializeSessionCookie(
+            result.token,
+            new URL(siteUrl).protocol === "https:",
+          ),
         },
       });
     } catch (error) {
@@ -78,20 +81,10 @@ export function createLoginHandler({
           );
         }
         if (error.code === "INVALID_CREDENTIALS") {
-          const rateLimit = error.rateLimit;
-          const remaining = rateLimit?.attemptsRemaining;
-          const limit = rateLimit?.attemptsLimit;
-          const message =
-            remaining === undefined || limit === undefined || !rateLimit
-              ? "Неверная почта или пароль."
-              : `Неверная почта или пароль. Осталось попыток: ${remaining} из ${limit}. Лимит сбросится ${formatResetsAt(rateLimit.resetsAt)}.`;
           return errorResponse(
             401,
             "INVALID_CREDENTIALS",
-            message,
-            undefined,
-            undefined,
-            rateLimit,
+            "Неверная почта или пароль.",
           );
         }
         if (error.code === "RATE_LIMITED") {
@@ -149,18 +142,6 @@ function formatResetsAt(iso: string): string {
   } catch {
     return iso;
   }
-}
-
-function serializeSessionCookie(token: string, siteUrl: string): string {
-  const secure = new URL(siteUrl).protocol === "https:";
-  return [
-    `admin_session=${token}`,
-    "HttpOnly",
-    "SameSite=Strict",
-    "Path=/",
-    `Max-Age=${COOKIE_MAX_AGE_SECONDS}`,
-    ...(secure ? ["Secure"] : []),
-  ].join("; ");
 }
 
 function errorResponse(
@@ -242,7 +223,16 @@ export async function POST(request: Request): Promise<Response> {
     import("@/lib/env/server"),
   ]);
   const handler = createLoginHandler({
-    login: loginWithDatabase,
+    login: async (input, context) => {
+      const result = await loginWithDatabase(input, context);
+      const { recordAuditEvent } = await import("@/modules/audit/audit");
+      await recordAuditEvent({
+        action: "admin.login",
+        actorUserId: result.user.id,
+        clientIp: context.clientIp,
+      });
+      return result;
+    },
     siteUrl: getPublicEnv().NEXT_PUBLIC_SITE_URL,
     trustedProxyHops: getServerEnv().TRUSTED_PROXY_HOPS,
   });

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 import type { SafeAdminUser } from "./auth.schemas";
 import { AuthDomainError } from "./auth.service";
-import { ADMIN_SESSION_COOKIE } from "./cookie";
+import { readSessionTokenFromStore } from "./cookie";
 
 interface CookieStore {
   get(name: string): { value: string } | undefined;
@@ -26,7 +26,7 @@ export async function requireAdmin(
       return cookies();
     });
   const store = await cookieStore();
-  const token = store.get(ADMIN_SESSION_COOKIE)?.value;
+  const token = readSessionTokenFromStore(store);
   if (!token) {
     throw new AuthDomainError("UNAUTHORIZED");
   }
@@ -44,7 +44,6 @@ export async function requireAdminOrRedirect(
     return await requireAdmin(dependencies);
   } catch (error) {
     if (error instanceof AuthDomainError && error.code === "UNAUTHORIZED") {
-      // cookies().delete в RSC нельзя — только redirect; stale cookie сбросит login Set-Cookie.
       const login = new URL("/admin/login", "http://local.invalid");
       login.searchParams.set("next", nextPath);
       redirect(`${login.pathname}${login.search}`);

@@ -1,7 +1,7 @@
 import { isSameOrigin } from "@/lib/http/origin";
 import { AuthErrorResponseSchema } from "@/modules/auth/auth.schemas";
 import {
-  expiredSessionCookie,
+  expiredSessionCookies,
   readSessionToken,
 } from "@/modules/auth/cookie";
 
@@ -25,7 +25,7 @@ export function createLogoutHandler({
       });
     }
 
-    const cookie = expiredSessionCookie(
+    const cookies = expiredSessionCookies(
       new URL(siteUrl).protocol === "https:",
     );
     const token = readSessionToken(request.headers.get("cookie"));
@@ -40,9 +40,14 @@ export function createLogoutHandler({
       }
     }
 
+    const headers = new Headers({ "Cache-Control": "no-store" });
+    for (const cookie of cookies) {
+      headers.append("Set-Cookie", cookie);
+    }
+
     return new Response(null, {
       status: 204,
-      headers: { "Cache-Control": "no-store", "Set-Cookie": cookie },
+      headers,
     });
   };
 }
@@ -62,6 +67,8 @@ async function logoutFromDatabase(token: string): Promise<void> {
     rateLimitRepository: new DrizzleRateLimitRepository(),
     sessionSecret: env.SESSION_SECRET,
   }).logout(token);
+  const { recordAuditEvent } = await import("@/modules/audit/audit");
+  await recordAuditEvent({ action: "admin.logout" });
 }
 
 export async function POST(request: Request): Promise<Response> {

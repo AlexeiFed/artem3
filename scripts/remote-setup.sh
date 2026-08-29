@@ -310,7 +310,7 @@ def pick(*keys: str, default: str | None = None) -> str | None:
 env = {
     "NODE_ENV": "production",
     "PORT": "${port}",
-    "HOSTNAME": "0.0.0.0",
+    "HOSTNAME": "127.0.0.1",
     "DATABASE_URL": os.environ.get("DATABASE_URL", ""),
     "SESSION_SECRET": os.environ.get("SESSION_SECRET", ""),
     "TRUSTED_PROXY_HOPS": os.environ.get("TRUSTED_PROXY_HOPS") or "1",
@@ -339,7 +339,7 @@ cfg = {
             "name": "${name}",
             "cwd": "${REMOTE_DIR}",
             "script": "node_modules/next/dist/bin/next",
-            "args": "start -p ${port} -H 0.0.0.0",
+            "args": "start -p ${port} -H 127.0.0.1",
             "interpreter": "${NODE_BIN}",
             "env": env,
         }

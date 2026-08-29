@@ -3,6 +3,7 @@ import {
   boolean,
   check,
   index,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -62,5 +63,24 @@ export const adminSessions = pgTable(
       "admin_sessions_expiry_after_creation_check",
       sql`${table.expiresAt} > ${table.createdAt}`,
     ),
+  ],
+);
+
+export const auditEvents = pgTable(
+  "audit_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    occurredAt: timestampWithTimezone("occurred_at").defaultNow().notNull(),
+    actorUserId: uuid("actor_user_id").references(() => adminUsers.id, {
+      onDelete: "set null",
+    }),
+    action: text("action").notNull(),
+    ipHash: text("ip_hash"),
+    metadata: jsonb("metadata").$type<Record<string, string>>(),
+  },
+  (table) => [
+    index("audit_events_occurred_at_idx").on(table.occurredAt),
+    index("audit_events_actor_user_id_idx").on(table.actorUserId),
+    check("audit_events_action_nonempty_check", sql`length(${table.action}) > 0`),
   ],
 );

@@ -16,15 +16,16 @@ import {
   createSessionMaterial,
   hashSessionToken,
   SESSION_ACTIVITY_INTERVAL_MS,
+  SESSION_IDLE_MS,
+  SESSION_TOKEN_PATTERN,
   type SessionMaterial,
 } from "./session";
 
 const LOGIN_RATE_LIMIT_ACTION_IP = "admin:login:ip";
-const LOGIN_RATE_LIMIT_ACTION_EMAIL = "admin:login:email";
+const PASSWORD_RATE_LIMIT_ACTION = "admin:password:user";
 export const LOGIN_RATE_LIMIT_MAXIMUM = 5;
 export const LOGIN_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1_000;
 const RATE_LIMIT_RETENTION_MS = 24 * 60 * 60 * 1_000;
-const SESSION_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
 export type AuthErrorCode =
   | "VALIDATION"
@@ -144,23 +145,6 @@ export function createAuthService({
         }
       }
 
-      const emailCount = await incrementLoginBucket(
-        rateLimitRepository,
-        sessionSecret,
-        parsed.data.email,
-        LOGIN_RATE_LIMIT_ACTION_EMAIL,
-        windowStart,
-      );
-      if (emailCount > LOGIN_RATE_LIMIT_MAXIMUM) {
-        throw new AuthDomainError(
-          "RATE_LIMITED",
-          undefined,
-          retryAfterSeconds(windowStart, context.now),
-          undefined,
-          rateLimitInfo(emailCount),
-        );
-      }
-
       let user;
       try {
         user = await authRepository.findUserByEmail(parsed.data.email);
@@ -178,7 +162,7 @@ export function createAuthService({
           undefined,
           undefined,
           undefined,
-          rateLimitInfo(Math.max(ipCount, emailCount)),
+          rateLimitInfo(ipCount),
         );
       }
 
@@ -197,7 +181,10 @@ export function createAuthService({
       return {
         token: session.token,
         expiresAt: session.expiresAt,
-        user: { id: user.id, email: user.email },
+        user: {
+          id: user.id,
+          email: user.email,
+        },
       };
     },
 
@@ -218,7 +205,11 @@ export function createAuthService({
         throw new AuthDomainError("UNAUTHORIZED");
       }
 
-      if (!session.user.active || session.expiresAt.getTime() <= now.getTime()) {
+      if (
+        !session.user.active ||
+        session.expiresAt.getTime() <= now.getTime() ||
+        session.lastActivityAt.getTime() <= now.getTime() - SESSION_IDLE_MS
+      ) {
         try {
           await authRepository.deleteSessionByTokenHash(tokenHash);
         } catch {
@@ -238,7 +229,10 @@ export function createAuthService({
         }
       }
 
-      return { id: session.user.id, email: session.user.email };
+      return {
+        id: session.user.id,
+        email: session.user.email,
+      };
     },
 
     async logout(token: string): Promise<void> {
@@ -271,6 +265,31 @@ export function createAuthService({
 
       if (!user || !user.active) {
         throw new AuthDomainError("UNAUTHORIZED");
+      }
+
+      if (parsed.data.newPassword.toLowerCase() === user.email) {
+        throw new AuthDomainError("VALIDATION", {
+          newPassword: ["Пароль не должен совпадать с почтой"],
+        });
+      }
+
+      const passwordWindowStart = new Date(
+        Math.floor(Date.now() / LOGIN_RATE_LIMIT_WINDOW_MS) *
+          LOGIN_RATE_LIMIT_WINDOW_MS,
+      );
+      const passwordAttempts = await incrementLoginBucket(
+        rateLimitRepository,
+        sessionSecret,
+        userId,
+        PASSWORD_RATE_LIMIT_ACTION,
+        passwordWindowStart,
+      );
+      if (passwordAttempts > LOGIN_RATE_LIMIT_MAXIMUM) {
+        throw new AuthDomainError(
+          "RATE_LIMITED",
+          undefined,
+          retryAfterSeconds(passwordWindowStart, new Date()),
+        );
       }
 
       const currentOk = await verify(

@@ -246,7 +246,7 @@ export function Reviews({
               key={rating.source}
               href={rating.externalUrl}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="rating-badge"
             >
               <strong>{rating.value.toFixed(1)}</strong>
@@ -262,7 +262,7 @@ export function Reviews({
               <p>«{review.quote}»</p>
               <footer>
                 <strong>{review.author}</strong>
-                <a href={review.sourceUrl} target="_blank" rel="noreferrer">
+                <a href={review.sourceUrl} target="_blank" rel="noopener noreferrer">
                   {review.source} ↗
                 </a>
               </footer>
@@ -280,7 +280,7 @@ export function Reviews({
                 className="certificate-scan"
                 href={certificate.imageUrl}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 <Image
                   src={certificate.imageUrl}

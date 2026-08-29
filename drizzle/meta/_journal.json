@@ -50,6 +50,20 @@
       "when": 1787648152536,
       "tag": "0006_slim_havok",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787997853436,
+      "tag": "0007_eminent_lyja",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787999272678,
+      "tag": "0008_silly_xavin",
+      "breakpoints": true
     }
   ]
 }

@@ -52,7 +52,35 @@ export async function readLimitedJson(
   return parseJson(new TextDecoder().decode(bytes));
 }
 
+const MAX_JSON_DEPTH = 8;
+const MAX_JSON_KEYS = 40;
+
 function parseJson(value: string): unknown {
   const parsed: unknown = JSON.parse(value);
+  assertJsonBounds(parsed, 0);
   return parsed;
+}
+
+function assertJsonBounds(value: unknown, depth: number): void {
+  if (depth > MAX_JSON_DEPTH) {
+    throw new PayloadTooLargeError();
+  }
+  if (Array.isArray(value)) {
+    if (value.length > MAX_JSON_KEYS) {
+      throw new PayloadTooLargeError();
+    }
+    for (const item of value) {
+      assertJsonBounds(item, depth + 1);
+    }
+    return;
+  }
+  if (value !== null && typeof value === "object") {
+    const keys = Object.keys(value);
+    if (keys.length > MAX_JSON_KEYS) {
+      throw new PayloadTooLargeError();
+    }
+    for (const key of keys) {
+      assertJsonBounds(Reflect.get(value, key), depth + 1);
+    }
+  }
 }

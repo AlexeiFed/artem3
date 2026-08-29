@@ -3,20 +3,24 @@ import { AuthDomainError } from "@/modules/auth/auth.service";
 import { errorResponse } from "@/lib/http/api-response";
 import { isSameOrigin } from "@/lib/http/origin";
 
-import { writeLocalMediaObject } from "./local.storage";
+import { writeLocalMediaStream } from "./local.storage";
 import { VIDEO_MAX_BYTES } from "./media.schemas";
+import { verifyUploadSignature } from "./upload-signature";
 
-/** Must cover the largest allowed media (MP4). Nginx must allow the same. */
 const BODY_LIMIT = VIDEO_MAX_BYTES;
 
 interface LocalUploadDependencies {
   requireAdmin(): Promise<SafeAdminUser>;
   siteUrl: string;
+  signSecret: string;
+  now?: () => Date;
 }
 
 export function createLocalUploadHandler({
   requireAdmin,
   siteUrl,
+  signSecret,
+  now = () => new Date(),
 }: LocalUploadDependencies): (request: Request) => Promise<Response> {
   return async function handleLocalUpload(request: Request): Promise<Response> {
     if (!isSameOrigin(request, siteUrl)) {
@@ -32,9 +36,35 @@ export function createLocalUploadHandler({
       return errorResponse(500, "INTERNAL", "Не удалось проверить сессию.");
     }
 
-    const objectKey = new URL(request.url).searchParams.get("objectKey");
-    if (!objectKey) {
-      return errorResponse(400, "VALIDATION", "Не указан objectKey.");
+    const params = new URL(request.url).searchParams;
+    const objectKey = params.get("objectKey");
+    const mimeType = params.get("mime");
+    const size = Number(params.get("size"));
+    const expiresAtUnix = Number(params.get("exp"));
+    const signature = params.get("sig");
+    if (
+      !objectKey ||
+      !mimeType ||
+      !signature ||
+      !Number.isInteger(size) ||
+      !Number.isInteger(expiresAtUnix)
+    ) {
+      return errorResponse(400, "VALIDATION", "Некорректные параметры загрузки.");
+    }
+    if (expiresAtUnix * 1000 < now().getTime()) {
+      return errorResponse(400, "VALIDATION", "Ссылка загрузки истекла.");
+    }
+    if (
+      !verifyUploadSignature({
+        objectKey,
+        mimeType,
+        size,
+        expiresAtUnix,
+        secret: signSecret,
+        signature,
+      })
+    ) {
+      return errorResponse(403, "FORBIDDEN", "Запрос отклонён.");
     }
 
     const contentLengthHeader = request.headers.get("content-length");
@@ -50,17 +80,23 @@ export function createLocalUploadHandler({
     }
 
     try {
-      const buffer = Buffer.from(await request.arrayBuffer());
-      if (buffer.byteLength > BODY_LIMIT) {
+      await writeLocalMediaStream({
+        objectKey,
+        body: request.body,
+        maxBytes: BODY_LIMIT,
+      });
+      return new Response(null, { status: 204 });
+    } catch (error) {
+      if (error instanceof Error && error.message === "PAYLOAD_TOO_LARGE") {
         return errorResponse(
           413,
           "PAYLOAD_TOO_LARGE",
           "Размер файла превышает допустимый.",
         );
       }
-      await writeLocalMediaObject({ objectKey, body: buffer });
-      return new Response(null, { status: 204 });
-    } catch {
+      if (error instanceof Error && error.message === "MEDIA_MAGIC_MISMATCH") {
+        return errorResponse(400, "VALIDATION", "Тип файла не совпадает с расширением.");
+      }
       return errorResponse(500, "INTERNAL", "Не удалось сохранить файл.");
     }
   };

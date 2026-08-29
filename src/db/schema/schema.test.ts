@@ -2,7 +2,7 @@ import { getTableColumns, getTableName } from "drizzle-orm";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
-import { adminSessions, adminUsers } from "./auth";
+import { adminSessions, adminUsers, auditEvents } from "./auth";
 import {
   cases,
   certificates,
@@ -31,6 +31,7 @@ describe("database schema contracts", () => {
         leads,
         mediaAssets,
         rateLimits,
+        auditEvents,
       ].map(getTableName),
     ).toEqual([
       "site_settings",
@@ -44,6 +45,7 @@ describe("database schema contracts", () => {
       "leads",
       "media_assets",
       "rate_limits",
+      "audit_events",
     ]);
   });
 

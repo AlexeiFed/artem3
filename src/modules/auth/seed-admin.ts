@@ -2,10 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 
-import {
-  hashPassword,
-  verifyPassword,
-} from "./password";
+import { hashPassword } from "./password";
 
 const AdminSeedInputSchema = z
   .object({
@@ -25,16 +22,11 @@ export interface AdminSeedRepository {
     passwordHash: string;
     active: true;
   }): Promise<void>;
-  rotatePasswordAndRevokeSessions(input: {
-    userId: string;
-    passwordHash: string;
-  }): Promise<void>;
 }
 
 interface SeedAdminDependencies {
   repository: AdminSeedRepository;
   hashPassword?: (password: string) => Promise<string>;
-  verifyPassword?: (passwordHash: string, password: string) => Promise<boolean>;
 }
 
 export async function seedAdminUser(
@@ -42,26 +34,12 @@ export async function seedAdminUser(
   {
     repository,
     hashPassword: createPasswordHash = hashPassword,
-    verifyPassword: verifyExistingPassword = verifyPassword,
   }: SeedAdminDependencies,
 ): Promise<void> {
   const parsed = AdminSeedInputSchema.parse(input);
   const existing = await repository.findByEmail(parsed.email);
 
   if (existing) {
-    const passwordMatches = await verifyExistingPassword(
-      existing.passwordHash,
-      parsed.password,
-    );
-    if (passwordMatches) {
-      return;
-    }
-
-    const passwordHash = await createPasswordHash(parsed.password);
-    await repository.rotatePasswordAndRevokeSessions({
-      userId: existing.id,
-      passwordHash,
-    });
     return;
   }
 

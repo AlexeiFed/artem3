@@ -42,7 +42,7 @@ export function Contacts({
                   className="contacts-chip"
                   href={contacts.max.url}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                 >
                   <MaxIcon className="contacts-chip-icon" />
                   {contacts.max.label}
@@ -51,7 +51,7 @@ export function Contacts({
                   className="contacts-chip"
                   href={contacts.telegram.url}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                 >
                   <TelegramIcon className="contacts-chip-icon" />
                   {contacts.telegram.label}
@@ -60,7 +60,7 @@ export function Contacts({
                   className="contacts-chip"
                   href={contacts.whatsapp.url}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                 >
                   <WhatsAppIcon className="contacts-chip-icon" />
                   {contacts.whatsapp.label}
@@ -120,7 +120,7 @@ export function Contacts({
           <a
             href="https://vk.com/tvoe_pravo_tut"
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
           >
             ВКонтакте
           </a>

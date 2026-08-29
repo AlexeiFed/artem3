@@ -153,7 +153,7 @@ export function ContactsMap({
         className="map-panel map-panel-fallback"
         href={externalUrl}
         target="_blank"
-        rel="noreferrer"
+        rel="noopener noreferrer"
         aria-label="Открыть адрес на Яндекс Картах"
       >
         <strong>Хабаровск</strong>
@@ -175,7 +175,7 @@ export function ContactsMap({
         className="map-panel-link"
         href={externalUrl}
         target="_blank"
-        rel="noreferrer"
+        rel="noopener noreferrer"
       >
         Открыть на Яндекс Картах ↗
       </a>

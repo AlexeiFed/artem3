@@ -356,13 +356,13 @@ export function ModalForm({
                   />
                   <span>
                     Даю согласие на обработку персональных данных согласно{" "}
-                    <a href="/personal-data" target="_blank" rel="noreferrer">
+                    <a href="/personal-data" target="_blank" rel="noopener noreferrer">
                       Согласию на обработку персональных данных
                     </a>{" "}
                     (ред. от{" "}
                     {PERSONAL_DATA_CONSENT_VERSION.split("-").reverse().join(".")}
                     ) и{" "}
-                    <a href="/privacy" target="_blank" rel="noreferrer">
+                    <a href="/privacy" target="_blank" rel="noopener noreferrer">
                       {PERSONAL_DATA_PROCESSING_POLICY_TITLE_DATIVE}
                     </a>
                     .

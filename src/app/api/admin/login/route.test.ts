@@ -27,7 +27,7 @@ function request(origin = "https://example.test"): Request {
 }
 
 describe("POST /api/admin/login", () => {
-  it("sets a strict HttpOnly seven-day cookie without returning the token", async () => {
+  it("sets a strict HttpOnly one-day host cookie without returning the token", async () => {
     const login = vi.fn().mockResolvedValue({
       token: "A".repeat(43),
       expiresAt: new Date("2026-07-19T10:00:00.000Z"),
@@ -46,11 +46,11 @@ describe("POST /api/admin/login", () => {
     expect(response.status).toBe(200);
     expect(body).toEqual({ authenticated: true, user: USER });
     expect(JSON.stringify(body)).not.toContain("A".repeat(43));
-    expect(cookie).toContain(`admin_session=${"A".repeat(43)}`);
+    expect(cookie).toContain(`__Host-admin_session=${"A".repeat(43)}`);
     expect(cookie).toMatch(/HttpOnly/i);
     expect(cookie).toMatch(/SameSite=Strict/i);
     expect(cookie).toMatch(/Path=\//i);
-    expect(cookie).toMatch(/Max-Age=604800/i);
+    expect(cookie).toMatch(/Max-Age=86400/i);
     expect(cookie).toMatch(/Secure/i);
   });
 

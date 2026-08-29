@@ -24,6 +24,7 @@ describe("local media storage", () => {
     const storage = createLocalObjectStorage({
       rootDir,
       uploadEndpoint: "http://localhost:3000/api/admin/media/local-upload",
+      signSecret: "s".repeat(32),
     });
 
     const objectKey = "11111111-1111-4111-8111-111111111111.jpg";
@@ -34,17 +35,20 @@ describe("local media storage", () => {
       expiresInSeconds: 60,
     });
     expect(signed.uploadUrl).toContain(`objectKey=${objectKey}`);
+    expect(signed.uploadUrl).toContain("sig=");
 
     await writeLocalMediaObject({
       objectKey,
-      body: Buffer.from("test"),
+      body: Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]),
       rootDir,
     });
-    expect(await readFile(path.join(rootDir, objectKey), "utf8")).toBe("test");
+    expect(await readFile(path.join(rootDir, objectKey))).toEqual(
+      Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]),
+    );
 
     await expect(storage.headObject(objectKey)).resolves.toEqual({
       contentType: "image/jpeg",
-      contentLength: 4,
+      contentLength: 6,
     });
   });
 

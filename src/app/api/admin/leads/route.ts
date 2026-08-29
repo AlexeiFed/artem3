@@ -6,10 +6,10 @@ import {
   DrizzleAdminLeadsRepository,
 } from "@/modules/leads/admin-leads.service";
 
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
   const { requireAdmin } = await import("@/modules/auth/require-admin");
   return createListLeadsHandler({
     requireAdmin,
     service: createAdminLeadsService(new DrizzleAdminLeadsRepository()),
-  })();
+  })(request);
 }

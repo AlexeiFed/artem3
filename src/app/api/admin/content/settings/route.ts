@@ -57,6 +57,13 @@ export async function PATCH(request: Request): Promise<Response> {
   return createUpdateSettingsHandler({
     requireAdmin,
     siteUrl: getPublicEnv().NEXT_PUBLIC_SITE_URL,
-    service,
+    service: {
+      updateSettings: async (input) => {
+        const data = await service.updateSettings(input);
+        const { recordAuditEvent } = await import("@/modules/audit/audit");
+        await recordAuditEvent({ action: "admin.settings_update" });
+        return data;
+      },
+    },
   })(request);
 }

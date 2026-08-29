@@ -98,7 +98,7 @@ function dependencies(
 }
 
 describe("auth service", () => {
-  it("normalizes email, limits both IP and email buckets, and creates a session", async () => {
+  it("normalizes email, limits the IP bucket, and creates a session", async () => {
     const deps = dependencies();
     const service = createAuthService(deps);
     const now = new Date("2026-07-12T10:00:00.000Z");
@@ -108,7 +108,7 @@ describe("auth service", () => {
       { clientIp: "203.0.113.5", now },
     );
 
-    expect(deps.rateLimitRepository.increment).toHaveBeenCalledTimes(2);
+    expect(deps.rateLimitRepository.increment).toHaveBeenCalledTimes(1);
     expect(deps.authRepository.findUserByEmail).toHaveBeenCalledWith(
       "admin@example.com",
     );
@@ -173,10 +173,7 @@ describe("auth service", () => {
     const verifyPassword = vi.fn().mockResolvedValue(false);
     const deps = dependencies({
       rateLimitRepository: {
-        increment: vi
-          .fn()
-          .mockResolvedValueOnce(2)
-          .mockResolvedValueOnce(2),
+        increment: vi.fn().mockResolvedValueOnce(2),
         deleteOlderThan: vi.fn().mockResolvedValue(undefined),
       },
       verifyPassword,
@@ -199,13 +196,10 @@ describe("auth service", () => {
     });
   });
 
-  it("returns generic rate limiting when either bucket exceeds five attempts", async () => {
+  it("returns generic rate limiting when the IP bucket exceeds five attempts", async () => {
     const deps = dependencies({
       rateLimitRepository: {
-        increment: vi
-          .fn()
-          .mockResolvedValueOnce(1)
-          .mockResolvedValueOnce(6),
+        increment: vi.fn().mockResolvedValue(6),
         deleteOlderThan: vi.fn().mockResolvedValue(undefined),
       },
     });
@@ -287,7 +281,7 @@ describe("auth service", () => {
     const record: AdminSessionRecord = {
       tokenHash: "b".repeat(64),
       expiresAt,
-      lastActivityAt: new Date("2026-07-12T08:00:00.000Z"),
+      lastActivityAt: new Date("2026-07-12T09:50:00.000Z"),
       user: { id: USER.id, email: USER.email, active },
     };
     const deps = dependencies({

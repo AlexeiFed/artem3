@@ -37,18 +37,8 @@ export function LoginForm({ nextPath }: LoginFormProps) {
           setError("Не удалось выполнить вход. Попробуйте ещё раз.");
           return;
         }
-        const { message, attemptsRemaining, attemptsLimit, retryAfterSeconds, resetsAt } =
-          parsed.data.error;
+        const { message, retryAfterSeconds, resetsAt } = parsed.data.error;
         const details: string[] = [message];
-        if (
-          attemptsRemaining !== undefined &&
-          attemptsLimit !== undefined &&
-          !message.includes("Осталось попыток")
-        ) {
-          details.push(
-            `Осталось попыток: ${attemptsRemaining} из ${attemptsLimit}.`,
-          );
-        }
         if (retryAfterSeconds !== undefined && !message.includes("Повторите через")) {
           details.push(`Повтор через ${retryAfterSeconds} с.`);
         }

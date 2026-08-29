@@ -70,6 +70,11 @@ export function createChangePasswordHandler({
 
     try {
       await changePassword(admin.id, sessionToken, input);
+      const { recordAuditEvent } = await import("@/modules/audit/audit");
+      await recordAuditEvent({
+        action: "admin.password_change",
+        actorUserId: admin.id,
+      });
       return Response.json({ ok: true }, { status: 200, headers: NO_STORE });
     } catch (error) {
       if (error instanceof AuthDomainError) {
@@ -91,6 +96,13 @@ export function createChangePasswordHandler({
         }
         if (error.code === "UNAUTHORIZED") {
           return errorResponse(401, "UNAUTHORIZED", "Требуется вход.");
+        }
+        if (error.code === "RATE_LIMITED") {
+          return errorResponse(
+            429,
+            "RATE_LIMITED",
+            "Слишком много попыток смены пароля. Попробуйте позже.",
+          );
         }
       }
       console.error({

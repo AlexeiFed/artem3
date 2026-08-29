@@ -8,14 +8,18 @@ import {
 } from "@/lib/http/read-limited-json";
 import {
   AdminLeadsDomainError,
+  LEADS_EXPORT_MAX_ROWS,
+  LEADS_PAGE_DEFAULT,
+  LEADS_PAGE_MAX,
   type AdminLeadsService,
 } from "@/modules/leads/admin-leads.service";
+import { recordAuditEvent } from "@/modules/audit/audit";
 
 const BODY_LIMIT = 8 * 1_024;
 
 interface ListDependencies {
   requireAdmin(): Promise<SafeAdminUser>;
-  service: Pick<AdminLeadsService, "list">;
+  service: Pick<AdminLeadsService, "listPage">;
 }
 
 interface MutationDependencies {
@@ -63,22 +67,31 @@ function mapLeadsError(error: unknown): Response {
 export function createListLeadsHandler({
   requireAdmin,
   service,
-}: ListDependencies): () => Promise<Response> {
-  return async function handleListLeads(): Promise<Response> {
+}: ListDependencies): (request: Request) => Promise<Response> {
+  return async function handleListLeads(request: Request): Promise<Response> {
     const blocked = await requireAdminOrResponse(requireAdmin);
     if (blocked) {
       return blocked;
     }
 
+    const url = new URL(request.url);
+    const cursor = url.searchParams.get("cursor") ?? undefined;
+    const limitRaw = url.searchParams.get("limit");
+    const limit = limitRaw ? Number(limitRaw) : LEADS_PAGE_DEFAULT;
+
     try {
-      const items = await service.list();
+      const page = await service.listPage({
+        limit,
+        ...(cursor === undefined ? {} : { cursor }),
+      });
       return okResponse({
-        items: items.map((item) => ({
+        items: page.items.map((item) => ({
           ...item,
           consentAt: item.consentAt.toISOString(),
           createdAt: item.createdAt.toISOString(),
           updatedAt: item.updatedAt.toISOString(),
         })),
+        nextCursor: page.nextCursor,
       });
     } catch (error) {
       return mapLeadsError(error);
@@ -144,8 +157,21 @@ export function createExportLeadsHandler({
     }
 
     try {
-      const items = await service.list();
-      const csv = service.toCsv(items);
+      const items = [];
+      let cursor: string | undefined;
+      while (items.length < LEADS_EXPORT_MAX_ROWS) {
+        const page = await service.listPage({
+          limit: LEADS_PAGE_MAX,
+          ...(cursor === undefined ? {} : { cursor }),
+        });
+        items.push(...page.items);
+        if (!page.nextCursor) {
+          break;
+        }
+        cursor = page.nextCursor;
+      }
+      const csv = service.toCsv(items.slice(0, LEADS_EXPORT_MAX_ROWS));
+      await recordAuditEvent({ action: "admin.leads_export" });
       return new Response(csv, {
         status: 200,
         headers: {

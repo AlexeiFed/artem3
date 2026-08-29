@@ -18,6 +18,7 @@ import type { RateLimitRepository } from "./rate-limit.repository";
 const RATE_LIMIT_ACTION = "lead:create";
 const RATE_LIMIT_MAXIMUM = 5;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1_000;
+const RATE_LIMIT_RETENTION_MS = 24 * 60 * 60 * 1_000;
 
 export type LeadErrorCode = "VALIDATION" | "RATE_LIMITED" | "PERSISTENCE";
 
@@ -122,6 +123,16 @@ export function createLeadService({
           undefined,
           asErrorCause(error),
         );
+      }
+
+      if (count === 1) {
+        try {
+          await rateLimitRepository.deleteOlderThan(
+            new Date(context.now.getTime() - RATE_LIMIT_RETENTION_MS),
+          );
+        } catch {
+          // Cleanup must not block lead creation.
+        }
       }
 
       if (count > RATE_LIMIT_MAXIMUM) {

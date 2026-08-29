@@ -47,7 +47,7 @@ describe("robots.txt metadata route", () => {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin", "/admin/", "/api/"],
+        disallow: ["/admin", "/admin/", "/api/", "/media/uploads/"],
       },
     ]);
   });

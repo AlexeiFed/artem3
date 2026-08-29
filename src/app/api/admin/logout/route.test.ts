@@ -25,16 +25,21 @@ describe("POST /api/admin/logout", () => {
     const response = await handler(
       request("https://example.test", `admin_session=${"A".repeat(43)}`),
     );
-    const cookie = response.headers.get("set-cookie");
+    const cookies =
+      typeof response.headers.getSetCookie === "function"
+        ? response.headers.getSetCookie()
+        : [response.headers.get("set-cookie")];
+    const serialized = cookies.join("\n");
 
     expect(response.status).toBe(204);
     expect(logout).toHaveBeenCalledWith("A".repeat(43));
-    expect(cookie).toMatch(/admin_session=;/);
-    expect(cookie).toMatch(/Max-Age=0/);
-    expect(cookie).toMatch(/HttpOnly/);
-    expect(cookie).toMatch(/SameSite=Strict/);
-    expect(cookie).toMatch(/Path=\//);
-    expect(cookie).toMatch(/Secure/);
+    expect(serialized).toMatch(/admin_session=;/);
+    expect(serialized).toMatch(/__Host-admin_session=;/);
+    expect(serialized).toMatch(/Max-Age=0/);
+    expect(serialized).toMatch(/HttpOnly/);
+    expect(serialized).toMatch(/SameSite=Strict/);
+    expect(serialized).toMatch(/Path=\//);
+    expect(serialized).toMatch(/Secure/);
   });
 
   it("rejects mismatched Origin without mutating the cookie or database", async () => {

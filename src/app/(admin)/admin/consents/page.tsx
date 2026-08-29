@@ -15,10 +15,24 @@ export default async function AdminConsentsPage() {
     const {
       createAdminLeadsService,
       DrizzleAdminLeadsRepository,
+      LEADS_EXPORT_MAX_ROWS,
+      LEADS_PAGE_MAX,
     } = await import("@/modules/leads/admin-leads.service");
-    const items = await createAdminLeadsService(
-      new DrizzleAdminLeadsRepository(),
-    ).list();
+    const service = createAdminLeadsService(new DrizzleAdminLeadsRepository());
+    const items: Awaited<ReturnType<typeof service.listPage>>["items"] = [];
+    let cursor: string | undefined;
+    while (items.length < LEADS_EXPORT_MAX_ROWS) {
+      const page = await service.listPage(
+        cursor === undefined
+          ? { limit: LEADS_PAGE_MAX }
+          : { limit: LEADS_PAGE_MAX, cursor },
+      );
+      items.push(...page.items);
+      if (page.nextCursor === null) {
+        break;
+      }
+      cursor = page.nextCursor;
+    }
     initialItems = items
       .filter((item) => item.isDataAgreed)
       .map((item) => ({
