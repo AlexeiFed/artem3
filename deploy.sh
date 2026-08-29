@@ -84,6 +84,10 @@ fi
 : "${NEXT_PUBLIC_ALLOW_INDEXING:=true}"
 export NEXT_PUBLIC_ALLOW_INDEXING
 
+echo "==> nginx rate zone + upload limit (до vhost: location login ссылается на zone=adminlogin)"
+scp "${SSH_OPTS[@]}" "$ROOT/scripts/ensure-nginx-upload-limit.sh" "$HOST:/tmp/ensure-nginx-upload-limit.sh"
+ssh "${SSH_OPTS[@]}" "$HOST" bash /tmp/ensure-nginx-upload-limit.sh
+
 echo "==> nginx vhost ${PROD_HOST} (до сборки — от этого зависит http vs https в бандле)"
 scp "${SSH_OPTS[@]}" "$ROOT/scripts/ensure-nginx-site.sh" "$HOST:/tmp/ensure-nginx-site.sh"
 ssh "${SSH_OPTS[@]}" "$HOST" \
