@@ -5,7 +5,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { COOKIE_CONSENT_KEY, acceptCookieConsent } from "@/lib/cookie-consent";
+import { acceptCookieConsent } from "@/lib/cookie-consent";
 
 import { ContactsMap } from "./ContactsMap";
 
@@ -43,7 +43,7 @@ describe("ContactsMap cookie gate", () => {
   });
 
   it("loads Yandex Maps script when consent is already stored", async () => {
-    localStorage.setItem(COOKIE_CONSENT_KEY, "1");
+    acceptCookieConsent();
     render(<ContactsMap {...MAP_PROPS} />);
 
     await waitFor(() => {

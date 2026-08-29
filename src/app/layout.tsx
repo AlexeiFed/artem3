@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import type { CSSProperties, ReactNode } from "react";
 
@@ -7,11 +7,13 @@ import { CookieBanner } from "@/components/CookieBanner";
 import { ModalProvider } from "@/components/forms/ModalProvider";
 import { LenisProvider } from "@/components/motion/LenisProvider";
 import {
+  designTokens,
   designTokenCssVariables,
   type DesignTokenCssVariables,
 } from "@/lib/design-tokens";
 import { getPublicEnv } from "@/lib/env/public";
 import { getPublicAnalytics } from "@/modules/content/public-analytics";
+import { buildSiteMetadata } from "@/modules/content/site-metadata";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -36,27 +38,18 @@ const rootStyle: CSSProperties & DesignTokenCssVariables = {
 
 export async function generateMetadata(): Promise<Metadata> {
   const analytics = await getPublicAnalytics();
-  const allowIndexing = getPublicEnv().NEXT_PUBLIC_ALLOW_INDEXING;
+  const { NEXT_PUBLIC_SITE_URL, NEXT_PUBLIC_ALLOW_INDEXING } = getPublicEnv();
 
-  return {
-    title: {
-      default: "Артём Сысуев — семейный и имущественный юрист",
-      template: "%s — Артём Сысуев",
-    },
-    description:
-      "Юридическая помощь по семейным и имущественным спорам в Хабаровске.",
-    robots: allowIndexing
-      ? { index: true, follow: true }
-      : { index: false, follow: false, nocache: true },
-    ...(analytics.yandexVerificationContent
-      ? {
-          verification: {
-            yandex: analytics.yandexVerificationContent,
-          },
-        }
-      : {}),
-  };
+  return buildSiteMetadata({
+    siteUrl: NEXT_PUBLIC_SITE_URL,
+    allowIndexing: NEXT_PUBLIC_ALLOW_INDEXING,
+    yandexVerificationContent: analytics.yandexVerificationContent,
+  });
 }
+
+export const viewport: Viewport = {
+  themeColor: designTokens.color.accentForest,
+};
 
 export default async function RootLayout({ children }: RootLayoutProps) {
   const analytics = await getPublicAnalytics();

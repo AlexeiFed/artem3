@@ -30,26 +30,39 @@ export function getPreviewLandingData(): LandingData {
   });
 }
 
-export async function getLandingPageData(): Promise<LandingData> {
-  if (!process.env.DATABASE_URL) return getPreviewLandingData();
+export interface GetLandingPageDataDependencies {
+  hasDatabase?: boolean;
+  connect?: () => Promise<void>;
+  loadFromDatabase?: () => Promise<LandingData>;
+}
 
-  // Request-time read so CMS edits appear without a rebuild.
-  // Static prerender was baking build-time DB/seed into HTML forever.
-  await connection();
+async function loadLandingDataFromDatabase(): Promise<LandingData> {
+  const [{ DrizzleContentRepository }, { buildLandingData }] =
+    await Promise.all([
+      import("./content.repository"),
+      import("./landing-data.service"),
+    ]);
+  return buildLandingData(new DrizzleContentRepository());
+}
+
+export async function getLandingPageData(
+  dependencies: GetLandingPageDataDependencies = {},
+): Promise<LandingData> {
+  const hasDatabase =
+    dependencies.hasDatabase ?? Boolean(process.env.DATABASE_URL);
+  if (!hasDatabase) return getPreviewLandingData();
+
+  await (dependencies.connect ?? (() => connection()))();
 
   try {
-    const [{ DrizzleContentRepository }, { buildLandingData }] =
-      await Promise.all([
-        import("./content.repository"),
-        import("./landing-data.service"),
-      ]);
-    return await buildLandingData(new DrizzleContentRepository());
+    return await (dependencies.loadFromDatabase ??
+      loadLandingDataFromDatabase)();
   } catch (error) {
     console.error({
-      event: "landing_page_data_fallback",
+      event: "landing_page_data_failed",
       category: "persistence",
       errorClass: error instanceof Error ? error.name : "UnknownError",
     });
-    return getPreviewLandingData();
+    throw error;
   }
 }

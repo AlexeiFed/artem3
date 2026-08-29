@@ -37,7 +37,7 @@ export function SortableEntityList({
   selectedId,
 }: SortableEntityListProps) {
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
@@ -121,6 +121,7 @@ function SortableRow({
       <button
         type="button"
         className="flex-1 text-left font-sans text-primary"
+        onPointerDown={(event) => event.stopPropagation()}
         onClick={() => onSelect?.(item.id)}
       >
         {item.label}

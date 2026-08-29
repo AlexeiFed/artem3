@@ -34,4 +34,16 @@ describe("getLandingPageData", () => {
       }
     }
   });
+
+  it("does not serve seed when the database is configured and load fails", async () => {
+    await expect(
+      getLandingPageData({
+        hasDatabase: true,
+        connect: async () => undefined,
+        loadFromDatabase: async () => {
+          throw new Error("db down");
+        },
+      }),
+    ).rejects.toThrow("db down");
+  });
 });

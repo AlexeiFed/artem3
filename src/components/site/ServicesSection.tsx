@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { motion } from "motion/react";
 
 import { useModal } from "@/components/forms/ModalProvider";
 import type { LandingData } from "@/modules/content/content.types";
@@ -9,6 +8,29 @@ import {
   serviceAnchorHref,
   serviceAnchorId,
 } from "@/modules/content/service-anchors";
+
+import { ServiceIcon } from "./ServiceIcon";
+
+function CtaArrow() {
+  return (
+    <svg
+      className="service-cta-arrow"
+      viewBox="0 0 16 16"
+      width="16"
+      height="16"
+      aria-hidden="true"
+    >
+      <path
+        d="M3 8h9M8.5 4.5 12.5 8l-4 3.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 export function ServicesSection({
   services,
@@ -76,12 +98,13 @@ export function ServicesSection({
             key={service.slug}
             className="service-card"
           >
-            <div className="service-number">
-              {String(index + 1).padStart(2, "0")}
-            </div>
             <div className="service-main">
+              <div className="service-number">
+                {String(index + 1).padStart(2, "0")}
+              </div>
               <h3>{service.title}</h3>
               <p className="lead">{service.description}</p>
+              <p className="service-list-label">Краткий список ситуаций</p>
               <ul>
                 {service.situations.map((situation) => (
                   <li key={situation}>{situation}</li>
@@ -89,13 +112,18 @@ export function ServicesSection({
               </ul>
             </div>
             <aside>
-              <JusticeScales />
-              <p>
-                <strong>Важно</strong>
+              <ServiceIcon slug={service.slug} iconUrl={service.iconUrl} />
+              <p className="service-trust">
+                <strong>
+                  <span className="service-trust-mark" aria-hidden="true">
+                    !
+                  </span>
+                  Важно
+                </strong>
                 {service.trustNote}
               </p>
               <p className="price">
-                от{" "}
+                От{" "}
                 {new Intl.NumberFormat("ru-RU").format(
                   service.priceFromKopecks / 100,
                 )}{" "}
@@ -103,10 +131,11 @@ export function ServicesSection({
               </p>
               <button
                 type="button"
-                className="text-button"
+                className="button service-cta"
                 onClick={() => openModal(service.title)}
               >
-                {service.ctaLabel} ↗
+                {service.ctaLabel}
+                <CtaArrow />
               </button>
             </aside>
           </article>
@@ -116,33 +145,3 @@ export function ServicesSection({
   );
 }
 
-function JusticeScales() {
-  return (
-    <motion.svg
-      className="justice-scales"
-      viewBox="0 0 160 110"
-      role="img"
-      aria-label="Весы правосудия"
-      initial="hidden"
-      whileInView="shown"
-      viewport={{ once: true, amount: 0.6 }}
-    >
-      <motion.g
-        className="scale-beam"
-        variants={{
-          hidden: { rotate: -7, transformOrigin: "80px 30px" },
-          shown: { rotate: 0, transformOrigin: "80px 30px" },
-        }}
-      >
-        <path d="M24 34H136M80 21V96" />
-        <g className="scale-pan scale-pan-left">
-          <path d="M42 34L24 74H60L42 34Z" />
-        </g>
-        <g className="scale-pan scale-pan-right">
-          <path d="M118 34L100 74H136L118 34Z" />
-        </g>
-      </motion.g>
-      <path d="M55 97H105M67 88H93" />
-    </motion.svg>
-  );
-}

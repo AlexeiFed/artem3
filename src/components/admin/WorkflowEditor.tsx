@@ -3,11 +3,18 @@
 import { useState, type FormEvent } from "react";
 
 import { SaveBar } from "@/components/admin/SaveBar";
-import { AdminApiErrorSchema } from "@/modules/content/admin-content.schemas";
+import { formatAdminApiError } from "@/components/admin/format-admin-error";
 import type {
   TrustBannerSettings,
   WorkflowSettings,
 } from "@/modules/content/content.types";
+
+const WORKFLOW_FIELD_LABELS: Record<string, string> = {
+  "trustBanner.consultation.eyebrow": "Консультация — надзаголовок",
+  "trustBanner.consultation.title": "Консультация — заголовок",
+  "workflow.eyebrow": "Работа — надзаголовок",
+  "workflow.title": "Работа — заголовок",
+};
 
 interface WorkflowEditorProps {
   initialTrustBanner: TrustBannerSettings;
@@ -62,10 +69,9 @@ export function WorkflowEditor({
         body: JSON.stringify({ trustBanner, workflow }),
       });
       if (!response.ok) {
-        const parsed = AdminApiErrorSchema.safeParse(await response.json());
-        throw new Error(
-          parsed.success ? parsed.data.error.message : "Ошибка сохранения",
-        );
+        throw formatAdminApiError(await response.json(), {
+          fieldLabels: WORKFLOW_FIELD_LABELS,
+        });
       }
       setDirty(false);
     } catch (err) {

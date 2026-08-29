@@ -43,6 +43,7 @@ function checkConsent() {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   delete window.ym;
 });
 
@@ -70,12 +71,14 @@ describe("global lead modal", () => {
       screen.getByRole("link", { name: /согласию на обработку персональных данных/i }),
     ).toHaveAttribute("href", "/personal-data");
     expect(
-      screen.getByRole("link", { name: /политике конфиденциальности/i }),
+      screen.getByRole("link", {
+        name: /политике в отношении обработки персональных данных/i,
+      }),
     ).toHaveAttribute("href", "/privacy");
     expect(
       screen.getByText(/Не указывайте ФИО детей, паспортные данные/i),
     ).toBeVisible();
-    expect(screen.getByText(/ред\. от 19\.08\.2026/i)).toBeVisible();
+    expect(screen.getByText(/ред\. от 22\.08\.2026/i)).toBeVisible();
 
     checkConsent();
     expect(submit).toBeEnabled();
@@ -147,6 +150,82 @@ describe("global lead modal", () => {
     });
   });
 
+  it("labels the situation field without the redundant optional hint", () => {
+    render(
+      <ModalProvider metrikaId={undefined}>
+        <Trigger />
+      </ModalProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Открыть форму" }));
+
+    expect(screen.getByLabelText("Суть вопроса")).toBeVisible();
+    expect(screen.queryByText("(необязательно)")).not.toBeInTheDocument();
+  });
+
+  it("opens the dialog without scrolling inner form content", () => {
+    const focus = vi.spyOn(HTMLInputElement.prototype, "focus");
+
+    render(
+      <ModalProvider metrikaId={undefined}>
+        <Trigger />
+      </ModalProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Открыть форму" }));
+
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+  });
+
+  it("moves the overlay when a field would sit under the keyboard", () => {
+    vi.stubGlobal("visualViewport", {
+      height: 400,
+      offsetTop: 0,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    });
+
+    render(
+      <ModalProvider metrikaId={undefined}>
+        <Trigger />
+      </ModalProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Открыть форму" }));
+
+    const phone = screen.getByLabelText("Телефон");
+    const fieldScrollIntoView = vi.fn();
+    phone.scrollIntoView = fieldScrollIntoView;
+    vi.spyOn(phone, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 450,
+      top: 450,
+      right: 320,
+      bottom: 500,
+      left: 0,
+      width: 320,
+      height: 50,
+      toJSON() {
+        return {};
+      },
+    });
+
+    const backdrop = document.querySelector(".modal-backdrop");
+    if (!(backdrop instanceof HTMLElement)) {
+      throw new Error("Missing modal backdrop");
+    }
+    const scrollBy = vi.fn();
+    backdrop.scrollBy = scrollBy;
+
+    fireEvent.focus(phone);
+
+    expect(fieldScrollIntoView).not.toHaveBeenCalled();
+    expect(scrollBy).toHaveBeenCalledWith({
+      top: 124,
+      behavior: "smooth",
+    });
+  });
+
   it("rejects all-identical phone digits before submit", async () => {
     render(
       <ModalProvider metrikaId={undefined}>
@@ -165,5 +244,38 @@ describe("global lead modal", () => {
     fireEvent.click(screen.getByRole("button", { name: "Получить план действий" }));
 
     expect(screen.getByText("Введите корректный российский номер")).toBeVisible();
+  });
+
+  it("shows a rate-limit message instead of a generic network error", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json(
+        {
+          ok: false,
+          error: {
+            code: "RATE_LIMITED",
+            message: "Слишком много заявок. Попробуйте позже.",
+            retryAfterSeconds: 60,
+          },
+        },
+        { status: 429 },
+      ),
+    );
+
+    render(
+      <ModalProvider metrikaId={undefined}>
+        <Trigger />
+      </ModalProvider>,
+    );
+
+    openAndFill();
+    checkConsent();
+    fireEvent.click(screen.getByRole("button", { name: "Получить план действий" }));
+
+    expect(
+      await screen.findByText("Слишком много заявок. Попробуйте позже."),
+    ).toBeVisible();
+    expect(
+      screen.queryByText(/Не удалось отправить заявку/),
+    ).not.toBeInTheDocument();
   });
 });

@@ -5,15 +5,18 @@ import type { HeroSettings } from "@/modules/content/content.types";
 import { AdminPageFrame } from "@/components/admin/AdminPageFrame";
 
 export default async function AdminXrayPage() {
+  const { requireAdminOrRedirect } = await import(
+    "@/modules/auth/require-admin"
+  );
+  await requireAdminOrRedirect("/admin/xray");
+
   let initialHero: HeroSettings | null = null;
   let loadError: string | null = null;
 
   try {
-    const { requireAdmin } = await import("@/modules/auth/require-admin");
     const { DrizzleContentRepository } = await import(
       "@/modules/content/content.repository"
     );
-    await requireAdmin();
     const settings = await new DrizzleContentRepository().getSiteSettings();
     if (!settings) {
       loadError = "Настройки сайта не найдены.";
@@ -22,7 +25,7 @@ export default async function AdminXrayPage() {
     }
   } catch {
     loadError =
-      "Не удалось загрузить блок «Рентген договора». Проверьте PostgreSQL и сессию.";
+      "Не удалось загрузить блок «Рентген договора». Проверьте PostgreSQL.";
   }
 
   return (

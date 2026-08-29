@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Боевой деплой artem → https://vibespace27.ru
+# Боевой деплой artem. Канон: https://artemsysuev.ru (пока нет TLS — http://artemsysuev.ru).
 # (/var/www/vibespace → symlink на релиз, PM2 :3001)
 #
 # Из корня репо на Mac:
-#   chmod +x deploy.sh scripts/remote-setup.sh
+#   chmod +x deploy.sh scripts/remote-setup.sh scripts/ensure-nginx-site.sh
 #   ./deploy.sh
 #
 # Поведение по умолчанию (безопасно):
@@ -20,9 +20,10 @@
 #   DEPLOY_SHARED=/var/www/vibespace-shared # uploads и пр.
 #   DEPLOY_PORT=3001
 #   DEPLOY_PROBE_PORT=3011                  # временный порт для проверки
-#   DEPLOY_SITE_URL=http://213.171.15.166
+#   DEPLOY_SITE_URL=https://artemsysuev.ru   # иначе: https если есть сертификат, иначе http
 #   SKIP_BUILD=1
-#   SKIP_HTTPS_SMOKE=1                      # пока DNS не смотрит на этот VPS
+#   SKIP_CERTBOT=1                          # не трогать Let's Encrypt
+#   SKIP_HTTPS_SMOKE=1                      # не курлить канонический URL
 #   REMOTE_BUILD=1
 #   FORCE_NPM_CI=1                          # принудительно npm ci (локально и на сервере)
 #   RESET_DB=1                              # ЯВНО снести и пересоздать БД (опасно)
@@ -42,13 +43,15 @@ RELEASES_ROOT="${DEPLOY_RELEASES:-/var/www/vibespace-releases}"
 SHARED_ROOT="${DEPLOY_SHARED:-/var/www/vibespace-shared}"
 APP_PORT="${DEPLOY_PORT:-3001}"
 PROBE_PORT="${DEPLOY_PROBE_PORT:-3011}"
-SITE_URL="${DEPLOY_SITE_URL:-http://213.171.15.166}"
+PROD_HOST="${DEPLOY_SITE_HOST:-artemsysuev.ru}"
+VPS_IP="${DEPLOY_VPS_IP:-${HOST#*@}}"
 NODE_VERSION="${DEPLOY_NODE_VERSION:-22}"
 PM2_NAME="${DEPLOY_PM2_NAME:-vibespace}"
 ENV_STORE="/root/.config/artem-vibespace.env"
 KEEP_RELEASES="${KEEP_RELEASES:-1}"
 RELEASE_ID="$(date -u +%Y%m%d-%H%M%S)"
 RELEASE_DIR="${RELEASES_ROOT}/${RELEASE_ID}"
+SSH_OPTS=(-o ServerAliveInterval=15 -o ServerAliveCountMax=40 -o ConnectTimeout=20)
 
 ensure_node_modules() {
   local label="$1"
@@ -75,13 +78,27 @@ if [[ -f .env ]]; then
   set +a
 fi
 
-# Всегда продакшен URL в бандл — не localhost из локального .env
-export NEXT_PUBLIC_SITE_URL="$SITE_URL"
 : "${NEXT_PUBLIC_YANDEX_METRIKA_ID:=}"
 : "${NEXT_PUBLIC_YANDEX_MAPS_API_KEY:=}"
-# Временный домен: по умолчанию закрыт от индексации. На проде: NEXT_PUBLIC_ALLOW_INDEXING=true
-: "${NEXT_PUBLIC_ALLOW_INDEXING:=false}"
+# Прод открыт для поиска. Закрыть: NEXT_PUBLIC_ALLOW_INDEXING=false ./deploy.sh
+: "${NEXT_PUBLIC_ALLOW_INDEXING:=true}"
 export NEXT_PUBLIC_ALLOW_INDEXING
+
+echo "==> nginx vhost ${PROD_HOST} (до сборки — от этого зависит http vs https в бандле)"
+scp "${SSH_OPTS[@]}" "$ROOT/scripts/ensure-nginx-site.sh" "$HOST:/tmp/ensure-nginx-site.sh"
+ssh "${SSH_OPTS[@]}" "$HOST" \
+  env SITE_HOST="$PROD_HOST" APP_PORT="$APP_PORT" SKIP_CERTBOT="${SKIP_CERTBOT:-0}" \
+  bash /tmp/ensure-nginx-site.sh
+
+if [[ -n "${DEPLOY_SITE_URL:-}" ]]; then
+  SITE_URL="${DEPLOY_SITE_URL}"
+elif ssh "${SSH_OPTS[@]}" "$HOST" test -f "/etc/letsencrypt/live/${PROD_HOST}/fullchain.pem"; then
+  SITE_URL="https://${PROD_HOST}"
+else
+  SITE_URL="http://${PROD_HOST}"
+fi
+# Всегда прод-URL в бандл — не localhost из локального .env
+export NEXT_PUBLIC_SITE_URL="$SITE_URL"
 
 echo "==> Host: $HOST"
 echo "==> Live: $LIVE_LINK"
@@ -99,7 +116,7 @@ if [[ "${REMOTE_BUILD:-0}" != "1" && "${SKIP_BUILD:-0}" != "1" ]]; then
 fi
 
 echo "==> Prepare remote release dirs (live process NOT stopped)"
-ssh -o ServerAliveInterval=15 -o ServerAliveCountMax=40 -o ConnectTimeout=20 "$HOST" \
+ssh "${SSH_OPTS[@]}" "$HOST" \
   "mkdir -p '${RELEASE_DIR}' '${SHARED_ROOT}/public/media/uploads' '${RELEASES_ROOT}'"
 
 echo "==> Rsync → release (без .next/dev)"
@@ -128,13 +145,13 @@ if [[ "${REMOTE_BUILD:-0}" == "1" ]]; then
 fi
 
 rsync -az --partial --progress --timeout=120 \
-  -e "ssh -o ServerAliveInterval=15 -o ServerAliveCountMax=40 -o ConnectTimeout=20" \
+  -e "ssh ${SSH_OPTS[*]}" \
   "${RSYNC_EXCLUDES[@]}" \
   --include 'public/media/uploads/.gitkeep' \
   "$ROOT/" "$HOST:$RELEASE_DIR/"
 
 echo "==> Remote setup + health + atomic switch"
-ssh -o ServerAliveInterval=15 -o ServerAliveCountMax=40 -o ConnectTimeout=20 "$HOST" \
+ssh "${SSH_OPTS[@]}" "$HOST" \
   env \
   REMOTE_DIR="$RELEASE_DIR" \
   LIVE_LINK="$LIVE_LINK" \
@@ -156,18 +173,30 @@ ssh -o ServerAliveInterval=15 -o ServerAliveCountMax=40 -o ConnectTimeout=20 "$H
   FORCE_NPM_CI="${FORCE_NPM_CI:-0}" \
   bash "$RELEASE_DIR/scripts/remote-setup.sh"
 
-echo "==> Smoke ${SITE_URL}/"
-HTTP_CODE="$(curl -sS -o /dev/null -w "%{http_code}" "${SITE_URL}/" || echo 000)"
+echo "==> nginx site + upload limit"
+ssh "${SSH_OPTS[@]}" "$HOST" \
+  env SITE_HOST="$PROD_HOST" APP_PORT="$APP_PORT" SKIP_CERTBOT="${SKIP_CERTBOT:-0}" \
+  bash "${RELEASE_DIR}/scripts/ensure-nginx-site.sh" \
+  || echo "WARN: ensure-nginx-site.sh failed" >&2
+ssh "${SSH_OPTS[@]}" "$HOST" \
+  "bash '${RELEASE_DIR}/scripts/ensure-nginx-upload-limit.sh'" \
+  || echo "WARN: не удалось обновить nginx body size — загрузки >1MB могут давать 413" >&2
+
+echo "==> Smoke Host:${PROD_HOST} → ${VPS_IP} (${SITE_URL})"
+if [[ "${SKIP_HTTPS_SMOKE:-0}" == "1" ]]; then
+  HTTP_CODE="$(curl -sS -o /dev/null -w "%{http_code}" "http://${VPS_IP}/" || echo 000)"
+elif [[ "${SITE_URL}" == https://* ]]; then
+  HTTP_CODE="$(curl -sS -o /dev/null -w "%{http_code}" \
+    --resolve "${PROD_HOST}:443:${VPS_IP}" "https://${PROD_HOST}/" || echo 000)"
+else
+  HTTP_CODE="$(curl -sS -o /dev/null -w "%{http_code}" \
+    -H "Host: ${PROD_HOST}" "http://${VPS_IP}/" || echo 000)"
+fi
 echo "smoke=${HTTP_CODE}"
 if [[ "$HTTP_CODE" != "200" && "$HTTP_CODE" != "304" ]]; then
   echo "WARN: smoke не 200 — проверь nginx/PM2 вручную" >&2
   exit 1
 fi
-
-echo "==> nginx upload limit (client_max_body_size)"
-ssh -o ConnectTimeout=20 "$HOST" \
-  "bash '${RELEASE_DIR}/scripts/ensure-nginx-upload-limit.sh'" \
-  || echo "WARN: не удалось обновить nginx body size — загрузки >1MB могут давать 413" >&2
 
 echo "==> Готово: ${SITE_URL}"
 echo "    Админка: ${SITE_URL}/admin/login"

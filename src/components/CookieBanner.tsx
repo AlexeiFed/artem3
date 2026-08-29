@@ -10,6 +10,7 @@ import {
   subscribeCookieConsent,
 } from "@/lib/cookie-consent";
 import { designTokens } from "@/lib/design-tokens";
+import { COOKIE_POLICY_TITLE_PREPOSITIONAL } from "@/modules/content/legal-copy";
 
 export { COOKIE_CONSENT_KEY };
 
@@ -46,7 +47,7 @@ export function CookieBanner() {
       {!hasConsent && visible ? (
         <motion.aside
           className="cookie-banner"
-          role="dialog"
+          role="region"
           aria-label="Использование cookie"
           initial={reduced ? false : { y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -60,7 +61,8 @@ export function CookieBanner() {
             Сайт использует файлы cookie, Яндекс.Карты и при подключении —
             Яндекс.Метрику, чтобы карта и аналитика работали. Нажимая «ОК», вы
             даёте ИП Сысуеву А.А. согласие на это. Подробности — в{" "}
-            <a href="/cookies">Согласии на cookie</a>. Если не согласны —
+            <a href="/cookies">{COOKIE_POLICY_TITLE_PREPOSITIONAL}</a>. Если не
+            согласны —
             отключите cookie в браузере или покиньте сайт.
           </p>
           <button type="button" className="cookie-banner-ok" onClick={accept}>

@@ -8,8 +8,10 @@ import {
   LandingDataSchema,
   RatingSchema,
   RatingsSettingsSchema,
+  ServiceSchema,
   TrustBannerSettingsSchema,
   VkEmbedSchema,
+  WorkflowSettingsSchema,
 } from "./content.schemas";
 import type {
   HeroSettings,
@@ -193,6 +195,43 @@ describe("external URL security", () => {
   });
 });
 
+function serviceContentInput(
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const first = seedContent.services[0];
+  if (!first) throw new Error("Missing service fixture");
+  return {
+    slug: first.slug,
+    title: first.title,
+    description: first.description,
+    situations: first.situations,
+    trustNote: first.trustNote,
+    priceFromKopecks: first.priceFromKopecks,
+    isHighValue: first.isHighValue,
+    isHidden: first.isHidden,
+    ctaLabel: first.ctaLabel,
+    iconUrl: first.iconUrl,
+    ...overrides,
+  };
+}
+
+describe("ServiceSchema", () => {
+  it("defaults iconUrl to null when the admin has not uploaded an icon", () => {
+    const withoutIcon = serviceContentInput();
+    delete withoutIcon.iconUrl;
+
+    expect(ServiceSchema.parse(withoutIcon).iconUrl).toBeNull();
+  });
+
+  it("accepts a local uploaded icon path", () => {
+    expect(
+      ServiceSchema.parse(
+        serviceContentInput({ iconUrl: "/media/razvod-icon.png" }),
+      ).iconUrl,
+    ).toBe("/media/razvod-icon.png");
+  });
+});
+
 describe("CertificateSchema", () => {
   it("accepts a single local diploma scan path", () => {
     const result = CertificateSchema.safeParse({
@@ -262,6 +301,7 @@ describe("CertificateSchema", () => {
             priceFromKopecks,
             isHighValue,
             ctaLabel,
+            iconUrl,
           }) => ({
             slug,
             title,
@@ -271,6 +311,7 @@ describe("CertificateSchema", () => {
             priceFromKopecks,
             isHighValue,
             ctaLabel,
+            iconUrl,
           }),
         ),
       meta: seedContent.settings.hero.meta,
@@ -321,5 +362,28 @@ describe("normalizeHonestySettings", () => {
         "Не общие советы, а рабочая карта дела",
       );
     }
+  });
+});
+
+describe("optional eyebrows", () => {
+  it("accepts an empty workflow eyebrow so the duplicate heading can be removed", () => {
+    const parsed = WorkflowSettingsSchema.safeParse({
+      ...structuredClone(seedContent.settings.workflow),
+      eyebrow: "",
+    });
+
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.eyebrow).toBe("");
+  });
+
+  it("accepts an empty honesty theme so the duplicate heading can be removed", () => {
+    const trustBanner = structuredClone(seedContent.settings.trustBanner);
+    const parsed = TrustBannerSettingsSchema.safeParse({
+      ...trustBanner,
+      honesty: { ...trustBanner.honesty, theme: "" },
+    });
+
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.honesty.theme).toBe("");
   });
 });

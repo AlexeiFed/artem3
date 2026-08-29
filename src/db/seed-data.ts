@@ -19,6 +19,7 @@ import {
   DEFAULT_PERSONAL_DATA_TEXT,
   DEFAULT_PRIVACY_TEXT,
   DEFAULT_TERMS_TEXT,
+  OPERATOR_EMAIL,
 } from "@/modules/content/legal-copy";
 
 type SeedEntity<T> = T & {
@@ -64,7 +65,7 @@ export const seedContent = {
           { label: "Главная", href: "#main" },
           { label: "Услуги", href: "#uslugi" },
           { label: "Кейсы", href: "#cases" },
-          { label: "Отзывы и документы", href: "#reviews" },
+          { label: "Отзывы", href: "#reviews" },
           { label: "FAQ", href: "#faq" },
           { label: "Контакты", href: "#contacts" },
         ],
@@ -211,7 +212,7 @@ export const seedContent = {
       },
       email: {
         label: "Email",
-        address: "artem@vibespace27.ru",
+        address: OPERATOR_EMAIL,
       },
       responseSla:
         "Отвечаю в течение 1 часа в рабочее время (с 9:00 до 18:00 по Хабаровску)",
@@ -280,6 +281,7 @@ export const seedContent = {
       isHighValue: false,
       isHidden: false,
       ctaLabel: "Получить оценку ситуации",
+      iconUrl: null,
       sortOrder: 0,
     },
     {
@@ -301,6 +303,7 @@ export const seedContent = {
       isHighValue: false,
       isHidden: false,
       ctaLabel: "Проверить возможность взыскания",
+      iconUrl: null,
       sortOrder: 1,
     },
     {
@@ -320,6 +323,7 @@ export const seedContent = {
       isHighValue: true,
       isHidden: false,
       ctaLabel: "Оценить перспективы раздела",
+      iconUrl: null,
       sortOrder: 2,
     },
     {
@@ -339,6 +343,7 @@ export const seedContent = {
       isHighValue: true,
       isHidden: false,
       ctaLabel: "Оценить перспективы дела",
+      iconUrl: null,
       sortOrder: 3,
     },
     {
@@ -357,6 +362,7 @@ export const seedContent = {
       isHighValue: true,
       isHidden: true,
       ctaLabel: "Проверить возможность оформления",
+      iconUrl: null,
       sortOrder: 4,
     },
     {
@@ -377,6 +383,7 @@ export const seedContent = {
       isHighValue: false,
       isHidden: false,
       ctaLabel: "Получить юридическую помощь",
+      iconUrl: null,
       sortOrder: 5,
     },
   ],

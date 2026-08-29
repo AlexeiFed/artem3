@@ -4,7 +4,7 @@ import "@testing-library/jest-dom/vitest";
 
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ModalProvider } from "@/components/forms/ModalProvider";
 import { getPreviewLandingData } from "@/modules/content/preview-landing-data";
@@ -27,6 +27,13 @@ vi.stubGlobal(
 afterEach(() => {
   cleanup();
   reducedMotion = false;
+  vi.mocked(HTMLVideoElement.prototype.play).mockRestore();
+});
+
+beforeEach(() => {
+  vi.spyOn(HTMLVideoElement.prototype, "play").mockResolvedValue(
+    undefined as unknown as void,
+  );
 });
 
 function renderHero() {
@@ -59,9 +66,12 @@ describe("Hero", () => {
         name: "Развод, алименты и раздел имущества в Хабаровске",
       }),
     ).toBeVisible();
-    expect(
-      screen.getByRole("button", { name: "Получить оценку ситуации" }),
-    ).toBeInTheDocument();
+    const cta = screen.getByRole("button", {
+      name: "Получить оценку ситуации",
+    });
+    expect(cta).toBeInTheDocument();
+    expect(cta).toHaveClass("button");
+    expect(cta).not.toHaveClass("button-light");
     expect(
       screen.getByText("Опишите ваш вопрос — оценю перспективы и подскажу возможные действия.", {
         exact: false,
@@ -86,6 +96,12 @@ describe("Hero", () => {
     ).toEqual(["0", "0", "0"]);
   });
 
+  it("starts muted playback after hydration", () => {
+    renderHero();
+
+    expect(HTMLVideoElement.prototype.play).toHaveBeenCalled();
+  });
+
   it("renders the local muted looping video without VK or sound controls", () => {
     const { data } = renderHero();
     const video = screen.getByTestId("hero-video");
@@ -95,7 +111,8 @@ describe("Hero", () => {
     expect(video).toHaveAttribute("autoplay");
     expect(video).toHaveAttribute("loop");
     expect(video).toHaveAttribute("playsinline");
-    expect(video).toHaveAttribute("preload", "metadata");
+    expect(video).toHaveAttribute("preload", "auto");
+    expect(video).toHaveAttribute("muted");
     expect(video).toHaveProperty("muted", true);
     expect(screen.queryByTitle(/VK-плеер/u)).not.toBeInTheDocument();
     expect(

@@ -43,6 +43,13 @@
       "when": 1787094079335,
       "tag": "0005_famous_whizzer",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787648152536,
+      "tag": "0006_slim_havok",
+      "breakpoints": true
     }
   ]
 }

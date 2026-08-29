@@ -3,16 +3,19 @@ import { LeadsPanel } from "@/components/admin/LeadsPanel";
 import { AdminPageFrame } from "@/components/admin/AdminPageFrame";
 
 export default async function AdminLeadsPage() {
+  const { requireAdminOrRedirect } = await import(
+    "@/modules/auth/require-admin"
+  );
+  await requireAdminOrRedirect("/admin/leads");
+
   let initialItems: Parameters<typeof LeadsPanel>[0]["initialItems"] = [];
   let loadError: string | null = null;
 
   try {
-    const { requireAdmin } = await import("@/modules/auth/require-admin");
     const {
       createAdminLeadsService,
       DrizzleAdminLeadsRepository,
     } = await import("@/modules/leads/admin-leads.service");
-    await requireAdmin();
     const items = await createAdminLeadsService(
       new DrizzleAdminLeadsRepository(),
     ).list();
@@ -26,8 +29,7 @@ export default async function AdminLeadsPage() {
       createdAt: item.createdAt.toISOString(),
     }));
   } catch {
-    loadError =
-      "Не удалось загрузить заявки. Проверьте PostgreSQL и сессию.";
+    loadError = "Не удалось загрузить заявки. Проверьте PostgreSQL.";
   }
 
   return (

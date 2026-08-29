@@ -96,6 +96,7 @@ export class DrizzleAdminContentRepository implements AdminContentRepository {
         isHighValue: input.isHighValue,
         isHidden: input.isHidden,
         ctaLabel: input.ctaLabel,
+        iconUrl: input.iconUrl,
         updatedAt: new Date(),
       })
       .where(eq(services.id, id))
@@ -126,6 +127,7 @@ export class DrizzleAdminContentRepository implements AdminContentRepository {
           isHighValue: input.isHighValue,
           isHidden: input.isHidden,
           ctaLabel: input.ctaLabel,
+          iconUrl: input.iconUrl,
           sortOrder,
         })
         .returning();

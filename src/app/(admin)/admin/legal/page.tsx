@@ -3,15 +3,18 @@ import { LegalEditor } from "@/components/admin/LegalEditor";
 import { AdminPageFrame } from "@/components/admin/AdminPageFrame";
 
 export default async function AdminLegalPage() {
+  const { requireAdminOrRedirect } = await import(
+    "@/modules/auth/require-admin"
+  );
+  await requireAdminOrRedirect("/admin/legal");
+
   let initialLegal: Record<string, unknown> = {};
   let loadError: string | null = null;
 
   try {
-    const { requireAdmin } = await import("@/modules/auth/require-admin");
     const { DrizzleContentRepository } = await import(
       "@/modules/content/content.repository"
     );
-    await requireAdmin();
     const settings = await new DrizzleContentRepository().getSiteSettings();
     if (!settings) {
       loadError = "Настройки сайта не найдены.";
@@ -19,8 +22,7 @@ export default async function AdminLegalPage() {
       initialLegal = settings.legal as Record<string, unknown>;
     }
   } catch {
-    loadError =
-      "Не удалось загрузить правовые тексты. Проверьте PostgreSQL и сессию.";
+    loadError = "Не удалось загрузить правовые тексты. Проверьте PostgreSQL.";
   }
 
   return (

@@ -31,6 +31,8 @@ function createLandingDataFixture() {
         trustNote,
         priceFromKopecks,
         isHighValue,
+        ctaLabel,
+        iconUrl,
       }) => ({
         slug,
         title,
@@ -39,6 +41,8 @@ function createLandingDataFixture() {
         trustNote,
         priceFromKopecks,
         isHighValue,
+        ctaLabel,
+        iconUrl,
       }),
     ),
     consultation: settings.trustBanner.consultation,

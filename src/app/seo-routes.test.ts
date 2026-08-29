@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
+const SITE_URL = "https://example.test";
+
 const getPublicEnvMock = vi.fn(() => ({
-  NEXT_PUBLIC_SITE_URL: "https://vibespace27.ru",
+  NEXT_PUBLIC_SITE_URL: SITE_URL,
   NEXT_PUBLIC_ALLOW_INDEXING: false,
 }));
 
@@ -15,7 +17,7 @@ import sitemap from "./sitemap";
 describe("robots.txt metadata route", () => {
   it("blocks all crawlers when indexing is disabled", () => {
     getPublicEnvMock.mockReturnValue({
-      NEXT_PUBLIC_SITE_URL: "https://vibespace27.ru",
+      NEXT_PUBLIC_SITE_URL: SITE_URL,
       NEXT_PUBLIC_ALLOW_INDEXING: false,
     });
 
@@ -33,14 +35,14 @@ describe("robots.txt metadata route", () => {
 
   it("allows public pages and points to sitemap when indexing is enabled", () => {
     getPublicEnvMock.mockReturnValue({
-      NEXT_PUBLIC_SITE_URL: "https://vibespace27.ru",
+      NEXT_PUBLIC_SITE_URL: SITE_URL,
       NEXT_PUBLIC_ALLOW_INDEXING: true,
     });
 
     const result = robots();
 
-    expect(result.host).toBe("https://vibespace27.ru");
-    expect(result.sitemap).toBe("https://vibespace27.ru/sitemap.xml");
+    expect(result.host).toBe(SITE_URL);
+    expect(result.sitemap).toBe(`${SITE_URL}/sitemap.xml`);
     expect(result.rules).toEqual([
       {
         userAgent: "*",
@@ -54,7 +56,7 @@ describe("robots.txt metadata route", () => {
 describe("sitemap.xml metadata route", () => {
   it("returns empty list when indexing is disabled", () => {
     getPublicEnvMock.mockReturnValue({
-      NEXT_PUBLIC_SITE_URL: "https://vibespace27.ru",
+      NEXT_PUBLIC_SITE_URL: SITE_URL,
       NEXT_PUBLIC_ALLOW_INDEXING: false,
     });
 
@@ -63,18 +65,18 @@ describe("sitemap.xml metadata route", () => {
 
   it("lists public legal and landing URLs when indexing is enabled", () => {
     getPublicEnvMock.mockReturnValue({
-      NEXT_PUBLIC_SITE_URL: "https://vibespace27.ru",
+      NEXT_PUBLIC_SITE_URL: SITE_URL,
       NEXT_PUBLIC_ALLOW_INDEXING: true,
     });
 
     const urls = sitemap().map((entry) => entry.url);
 
     expect(urls).toEqual([
-      "https://vibespace27.ru",
-      "https://vibespace27.ru/privacy",
-      "https://vibespace27.ru/personal-data",
-      "https://vibespace27.ru/cookies",
-      "https://vibespace27.ru/usloviya",
+      SITE_URL,
+      `${SITE_URL}/privacy`,
+      `${SITE_URL}/personal-data`,
+      `${SITE_URL}/cookies`,
+      `${SITE_URL}/usloviya`,
     ]);
   });
 });

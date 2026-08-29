@@ -3,16 +3,19 @@ import { ConsentsPanel } from "@/components/admin/ConsentsPanel";
 import { AdminPageFrame } from "@/components/admin/AdminPageFrame";
 
 export default async function AdminConsentsPage() {
+  const { requireAdminOrRedirect } = await import(
+    "@/modules/auth/require-admin"
+  );
+  await requireAdminOrRedirect("/admin/consents");
+
   let initialItems: Parameters<typeof ConsentsPanel>[0]["initialItems"] = [];
   let loadError: string | null = null;
 
   try {
-    const { requireAdmin } = await import("@/modules/auth/require-admin");
     const {
       createAdminLeadsService,
       DrizzleAdminLeadsRepository,
     } = await import("@/modules/leads/admin-leads.service");
-    await requireAdmin();
     const items = await createAdminLeadsService(
       new DrizzleAdminLeadsRepository(),
     ).list();
@@ -29,8 +32,7 @@ export default async function AdminConsentsPage() {
         createdAt: item.createdAt.toISOString(),
       }));
   } catch {
-    loadError =
-      "Не удалось загрузить согласия. Проверьте PostgreSQL и сессию.";
+    loadError = "Не удалось загрузить согласия. Проверьте PostgreSQL.";
   }
 
   return (

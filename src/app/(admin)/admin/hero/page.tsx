@@ -5,15 +5,18 @@ import type { HeroSettings } from "@/modules/content/content.types";
 import { AdminPageFrame } from "@/components/admin/AdminPageFrame";
 
 export default async function AdminHeroPage() {
+  const { requireAdminOrRedirect } = await import(
+    "@/modules/auth/require-admin"
+  );
+  await requireAdminOrRedirect("/admin/hero");
+
   let initialHero: HeroSettings | null = null;
   let loadError: string | null = null;
 
   try {
-    const { requireAdmin } = await import("@/modules/auth/require-admin");
     const { DrizzleContentRepository } = await import(
       "@/modules/content/content.repository"
     );
-    await requireAdmin();
     const settings = await new DrizzleContentRepository().getSiteSettings();
     if (!settings) {
       loadError = "Настройки сайта не найдены.";
@@ -21,8 +24,7 @@ export default async function AdminHeroPage() {
       initialHero = HeroSettingsSchema.parse(settings.hero);
     }
   } catch {
-    loadError =
-      "Не удалось загрузить hero. Проверьте PostgreSQL и сессию.";
+    loadError = "Не удалось загрузить hero. Проверьте PostgreSQL.";
   }
 
   return (

@@ -6,6 +6,15 @@ interface LegalDocumentPageProps {
   entityText: string;
 }
 
+export function isLegalSectionHeading(text: string): boolean {
+  const trimmed = text.trim();
+  return (
+    /^\d+\.\s+\S.+$/u.test(trimmed) &&
+    !/^\d+\.\d+/u.test(trimmed) &&
+    !trimmed.includes("\n")
+  );
+}
+
 export function LegalDocumentPage({
   title,
   body,
@@ -24,9 +33,13 @@ export function LegalDocumentPage({
       <p className="eyebrow">Правовая информация</p>
       <h1>{title}</h1>
       <section>
-        {paragraphs.map((paragraph, index) => (
-          <p key={index}>{paragraph}</p>
-        ))}
+        {paragraphs.map((paragraph, index) =>
+          isLegalSectionHeading(paragraph) ? (
+            <h2 key={index}>{paragraph}</h2>
+          ) : (
+            <p key={index}>{paragraph}</p>
+          ),
+        )}
       </section>
       <p>{entityText}</p>
     </main>

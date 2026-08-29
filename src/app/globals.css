@@ -21,14 +21,17 @@
 
 :root {
   --site-header-offset: 5.5rem;
+  --site-shell-max: 82rem;
+  --site-shell-gutter: 2rem;
   /* fallback до ResizeObserver: ~3 ряда табов на мобилке */
   --site-tabs-offset: 10.5rem;
   --site-section-pad: clamp(3.75rem, 7vw, 6.5rem);
   --site-scroll-offset-tabs: calc(
     var(--site-header-offset) + var(--site-tabs-offset)
   );
-  /* якоря: останавливаемся под шапкой с небольшим воздухом */
-  --site-scroll-margin: calc(var(--site-header-offset) + 0.85rem);
+  /* якоря: 0 — секция заезжает под прозрачную шапку своим фоном;
+     контент держим ниже шапки padding-top секции, не щелью предыдущего блока */
+  --site-scroll-margin: 0;
   /* кейсы: фото и первая карточка фиксируются на одном уровне */
   --cases-sticky-top: calc(var(--site-header-offset) + 1.5rem);
   --cases-sticky-step: 1.1rem;
@@ -54,6 +57,16 @@ html {
 #faq,
 #contacts {
   scroll-margin-top: var(--site-scroll-margin);
+}
+
+.cases.section,
+.reviews.section,
+.faq.section,
+.contacts.section {
+  padding-top: max(
+    var(--site-section-pad),
+    calc(var(--site-header-offset) + 1.5rem)
+  );
 }
 
 /* #uslugi сидит на .service-list — без section-padding, сразу под шапкой+табами */
@@ -187,10 +200,10 @@ h2 {
   min-height: 3.5rem;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--token-color-accent-forest);
+  border: 1px solid var(--token-color-background);
   border-radius: var(--token-radius-control);
   padding: 0.8rem 1.5rem;
-  background: var(--token-color-accent-forest);
+  background: var(--token-color-accent-sage);
   color: var(--token-color-background);
   font-weight: 700;
   transition:
@@ -206,8 +219,12 @@ h2 {
 
 .button:hover {
   transform: translateY(-2px);
-  background: var(--token-color-accent-sage);
-  border-color: var(--token-color-accent-sage);
+  border-color: var(--token-color-background);
+  background: color-mix(
+    in srgb,
+    var(--token-color-accent-sage) 72%,
+    var(--token-color-background)
+  );
   color: var(--token-color-background);
 }
 
@@ -241,9 +258,10 @@ h2 {
 
 .header-inner {
   display: flex;
+  min-width: 0;
   min-height: 5.5rem;
   align-items: center;
-  gap: 0.75rem 2rem;
+  gap: 0.75rem 1.5rem;
 }
 
 .logo {
@@ -282,6 +300,32 @@ h2 {
 
 .desktop-nav,
 .header-cta {
+  display: none;
+}
+
+/* Мобилка: только иконка-звонок с тач-таргетом 44px; номер появляется на десктопе */
+.header-phone {
+  display: inline-grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border: 1px solid
+    color-mix(in srgb, var(--token-color-background) 32%, transparent);
+  border-radius: var(--token-radius-control);
+  color: var(--token-color-background);
+  transition:
+    background var(--token-motion-duration-fast)
+      var(--token-motion-ease-cinematic),
+    border-color var(--token-motion-duration-fast)
+      var(--token-motion-ease-cinematic);
+}
+
+.header-phone:hover {
+  border-color: var(--token-color-background);
+  background: color-mix(in srgb, var(--token-color-background) 16%, transparent);
+}
+
+.header-phone-number {
   display: none;
 }
 
@@ -466,6 +510,7 @@ h2 {
 .hero-case-cover {
   position: absolute;
   inset: 0;
+  pointer-events: none;
 }
 
 .hero-stage {
@@ -485,6 +530,17 @@ h2 {
   height: 100%;
   object-fit: cover;
   object-position: center;
+  opacity: 0;
+}
+
+.hero-stage video.is-playing {
+  opacity: 1;
+}
+
+.hero-stage video::-webkit-media-controls,
+.hero-stage video::-webkit-media-controls-start-playback-button,
+.hero-stage video::-webkit-media-controls-enclosure {
+  display: none !important;
 }
 
 .hero-stage video.is-failed {
@@ -624,38 +680,42 @@ h2 {
   line-height: 1.5;
 }
 
-.hero-actions {
-  display: flex;
-  align-items: center;
-  margin-top: 0.5rem;
+.hero-actions .button {
+  border-color: var(--token-color-background);
+  box-shadow: var(--token-shadow-lift);
 }
 
 .hero-disclaimer {
-  max-width: 32rem;
+  max-width: 36rem;
   margin: 1.5rem 0 0;
   color: color-mix(
     in srgb,
-    var(--token-color-background) 74%,
-    transparent
+    var(--token-color-background) 88%,
+    var(--token-color-text-secondary)
   );
-  font-size: 0.68rem;
+  font-size: 1rem;
   line-height: 1.5;
 }
 
+/* Правый край = правый край .shell / header CTA */
 .hero-dossier {
   position: absolute;
+  right: 0;
+  bottom: 3.25rem;
+  left: auto;
   z-index: 2;
-  right: calc((100vw - min(100vw - 4rem, 82rem)) / -2);
-  bottom: 2rem;
-  width: min(58vw, 52rem);
+  display: grid;
+  width: min(100%, 52rem);
+  justify-items: end;
   color: var(--token-color-text-primary);
 }
 
 .hero-dossier-rule {
+  display: none;
   position: absolute;
   z-index: 1;
-  right: calc((100vw - min(100vw - 4rem, 82rem)) / -2);
-  bottom: 2rem;
+  left: 0;
+  bottom: 3.25rem;
   width: min(58vw, 52rem);
   height: 2px;
   background: linear-gradient(
@@ -668,6 +728,7 @@ h2 {
 
 .hero-dossier-tab {
   display: inline-flex;
+  margin-right: 1.5rem;
   border-radius: var(--token-radius-card) var(--token-radius-card) 0 0;
   padding: 0.55rem 0.9rem 0.45rem;
   background: color-mix(
@@ -684,11 +745,12 @@ h2 {
 
 .hero-dossier ol {
   display: grid;
+  width: 100%;
   min-height: 7.25rem;
   grid-template-columns: 0.8fr 1.35fr 0.9fr;
   overflow: hidden;
   margin: 0;
-  border-radius: var(--token-radius-panel) 0 0 var(--token-radius-panel);
+  border-radius: var(--token-radius-panel);
   padding: 0;
   background: color-mix(
     in srgb,
@@ -1029,8 +1091,12 @@ h2 {
   -webkit-mask-image: none !important;
 }
 
+/* Заголовок в одну строку: 16ch ломали его на три обрывка */
 .services > h2 {
+  max-width: none;
   margin-bottom: 3.5rem;
+  font-size: clamp(2rem, 4.2vw, 4rem);
+  text-wrap: balance;
 }
 
 .service-tabs {
@@ -1086,6 +1152,10 @@ h2 {
   text-transform: uppercase;
 }
 
+.service-main .service-number {
+  margin-bottom: 1.15rem;
+}
+
 .service-card h3 {
   margin-bottom: 1.75rem;
   font-size: clamp(2.6rem, 6vw, 5rem);
@@ -1094,28 +1164,59 @@ h2 {
 
 .service-main .lead {
   margin-top: 0;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
   padding-top: 0;
   padding-bottom: 0;
+  font-size: clamp(1.12rem, 1.8vw, 1.45rem);
+  line-height: 1.55;
+}
+
+.service-list-label {
+  margin-bottom: 1.35rem;
+  color: var(--token-color-accent-sage);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
 }
 
 .service-card ul {
   display: grid;
-  gap: 1.1rem;
+  gap: 1.35rem;
   margin-top: 0;
-  padding-left: 1.2rem;
+  padding-left: 0;
   color: var(--token-color-text-secondary);
-  line-height: 1.55;
+  list-style: none;
+}
+
+.service-card li {
+  position: relative;
+  padding-left: 1.15rem;
+  line-height: 1.7;
+}
+
+.service-card li::before {
+  position: absolute;
+  top: 0.62em;
+  left: 0;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: var(--token-color-accent-sage);
+  content: "";
 }
 
 .service-card aside {
+  display: grid;
+  justify-items: center;
   border-radius: var(--token-radius-card);
-  padding: 1.5rem;
+  padding: 2rem;
   background: color-mix(
     in srgb,
     var(--token-color-accent-sage) 8%,
     var(--token-color-background)
   );
+  text-align: center;
 }
 
 .service-card aside p {
@@ -1123,12 +1224,30 @@ h2 {
 }
 
 .service-card aside strong {
-  display: block;
-  margin-bottom: 0.35rem;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
   color: var(--token-color-accent-sage);
-  font-size: 0.7rem;
-  letter-spacing: 0.15em;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.service-trust-mark {
+  display: grid;
+  width: 1.05rem;
+  height: 1.05rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--token-color-accent-sage);
+  color: var(--token-color-background);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
 .price {
@@ -1136,28 +1255,24 @@ h2 {
   font-size: 2rem;
 }
 
-.text-button {
-  border: 0;
-  border-bottom: 1px solid var(--token-color-accent-sage);
+.service-card .price {
+  margin-top: 1.15rem;
+}
+
+.service-cta {
+  width: 100%;
   margin-top: 1.75rem;
-  padding: 0 0 0.3rem;
-  background: transparent;
-  color: var(--token-color-accent-forest);
-  font-weight: 700;
-  transition:
-    color var(--token-motion-duration-fast)
-      var(--token-motion-ease-cinematic),
-    border-color var(--token-motion-duration-fast)
-      var(--token-motion-ease-cinematic);
+  gap: 0.55rem;
+  font-size: 0.95rem;
 }
 
-.text-button:hover {
-  border-bottom-color: var(--token-color-accent-forest);
-  color: var(--token-color-accent-sage);
+.service-cta-arrow {
+  display: block;
+  flex-shrink: 0;
 }
 
-.justice-scales {
-  width: 8rem;
+.service-icon {
+  width: 7rem;
   margin-bottom: 1rem;
   overflow: visible;
   fill: none;
@@ -1165,34 +1280,33 @@ h2 {
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2;
-}
-
-.scale-beam,
-.scale-pan {
-  transform-box: fill-box;
   transition: transform var(--token-motion-duration-base)
     var(--token-motion-ease-cinematic);
 }
 
-.scale-pan-left,
-.scale-pan-right {
-  transform-origin: center top;
+.service-icon-image {
+  display: block;
+  height: auto;
+  aspect-ratio: 160 / 110;
+  object-fit: contain;
+  stroke: none;
+  stroke-width: 0;
 }
 
-.service-card:hover .scale-beam,
-.service-card:focus-within .scale-beam {
-  transform: rotate(6deg);
-  transform-origin: 80px 30px;
+.service-card:hover .service-icon,
+.service-card:focus-within .service-icon {
+  transform: translateY(-3px) scale(1.03);
 }
 
-.service-card:hover .scale-pan-left,
-.service-card:focus-within .scale-pan-left {
-  transform: translateY(4px);
-}
+@media (prefers-reduced-motion: reduce) {
+  .service-icon {
+    transition: none;
+  }
 
-.service-card:hover .scale-pan-right,
-.service-card:focus-within .scale-pan-right {
-  transform: translateY(-3px);
+  .service-card:hover .service-icon,
+  .service-card:focus-within .service-icon {
+    transform: none;
+  }
 }
 
 .workflow {
@@ -1683,65 +1797,136 @@ h2 {
   font-size: 1.2rem;
 }
 
-.contacts-hours {
-  margin: 0;
+.contacts-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
-.contacts-channels {
-  margin-top: 2rem;
+.contacts-quick {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.75rem;
+  margin-top: 1.35rem;
+}
+
+.contacts-phone {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.contacts-phone-icon {
+  flex-shrink: 0;
+  width: 1.15rem;
+  height: 1.15rem;
+  opacity: 0.9;
+}
+
+.contacts-messengers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+}
+
+.contacts-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  border: 1px solid var(--token-color-background);
+  border-radius: var(--token-radius-control);
+  padding: 0.35rem 0.9rem;
+  background: var(--token-color-accent-sage);
+  color: var(--token-color-background);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1;
+  transition:
+    transform var(--token-motion-duration-fast)
+      var(--token-motion-ease-cinematic),
+    background var(--token-motion-duration-fast)
+      var(--token-motion-ease-cinematic),
+    border-color var(--token-motion-duration-fast)
+      var(--token-motion-ease-cinematic),
+    color var(--token-motion-duration-fast)
+      var(--token-motion-ease-cinematic);
+}
+
+.contacts-chip:hover {
+  transform: translateY(-1px);
+  border-color: var(--token-color-background);
+  background: color-mix(
+    in srgb,
+    var(--token-color-accent-sage) 72%,
+    var(--token-color-background)
+  );
+  color: var(--token-color-background);
+}
+
+.contacts-chip-icon {
+  flex-shrink: 0;
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.contacts-notes {
+  margin-top: 1.85rem;
 }
 
 .contacts-sla {
-  margin: 0.55rem 0 0;
+  margin: 0;
   max-width: 28rem;
-  color: color-mix(in srgb, var(--token-color-background) 82%, transparent);
-  font-size: 0.88rem;
-  line-height: 1.55;
+  color: color-mix(in srgb, var(--token-color-background) 70%, transparent);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.contacts-sla + .contacts-sla {
+  margin-top: 0.2rem;
 }
 
 .contacts-location {
-  margin-top: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin-top: 2.25rem;
 }
 
-.contacts-hours-note {
-  margin: 0.35rem 0 0;
-  max-width: 28rem;
-  color: color-mix(in srgb, var(--token-color-background) 68%, transparent);
-  font-size: 0.78rem;
+.contacts-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.98rem;
+  font-style: normal;
+  line-height: 1.45;
+}
+
+.contacts-detail-icon {
+  flex-shrink: 0;
+  width: 0.9rem;
+  height: 0.9rem;
+  opacity: 0.55;
+}
+
+.contacts-hours {
+  margin: 0;
+  padding-left: 1.4rem;
+  color: color-mix(in srgb, var(--token-color-background) 70%, transparent);
+  font-size: 0.85rem;
   line-height: 1.4;
 }
 
 .contacts-cta {
   margin-top: 3.25rem;
-}
-
-.contact-links {
-  display: grid;
-  margin: 0;
-}
-
-.contact-links a {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.65rem;
-  border-top: 1px solid
-    color-mix(in srgb, var(--token-color-background) 22%, transparent);
-  padding-block: 0.85rem;
-  font-size: clamp(1.05rem, 1.8vw, 1.35rem);
-}
-
-.contact-link-icon {
-  flex-shrink: 0;
-  width: 1.1em;
-  height: 1.1em;
-  opacity: 0.9;
-}
-
-.contacts address {
-  max-width: 28rem;
-  margin-bottom: 0.5rem;
-  font-style: normal;
-  line-height: 1.5;
 }
 
 .map-panel {
@@ -1919,6 +2104,17 @@ h2 {
 
 .contact-fab {
   position: relative;
+  transition:
+    opacity var(--token-motion-duration-fast)
+      var(--token-motion-ease-cinematic),
+    visibility var(--token-motion-duration-fast);
+}
+
+.floating-actions.is-over-contacts .contact-fab,
+.floating-actions.is-over-contacts .contact-menu {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .contact-fab.is-open {
@@ -1976,9 +2172,13 @@ h2 {
 .modal-backdrop {
   position: fixed;
   z-index: 100;
-  inset: 0;
+  top: var(--modal-viewport-offset, 0px);
+  right: 0;
+  left: 0;
   display: grid;
+  height: var(--modal-viewport, 100dvh);
   overflow-y: auto;
+  overscroll-behavior: contain;
   align-items: start;
   justify-items: center;
   padding: 1rem;
@@ -1987,22 +2187,19 @@ h2 {
     var(--token-color-text-primary) 88%,
     transparent
   );
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-panel {
   position: relative;
   width: min(100%, 28rem);
-  max-height: calc(100dvh - 1.5rem);
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: visible;
   margin-block: auto;
   border-radius: var(--token-radius-panel);
   padding: 1.15rem 1.15rem 1.25rem;
   padding-top: 1.85rem;
   background: var(--token-color-background);
   box-shadow: var(--token-shadow-lift);
-  -webkit-overflow-scrolling: touch;
 }
 
 .modal-panel h2 {
@@ -2036,10 +2233,10 @@ h2 {
 
 .modal-field {
   display: grid;
-  gap: 0.35rem;
-  margin-top: 0.7rem;
-  font-size: 0.72rem;
-  font-weight: 700;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .modal-field-row .modal-field {
@@ -2051,16 +2248,17 @@ h2 {
   font-weight: 400;
 }
 
+/* 1rem = 16px: ниже этого Safari на iOS зумит страницу при фокусе */
 .modal-panel input,
 .modal-panel textarea {
   width: 100%;
   border: 1px solid
     color-mix(in srgb, var(--token-color-text-primary) 28%, transparent);
   border-radius: 0.75rem;
-  padding: 0.65rem 0.8rem;
+  padding: 0.7rem 0.85rem;
   background: transparent;
   color: var(--token-color-text-primary);
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 400;
 }
 
@@ -2128,7 +2326,6 @@ h2 {
 
   .modal-panel {
     width: min(100%, 30rem);
-    max-height: calc(100dvh - 2rem);
   }
 }
 
@@ -2284,8 +2481,9 @@ h2 {
   width: 100%;
   max-width: none;
   margin: 0 0 1.25rem;
-  font-size: clamp(1.25rem, 3.2vw, 1.5rem);
-  line-height: 1.25;
+  font-size: clamp(1.6rem, 5vw, 2.1rem);
+  font-weight: 700;
+  line-height: 1.2;
   letter-spacing: -0.02em;
   text-align: center;
 }
@@ -2294,6 +2492,7 @@ h2 {
   margin: 0 auto;
   max-width: 22rem;
   color: var(--token-color-text-secondary);
+  font-size: 0.95rem;
   line-height: 1.65;
   text-align: center;
 }
@@ -2309,10 +2508,12 @@ h2 {
 }
 
 .legal-page h1 {
-  max-width: 14ch;
-  margin: 3rem 0;
-  font-size: clamp(3rem, 8vw, 6rem);
-  line-height: 0.9;
+  max-width: none;
+  margin: 1.25rem 0 2rem;
+  font-size: clamp(1.85rem, 3.2vw, 2.5rem);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
 }
 
 .legal-page section {
@@ -2320,12 +2521,20 @@ h2 {
 }
 
 .legal-page h2 {
-  font-size: 2rem;
+  max-width: none;
+  margin-top: 2.25rem;
+  margin-bottom: 0.85rem;
+  font-size: clamp(1.15rem, 1.8vw, 1.4rem);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  color: var(--token-color-text-primary);
 }
 
 .legal-page p {
   color: var(--token-color-text-secondary);
   line-height: 1.75;
+  white-space: pre-line;
 }
 
 .back-link {
@@ -2395,14 +2604,18 @@ h2 {
     white-space: normal;
   }
 
+  /* Метрики в потоке: absolute-панель обрезала первый экран на мобиле */
   .hero-content {
-    align-items: center;
-    padding-block: 7.75rem 13.75rem;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 1.75rem;
+    padding-block: 6.75rem 2.5rem;
   }
 
   .hero-copy {
     width: 100%;
-    padding-top: 1.25rem;
+    padding-top: 0;
   }
 
   .hero-eyebrow {
@@ -2435,11 +2648,13 @@ h2 {
 
   .hero-disclaimer {
     margin-top: 2rem;
+    font-size: 0.95rem;
   }
 
+  /* Артём в кадре справа: 62% срезало лицо, 50% уводило его за край */
   .hero-stage video,
   .hero-poster {
-    object-position: 62% center;
+    object-position: 70% center;
   }
 
   .hero-overlay {
@@ -2457,18 +2672,13 @@ h2 {
   }
 
   .hero-dossier {
-    /* Align with .shell content column — side gutters from shell, not full-bleed */
-    right: 0;
-    bottom: 2.75rem;
-    left: 0;
+    position: static;
     width: auto;
+    justify-items: start;
   }
 
   .hero-dossier-rule {
-    right: 0;
-    bottom: 2.75rem;
-    left: 0;
-    width: auto;
+    display: none;
   }
 
   .hero-dossier ol {
@@ -2507,7 +2717,7 @@ h2 {
   }
 
   .service-main .lead {
-    margin-bottom: 1.35rem;
+    margin-bottom: 1.6rem;
   }
 
   .xray-grid {
@@ -2679,28 +2889,12 @@ h2 {
 }
 
 @media (min-width: 64rem) {
-  .header-meta {
-    display: grid;
-    order: 0;
-    width: auto;
-    max-width: 15rem;
-    margin-right: auto;
-    padding-bottom: 0;
-    font-size: 0.68rem;
-  }
-
-  .header-meta-note {
-    font-size: 0.6rem;
-  }
-
-  .logo {
-    margin-right: 0;
-  }
-
   .desktop-nav {
     display: flex;
-    gap: 1.45rem;
-    font-size: 0.95rem;
+    min-width: 0;
+    justify-content: flex-end;
+    gap: 1.15rem;
+    font-size: 0.9rem;
     font-weight: 500;
   }
 
@@ -2825,26 +3019,62 @@ h2 {
     text-decoration: none;
   }
 
+  /* Без пилюли: в баре не хватало места под номер, нав и CTA одновременно */
+  .header-phone {
+    width: auto;
+    height: auto;
+    grid-auto-flow: column;
+    align-items: center;
+    border: 0;
+    padding: 0;
+    gap: 0.45rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .header-phone:hover {
+    background: transparent;
+  }
+
+  .header-phone svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .header-phone-number {
+    display: inline;
+  }
+
+  /* Sage-заливка: белая пилюля тонула в рубашке/светлых элементах шапки */
   .header-cta {
     display: block;
-    border: 1px solid
-      color-mix(in srgb, var(--token-color-background) 42%, transparent);
+    border: 1px solid var(--token-color-background);
     border-radius: var(--token-radius-control);
     padding: 0.72rem 1.05rem;
-    background: transparent;
+    background: var(--token-color-accent-sage);
     color: var(--token-color-background);
     font-size: 0.88rem;
-    font-weight: 500;
+    font-weight: 700;
+    white-space: nowrap;
+    transition:
+      transform var(--token-motion-duration-fast)
+        var(--token-motion-ease-cinematic),
+      background var(--token-motion-duration-fast)
+        var(--token-motion-ease-cinematic),
+      color var(--token-motion-duration-fast)
+        var(--token-motion-ease-cinematic);
   }
 
   .header-cta:hover {
     border-color: var(--token-color-background);
     background: color-mix(
       in srgb,
-      var(--token-color-background) 16%,
-      transparent
+      var(--token-color-accent-sage) 72%,
+      var(--token-color-background)
     );
     color: var(--token-color-background);
+    transform: translateY(-1px);
   }
 
   .menu-toggle {
@@ -2857,8 +3087,8 @@ h2 {
   }
 
   .service-card {
-    grid-template-columns: 4rem minmax(0, 1fr) 19rem;
-    gap: 3rem;
+    grid-template-columns: minmax(0, 1fr) 20rem;
+    gap: 4rem;
   }
 
   .workflow {
@@ -2884,7 +3114,23 @@ h2 {
     box-shadow: 0 12px 40px rgb(47 74 54 / 0.14);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
     transform: translateY(-50%);
+    transition:
+      opacity var(--token-motion-duration-fast)
+        var(--token-motion-ease-cinematic),
+      transform var(--token-motion-duration-fast)
+        var(--token-motion-ease-cinematic),
+      visibility var(--token-motion-duration-fast);
+  }
+
+  .contact-rail.is-hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-50%) translateX(0.85rem);
   }
 
   .contact-rail-link {
@@ -3055,15 +3301,6 @@ h2 {
     top: auto !important;
   }
 
-  .service-card:hover .scale-beam,
-  .service-card:focus-within .scale-beam,
-  .service-card:hover .scale-pan-left,
-  .service-card:focus-within .scale-pan-left,
-  .service-card:hover .scale-pan-right,
-  .service-card:focus-within .scale-pan-right {
-    transform: none;
-  }
-
   .cases-portrait-image,
   .cases-layout:has(.case-card:hover) .cases-portrait-image,
   .cases-layout:has(.case-card:focus-within) .cases-portrait-image,
@@ -3075,5 +3312,26 @@ h2 {
 
   .hero-case-cover {
     display: none;
+  }
+}
+
+/* Адрес и часы в баре только там, где они не выдавливают телефон и CTA */
+@media (min-width: 90rem) {
+  .header-meta {
+    display: grid;
+    order: 0;
+    width: auto;
+    max-width: 15rem;
+    margin-right: auto;
+    padding-bottom: 0;
+    font-size: 0.68rem;
+  }
+
+  .header-meta-note {
+    font-size: 0.6rem;
+  }
+
+  .logo {
+    margin-right: 0;
   }
 }

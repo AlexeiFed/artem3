@@ -29,39 +29,44 @@ describe("CookieBanner", () => {
     render(<CookieBanner />);
 
     expect(
-      screen.queryByRole("dialog", { name: /использование cookie/i }),
+      screen.queryByRole("region", { name: /использование cookie/i }),
     ).toBeNull();
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(700);
     });
 
-    const banner = screen.getByRole("dialog", {
+    const banner = screen.getByRole("region", {
       name: /использование cookie/i,
     });
     expect(banner).toBeInTheDocument();
     expect(banner).toHaveTextContent(/Яндекс\.Карты/);
     expect(
-      screen.getByRole("link", { name: /согласии на cookie/i }),
+      screen.getByRole("link", { name: /политике cookie/i }),
     ).toHaveAttribute("href", "/cookies");
 
     fireEvent.click(screen.getByRole("button", { name: "ОК" }));
-    expect(localStorage.getItem(COOKIE_CONSENT_KEY)).toBe("1");
+    expect(JSON.parse(localStorage.getItem(COOKIE_CONSENT_KEY) ?? "")).toEqual({
+      version: "22.08.2026",
+    });
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);
     });
 
     expect(
-      screen.queryByRole("dialog", { name: /использование cookie/i }),
+      screen.queryByRole("region", { name: /использование cookie/i }),
     ).toBeNull();
   });
 
   it("does not render when consent already stored", () => {
-    localStorage.setItem(COOKIE_CONSENT_KEY, "1");
+    localStorage.setItem(
+      COOKIE_CONSENT_KEY,
+      JSON.stringify({ version: "22.08.2026" }),
+    );
     render(<CookieBanner />);
     expect(
-      screen.queryByRole("dialog", { name: /использование cookie/i }),
+      screen.queryByRole("region", { name: /использование cookie/i }),
     ).toBeNull();
   });
 });

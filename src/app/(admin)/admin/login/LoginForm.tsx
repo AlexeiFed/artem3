@@ -3,21 +3,12 @@
 import { useState, type FormEvent } from "react";
 
 import { AuthErrorResponseSchema } from "@/modules/auth/auth.schemas";
+import { safeAdminNextPath } from "@/modules/auth/safe-admin-next-path";
+
+export { safeAdminNextPath };
 
 interface LoginFormProps {
   nextPath?: string;
-}
-
-export function safeAdminNextPath(value: string | undefined): string {
-  if (
-    value &&
-    value.startsWith("/admin") &&
-    !value.startsWith("//") &&
-    value !== "/admin/login"
-  ) {
-    return value;
-  }
-  return "/admin";
 }
 
 export function LoginForm({ nextPath }: LoginFormProps) {

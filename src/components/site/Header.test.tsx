@@ -23,6 +23,7 @@ function renderHeader(hoursNote?: string) {
           address={data.contacts.address}
           workHours={data.contacts.workHours}
           hoursNote={hoursNote ?? data.contacts.hoursNote}
+          phone={data.contacts.phone}
           serviceLinks={data.quickLinks}
         />
       </ModalProvider>,
@@ -73,6 +74,32 @@ describe("Header", () => {
       "href",
       "#alimenty",
     );
+  });
+
+  it("exposes services dropdown expanded state for assistive tech", () => {
+    renderHeader();
+
+    const trigger = document.querySelector(".nav-dropdown > a");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+    const dropdown = trigger?.closest(".nav-dropdown");
+    expect(dropdown).toBeTruthy();
+    fireEvent.mouseEnter(dropdown!);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.mouseLeave(dropdown!);
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("puts a tap-to-call phone link in the header bar", () => {
+    const { data } = renderHeader();
+
+    const phoneLink = document.querySelector<HTMLAnchorElement>(
+      ".header-inner .header-phone",
+    );
+    expect(phoneLink).toBeTruthy();
+    expect(phoneLink).toHaveAttribute("href", data.contacts.phone.href);
+    expect(phoneLink).toHaveTextContent(data.contacts.phone.display);
   });
 
   it("shows Главная in desktop nav and mobile menu", () => {

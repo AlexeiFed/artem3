@@ -78,6 +78,7 @@ describe("buildLandingData", () => {
       priceFromKopecks: seedContent.services[0]?.priceFromKopecks,
       isHighValue: seedContent.services[0]?.isHighValue,
       ctaLabel: seedContent.services[0]?.ctaLabel,
+      iconUrl: null,
     });
     expect(data.cases).toHaveLength(4);
     expect(data.faqs.length).toBeGreaterThanOrEqual(6);
@@ -111,6 +112,25 @@ describe("buildLandingData", () => {
     expect(data.header.nav.filter((item) => item.href === "#main")).toHaveLength(
       1,
     );
+  });
+
+  it("uses seed header nav even when the database still has an old label", async () => {
+    const base = createFakeRepository();
+    const settings = await base.getSiteSettings();
+    if (!settings) throw new Error("Missing settings fixture");
+    const hero = structuredClone(settings.hero) as {
+      header: { nav: Array<{ label: string; href: string }> };
+      hero: { title: string };
+    };
+    const reviews = hero.header.nav.find((item) => item.href === "#reviews");
+    if (!reviews) throw new Error("Missing reviews nav fixture");
+    reviews.label = "Отзывы и документы";
+    hero.hero.title = "Заголовок из админки";
+
+    const data = await buildLandingData(createFakeRepository({ hero }));
+
+    expect(data.header.nav).toEqual(seedContent.settings.hero.header.nav);
+    expect(data.hero.title).toBe("Заголовок из админки");
   });
 
   it("maps nullable review images and disabled VK embed exactly", async () => {

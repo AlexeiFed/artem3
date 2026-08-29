@@ -5,7 +5,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { COOKIE_CONSENT_KEY, acceptCookieConsent } from "@/lib/cookie-consent";
+import { acceptCookieConsent } from "@/lib/cookie-consent";
 
 import { ConsentGatedMetrika } from "./ConsentGatedMetrika";
 
@@ -30,7 +30,7 @@ describe("ConsentGatedMetrika", () => {
   });
 
   it("mounts Metrika when consent is already stored", async () => {
-    localStorage.setItem(COOKIE_CONSENT_KEY, "1");
+    acceptCookieConsent();
     render(<ConsentGatedMetrika counterId={123} />);
 
     await waitFor(() => {

@@ -1,8 +1,10 @@
 import { z } from "zod";
 
-import { DEFAULT_TERMS_TEXT } from "./legal-copy";
+import { DEFAULT_TERMS_TEXT, OPERATOR_EMAIL } from "./legal-copy";
 
 const shortText = z.string().trim().min(1).max(160);
+/** Надзаголовок, который можно очистить в админке, чтобы убрать дубль на странице. */
+const optionalShortText = z.string().trim().max(160);
 const mediumText = z.string().trim().min(1).max(500);
 const longText = z.string().trim().min(1).max(2_500);
 const legalPageText = z.string().trim().min(1).max(20_000);
@@ -191,7 +193,7 @@ export const HonestyItemSchema = z.object({
 });
 
 export const HonestyBannerSchema = z.object({
-  theme: shortText,
+  theme: optionalShortText,
   title: shortText,
   items: z.array(HonestyItemSchema).length(3),
 });
@@ -202,7 +204,7 @@ export const TrustBannerSettingsSchema = z.object({
 });
 
 export const WorkflowSettingsSchema = z.object({
-  eyebrow: shortText,
+  eyebrow: optionalShortText,
   title: shortText,
   bullets: z
     .array(
@@ -241,7 +243,7 @@ export const ContactsSettingsSchema = z.object({
   email: z.object({
     label: shortText,
     address: z.email({
-      error: "Укажите корректный email, например artem@vibespace27.ru",
+      error: `Укажите корректный email, например ${OPERATOR_EMAIL}`,
     }),
   }),
   responseSla: mediumText,
@@ -333,6 +335,7 @@ export const ServiceSchema = z.object({
   isHighValue: z.boolean(),
   isHidden: z.boolean().default(false),
   ctaLabel: shortText.default("Получить оценку ситуации"),
+  iconUrl: z.union([localAssetUrl, PublicHttpsUrlSchema]).nullable().default(null),
 });
 
 export const PublicServiceSchema = ServiceSchema.omit({ isHidden: true });

@@ -84,7 +84,7 @@ cat > "${SITE_CONFIG}" <<NGINX
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
-    server_name vibespace27.ru www.vibespace27.ru _;
+    server_name artemsysuev.ru www.artemsysuev.ru _;
 
     client_max_body_size 105m;
 
@@ -121,4 +121,4 @@ ufw --force enable
 
 echo "BOOTSTRAP_OK node=$(node -v) pm2=$(pm2 -v) postgres=$(sudo -u postgres psql -At -c 'SHOW server_version;')"
 echo "NEXT: DEPLOY_HOST=root@$(hostname -I | awk '{print $1}') ./deploy.sh"
-echo "HTTPS: после A-записи → certbot --nginx -d vibespace27.ru -d www.vibespace27.ru"
+echo "HTTPS: после A-записи → bash scripts/ensure-nginx-site.sh"

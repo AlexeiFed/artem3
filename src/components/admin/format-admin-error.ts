@@ -1,4 +1,5 @@
 import { AdminApiErrorSchema } from "@/modules/content/admin-content.schemas";
+import { OPERATOR_EMAIL } from "@/modules/content/legal-copy";
 
 export class AdminFormError extends Error {
   readonly fields: Record<string, string[]>;
@@ -44,7 +45,7 @@ export function humanizeValidationMessage(
     lowerMessage.includes("invalid email") ||
     lowerMessage.includes("email address")
   ) {
-    return "Укажите корректный email, например artem@vibespace27.ru";
+    return `Укажите корректный email, например ${OPERATOR_EMAIL}`;
   }
 
   if (

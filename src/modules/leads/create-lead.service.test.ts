@@ -112,9 +112,9 @@ describe("createLeadService", () => {
         isDataAgreed: true,
         isMarketingAgreed: true,
         consentAt: NOW,
-        consentDocumentVersion: "2026-08-19",
+        consentDocumentVersion: "2026-08-22",
         consentCheckboxText:
-          "Даю согласие на обработку персональных данных согласно Согласию на обработку персональных данных (ред. от 19.08.2026) и Политике конфиденциальности.",
+          "Даю согласие на обработку персональных данных согласно Согласию на обработку персональных данных (ред. от 22.08.2026) и Политике в отношении обработки персональных данных.",
       },
     ]);
     expect(repositories.rateLimitCalls).toHaveLength(1);

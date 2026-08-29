@@ -4,17 +4,18 @@ import type { MediaLibraryItem } from "@/components/admin/MediaLibrary";
 import { AdminPageFrame } from "@/components/admin/AdminPageFrame";
 
 export default async function AdminMediaPage() {
+  const { requireAdminOrRedirect } = await import(
+    "@/modules/auth/require-admin"
+  );
+  await requireAdminOrRedirect("/admin/media");
+
   let initialItems: MediaLibraryItem[] = [];
   let loadError: string | null = null;
 
   try {
-    const { requireAdminOrRedirect } = await import(
-      "@/modules/auth/require-admin"
-    );
     const { DrizzleMediaRepository } = await import(
       "@/modules/media/media.service"
     );
-    await requireAdminOrRedirect("/admin/media");
     const rows = await new DrizzleMediaRepository().list();
     initialItems = rows.map((row) => ({
       id: row.id,
@@ -26,8 +27,7 @@ export default async function AdminMediaPage() {
     }));
   } catch (error) {
     console.error("[admin/media] load failed", error);
-    loadError =
-      "Не удалось загрузить список медиа. Проверьте PostgreSQL и сессию.";
+    loadError = "Не удалось загрузить список медиа. Проверьте PostgreSQL.";
   }
 
   return (

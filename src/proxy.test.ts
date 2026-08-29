@@ -35,4 +35,15 @@ describe("admin proxy", () => {
 
     expect(response.headers.get("x-middleware-next")).toBe("1");
   });
+
+  it("does not expire the session cookie when opening the login page", () => {
+    const response = proxy(
+      new NextRequest("https://example.test/admin/login", {
+        headers: { Cookie: "admin_session=not-authoritative" },
+      }),
+    );
+
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+    expect(response.headers.get("set-cookie")).toBeNull();
+  });
 });

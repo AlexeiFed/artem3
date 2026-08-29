@@ -75,6 +75,13 @@ describe("database schema contracts", () => {
     expect(columns.ctaLabel?.hasDefault).toBe(true);
   });
 
+  it("stores services.icon_url as optional text", () => {
+    const columns = getTableColumns(services);
+
+    expect(columns.iconUrl?.name).toBe("icon_url");
+    expect(columns.iconUrl?.notNull).toBe(false);
+  });
+
   it.each(sortableTables)(
     "$_.sortOrder is required and globally unique",
     (table) => {

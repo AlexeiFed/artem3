@@ -5,6 +5,7 @@ import { getLandingPageData } from "@/modules/content/preview-landing-data";
 
 export const metadata: Metadata = {
   title: "Условия обращения через сайт",
+  alternates: { canonical: "/usloviya" },
 };
 
 export default async function TermsPage() {

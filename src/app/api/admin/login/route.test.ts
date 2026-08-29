@@ -62,15 +62,15 @@ describe("POST /api/admin/login", () => {
     });
     const handler = createLoginHandler({
       login,
-      siteUrl: "http://213.171.15.166",
+      siteUrl: "http://192.0.2.10",
     });
 
     const response = await handler(
-      new Request("http://213.171.15.166/api/admin/login", {
+      new Request("http://192.0.2.10/api/admin/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Origin: "http://213.171.15.166",
+          Origin: "http://192.0.2.10",
           "x-real-ip": "203.0.113.5",
         },
         body: JSON.stringify({

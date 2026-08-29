@@ -3,15 +3,18 @@ import { ContactsEditor } from "@/components/admin/ContactsEditor";
 import { AdminPageFrame } from "@/components/admin/AdminPageFrame";
 
 export default async function AdminContactsPage() {
+  const { requireAdminOrRedirect } = await import(
+    "@/modules/auth/require-admin"
+  );
+  await requireAdminOrRedirect("/admin/contacts");
+
   let initialContacts: Record<string, unknown> = {};
   let loadError: string | null = null;
 
   try {
-    const { requireAdmin } = await import("@/modules/auth/require-admin");
     const { DrizzleContentRepository } = await import(
       "@/modules/content/content.repository"
     );
-    await requireAdmin();
     const settings = await new DrizzleContentRepository().getSiteSettings();
     if (!settings) {
       loadError = "Настройки сайта не найдены.";
@@ -19,8 +22,7 @@ export default async function AdminContactsPage() {
       initialContacts = settings.contacts as Record<string, unknown>;
     }
   } catch {
-    loadError =
-      "Не удалось загрузить контакты. Проверьте PostgreSQL и сессию.";
+    loadError = "Не удалось загрузить контакты. Проверьте PostgreSQL.";
   }
 
   return (

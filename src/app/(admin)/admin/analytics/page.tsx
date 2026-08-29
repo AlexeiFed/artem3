@@ -7,15 +7,18 @@ import {
 import { AdminPageFrame } from "@/components/admin/AdminPageFrame";
 
 export default async function AdminAnalyticsPage() {
+  const { requireAdminOrRedirect } = await import(
+    "@/modules/auth/require-admin"
+  );
+  await requireAdminOrRedirect("/admin/analytics");
+
   let initialAnalytics = DEFAULT_ANALYTICS_SETTINGS;
   let loadError: string | null = null;
 
   try {
-    const { requireAdmin } = await import("@/modules/auth/require-admin");
     const { DrizzleContentRepository } = await import(
       "@/modules/content/content.repository"
     );
-    await requireAdmin();
     const settings = await new DrizzleContentRepository().getSiteSettings();
     if (!settings) {
       loadError = "Настройки сайта не найдены.";
@@ -26,8 +29,7 @@ export default async function AdminAnalyticsPage() {
         : DEFAULT_ANALYTICS_SETTINGS;
     }
   } catch {
-    loadError =
-      "Не удалось загрузить аналитику. Проверьте PostgreSQL и сессию.";
+    loadError = "Не удалось загрузить аналитику. Проверьте PostgreSQL.";
   }
 
   return (

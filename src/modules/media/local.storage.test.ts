@@ -26,24 +26,23 @@ describe("local media storage", () => {
       uploadEndpoint: "http://localhost:3000/api/admin/media/local-upload",
     });
 
+    const objectKey = "11111111-1111-4111-8111-111111111111.jpg";
     const signed = await storage.createPresignedPutUrl({
-      objectKey: "photo.jpg",
+      objectKey,
       mimeType: "image/jpeg",
       size: 4,
       expiresInSeconds: 60,
     });
-    expect(signed.uploadUrl).toContain("objectKey=photo.jpg");
+    expect(signed.uploadUrl).toContain(`objectKey=${objectKey}`);
 
     await writeLocalMediaObject({
-      objectKey: "photo.jpg",
+      objectKey,
       body: Buffer.from("test"),
       rootDir,
     });
-    expect(await readFile(path.join(rootDir, "photo.jpg"), "utf8")).toBe(
-      "test",
-    );
+    expect(await readFile(path.join(rootDir, objectKey), "utf8")).toBe("test");
 
-    await expect(storage.headObject("photo.jpg")).resolves.toEqual({
+    await expect(storage.headObject(objectKey)).resolves.toEqual({
       contentType: "image/jpeg",
       contentLength: 4,
     });
@@ -57,6 +56,19 @@ describe("local media storage", () => {
       writeLocalMediaObject({
         objectKey: "../escape.jpg",
         body: Buffer.from("x"),
+        rootDir,
+      }),
+    ).rejects.toThrow(/Unsafe object key/);
+  });
+
+  it("rejects HTML and other non-media object keys", async () => {
+    const rootDir = await mkdtemp(path.join(tmpdir(), "artem-media-"));
+    tempDirs.push(rootDir);
+
+    await expect(
+      writeLocalMediaObject({
+        objectKey: "xss.html",
+        body: Buffer.from("<script>alert(1)</script>"),
         rootDir,
       }),
     ).rejects.toThrow(/Unsafe object key/);

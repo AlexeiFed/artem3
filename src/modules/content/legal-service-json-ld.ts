@@ -51,3 +51,9 @@ export function buildLegalServiceJsonLd(input: LegalServiceJsonLdInput) {
     sameAs: input.sameAs,
   } as const;
 }
+
+/** JSON-LD inside <script>: escape `<` so CMS text cannot close the tag. */
+export function serializeJsonLd(value: unknown): string {
+  return JSON.stringify(value).replaceAll("<", "\\u003c");
+}
+

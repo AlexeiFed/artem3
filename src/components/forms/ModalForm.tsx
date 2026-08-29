@@ -2,6 +2,7 @@
 
 import {
   type ChangeEvent,
+  type FocusEvent,
   type FormEvent,
   useEffect,
   useId,
@@ -15,6 +16,7 @@ import {
   validatePersonName,
   validateRussianPhoneInput,
 } from "@/modules/leads/lead-form.validation";
+import { PERSONAL_DATA_PROCESSING_POLICY_TITLE_DATIVE } from "@/modules/content/legal-copy";
 import { PERSONAL_DATA_CONSENT_VERSION } from "@/modules/leads/personal-data-consent";
 
 interface ModalFormProps {
@@ -54,6 +56,7 @@ export function ModalForm({
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">(
     "idle",
   );
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const canSubmit = isDataAgreed && status !== "sending";
   const serviceBadge =
@@ -63,7 +66,7 @@ export function ModalForm({
     const previousFocus = document.activeElement;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    nameRef.current?.focus();
+    nameRef.current?.focus({ preventScroll: true });
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -90,6 +93,50 @@ export function ModalForm({
       if (previousFocus instanceof HTMLElement) previousFocus.focus();
     };
   }, [onClose]);
+
+  /** Клавиатура перекрывает поле — сдвигаем карточку формы, не скроллим поля внутри. */
+  function revealField(
+    event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) {
+    const scroller = dialogRef.current?.parentElement;
+    if (!(scroller instanceof HTMLElement)) return;
+
+    const viewport = window.visualViewport;
+    const viewBottom =
+      (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight);
+    const delta =
+      event.currentTarget.getBoundingClientRect().bottom - viewBottom + 24;
+    if (delta > 0) {
+      scroller.scrollBy({ top: delta, behavior: "smooth" });
+    }
+  }
+
+  useEffect(() => {
+    // На iOS клавиатура сжимает visualViewport, но не 100dvh — панель уезжала под неё.
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const syncHeight = () => {
+      document.documentElement.style.setProperty(
+        "--modal-viewport",
+        `${viewport.height}px`,
+      );
+      document.documentElement.style.setProperty(
+        "--modal-viewport-offset",
+        `${viewport.offsetTop}px`,
+      );
+    };
+    syncHeight();
+    viewport.addEventListener("resize", syncHeight);
+    viewport.addEventListener("scroll", syncHeight);
+
+    return () => {
+      viewport.removeEventListener("resize", syncHeight);
+      viewport.removeEventListener("scroll", syncHeight);
+      document.documentElement.style.removeProperty("--modal-viewport");
+      document.documentElement.style.removeProperty("--modal-viewport-offset");
+    };
+  }, []);
 
   function onPhoneChange(event: ChangeEvent<HTMLInputElement>) {
     setPhone(formatRussianPhoneMask(event.target.value));
@@ -122,6 +169,7 @@ export function ModalForm({
     if (Object.keys(nextErrors).length > 0) return;
 
     setStatus("sending");
+    setSubmitError(null);
     try {
       const response = await fetch("/api/leads", {
         method: "POST",
@@ -146,6 +194,16 @@ export function ModalForm({
           ...(fields.phone?.[0] ? { phone: fields.phone[0] } : {}),
         });
         setStatus("idle");
+        return;
+      }
+      if (response.status === 429) {
+        const body = (await response.json()) as {
+          error?: { message?: string };
+        };
+        setSubmitError(
+          body.error?.message ?? "Слишком много заявок. Попробуйте позже.",
+        );
+        setStatus("error");
         return;
       }
       if (response.status !== 201) throw new Error("Lead request failed");
@@ -233,6 +291,7 @@ export function ModalForm({
                     placeholder="Введите имя"
                     value={name}
                     onChange={onNameChange}
+                    onFocus={revealField}
                     aria-invalid={errors.name ? true : undefined}
                     aria-describedby={errors.name ? "lead-name-error" : undefined}
                   />
@@ -253,6 +312,7 @@ export function ModalForm({
                     placeholder="Введите номер телефона"
                     value={phone}
                     onChange={onPhoneChange}
+                    onFocus={revealField}
                     aria-invalid={errors.phone ? true : undefined}
                     aria-describedby={
                       errors.phone ? "lead-phone-error" : undefined
@@ -267,7 +327,7 @@ export function ModalForm({
               </div>
 
               <label className="modal-field" htmlFor="lead-situation">
-                Суть вопроса <span>(необязательно)</span>
+                Суть вопроса
                 <textarea
                   id="lead-situation"
                   name="situation"
@@ -275,6 +335,7 @@ export function ModalForm({
                   placeholder="Например: развод, есть ребёнок, квартира в ипотеке. Хочу понять свои варианты."
                   value={situation}
                   onChange={(event) => setSituation(event.target.value)}
+                  onFocus={revealField}
                 />
               </label>
               <p className="form-legal-hint">
@@ -302,7 +363,7 @@ export function ModalForm({
                     {PERSONAL_DATA_CONSENT_VERSION.split("-").reverse().join(".")}
                     ) и{" "}
                     <a href="/privacy" target="_blank" rel="noreferrer">
-                      Политике конфиденциальности
+                      {PERSONAL_DATA_PROCESSING_POLICY_TITLE_DATIVE}
                     </a>
                     .
                   </span>
@@ -311,8 +372,8 @@ export function ModalForm({
 
               {status === "error" ? (
                 <p role="alert" className="form-error">
-                  Не удалось отправить заявку. Данные сохранены — попробуйте ещё
-                  раз.
+                  {submitError ??
+                    "Не удалось отправить заявку. Данные сохранены — попробуйте ещё раз."}
                 </p>
               ) : null}
               <button

@@ -43,6 +43,50 @@ for (const viewport of viewports) {
   });
 }
 
+test("aligns dossier and header CTA to the content column", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+
+  const alignment = await page.evaluate(() => {
+    const dossier = document.querySelector(".hero-dossier");
+    const copy = document.querySelector(".hero-copy");
+    const headerInner = document.querySelector(".header-inner");
+    const headerCta = document.querySelector(".header-cta");
+    const column = document.querySelector(".services.section");
+    if (!dossier || !copy || !headerInner || !headerCta || !column) {
+      return null;
+    }
+
+    const dossierBox = dossier.getBoundingClientRect();
+    const copyBox = copy.getBoundingClientRect();
+    const headerBox = headerInner.getBoundingClientRect();
+    const ctaBox = headerCta.getBoundingClientRect();
+    const columnBox = column.getBoundingClientRect();
+
+    return {
+      copyLeft: copyBox.left,
+      ctaRight: ctaBox.right,
+      columnLeft: columnBox.left,
+      columnRight: columnBox.right,
+      dossierRight: dossierBox.right,
+      headerRight: headerBox.right,
+    };
+  });
+
+  expect(alignment).not.toBeNull();
+  expect(
+    Math.abs((alignment?.dossierRight ?? 0) - (alignment?.columnRight ?? 0)),
+  ).toBeLessThan(2);
+  expect(
+    Math.abs((alignment?.headerRight ?? 0) - (alignment?.columnRight ?? 0)),
+  ).toBeLessThan(2);
+  expect(alignment?.ctaRight).toBeLessThanOrEqual(
+    (alignment?.columnRight ?? 0) + 1,
+  );
+});
+
 test("does not draw a divider through the hero portrait", async ({ page }) => {
   await page.goto("/");
 

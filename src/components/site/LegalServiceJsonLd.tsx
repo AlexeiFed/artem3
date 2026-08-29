@@ -1,5 +1,8 @@
 import type { LandingData } from "@/modules/content/content.types";
-import { buildLegalServiceJsonLd } from "@/modules/content/legal-service-json-ld";
+import {
+  buildLegalServiceJsonLd,
+  serializeJsonLd,
+} from "@/modules/content/legal-service-json-ld";
 
 const PREVIEW_SITE_URL = "http://localhost:3000";
 
@@ -39,7 +42,7 @@ export function LegalServiceJsonLd({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
     />
   );
 }

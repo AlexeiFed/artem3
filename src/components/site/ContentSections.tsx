@@ -34,7 +34,9 @@ export function Workflow({
         </ol>
       </div>
       <div className="workflow-column">
-        <p className="eyebrow">{workflow.eyebrow}</p>
+        {workflow.eyebrow ? (
+          <p className="eyebrow">{workflow.eyebrow}</p>
+        ) : null}
         <h3>{workflow.title}</h3>
         {workflow.bullets.map((bullet) => (
           <article key={bullet.title}>
@@ -110,7 +112,7 @@ export function HonestyBanner({
   return (
     <section className="honesty section">
       <div className="shell">
-        <p className="eyebrow">{data.theme}</p>
+        {data.theme ? <p className="eyebrow">{data.theme}</p> : null}
         <h2>{data.title}</h2>
         {isDesktop ? (
           <div className="honesty-grid">{cards}</div>

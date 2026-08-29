@@ -7,6 +7,8 @@ import { useModal } from "@/components/forms/ModalProvider";
 import { designTokens } from "@/lib/design-tokens";
 import type { LandingData } from "@/modules/content/content.types";
 
+import { PhoneIcon } from "./PhoneIcon";
+
 type ServiceLink = {
   slug: string;
   label: string;
@@ -29,16 +31,19 @@ export function Header({
   address,
   workHours,
   hoursNote,
+  phone,
   serviceLinks,
 }: {
   data: LandingData["header"];
   address: string;
   workHours: string;
   hoursNote: string;
+  phone: LandingData["contacts"]["phone"];
   serviceLinks: ServiceLink[];
 }) {
   const { openModal } = useModal();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [servicesOpen, setServicesOpen] = useState(false);
   const firstLink = useRef<HTMLAnchorElement>(null);
   const { durationBase, easeCinematic } = designTokens.motion;
 
@@ -60,8 +65,25 @@ export function Header({
   function renderDesktopNavItem(item: LandingData["header"]["nav"][number]) {
     if (item.href === "#uslugi" && serviceLinks.length > 0) {
       return (
-        <div key={item.href} className="nav-dropdown">
-          <a href={item.href} aria-haspopup="true" aria-expanded="false">
+        <div
+          key={item.href}
+          className="nav-dropdown"
+          onMouseEnter={() => setServicesOpen(true)}
+          onMouseLeave={() => setServicesOpen(false)}
+          onFocus={() => setServicesOpen(true)}
+          onBlur={(event) => {
+            const next = event.relatedTarget;
+            if (next instanceof Node && event.currentTarget.contains(next)) {
+              return;
+            }
+            setServicesOpen(false);
+          }}
+        >
+          <a
+            href={item.href}
+            aria-haspopup="true"
+            aria-expanded={servicesOpen}
+          >
             {item.label}
             <span className="nav-chevron" aria-hidden="true">
               <ChevronIcon />
@@ -149,6 +171,14 @@ export function Header({
         <nav className="desktop-nav" aria-label="Основная навигация">
           {data.nav.map((item) => renderDesktopNavItem(item))}
         </nav>
+        <a
+          className="header-phone"
+          href={phone.href}
+          aria-label={`Позвонить: ${phone.display}`}
+        >
+          <PhoneIcon />
+          <span className="header-phone-number">{phone.display}</span>
+        </a>
         <button
           type="button"
           className="header-cta"
@@ -207,7 +237,7 @@ export function Header({
                 </p>
                 <button
                   type="button"
-                  className="button button-light"
+                  className="button"
                   onClick={() => {
                     setMenuOpen(false);
                     openModal("Шапка сайта");

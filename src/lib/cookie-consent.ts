@@ -1,9 +1,26 @@
+import { LEGAL_TEXT_VERSION } from "@/modules/content/legal-copy";
+
 export const COOKIE_CONSENT_KEY = "artem-cookie-consent";
 export const COOKIE_CONSENT_EVENT = "artem-cookie-consent";
 
+function isCurrentConsent(raw: string | null): boolean {
+  if (!raw) return false;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      "version" in parsed &&
+      parsed.version === LEGAL_TEXT_VERSION
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function readCookieConsent(): boolean {
   try {
-    return localStorage.getItem(COOKIE_CONSENT_KEY) === "1";
+    return isCurrentConsent(localStorage.getItem(COOKIE_CONSENT_KEY));
   } catch {
     return false;
   }
@@ -11,7 +28,10 @@ export function readCookieConsent(): boolean {
 
 export function acceptCookieConsent(): void {
   try {
-    localStorage.setItem(COOKIE_CONSENT_KEY, "1");
+    localStorage.setItem(
+      COOKIE_CONSENT_KEY,
+      JSON.stringify({ version: LEGAL_TEXT_VERSION }),
+    );
   } catch {
     // ignore quota / private mode
   }

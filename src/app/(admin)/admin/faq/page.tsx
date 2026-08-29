@@ -3,18 +3,21 @@ import { FaqEditor } from "@/components/admin/FaqEditor";
 import { AdminPageFrame } from "@/components/admin/AdminPageFrame";
 
 export default async function AdminFaqPage() {
+  const { requireAdminOrRedirect } = await import(
+    "@/modules/auth/require-admin"
+  );
+  await requireAdminOrRedirect("/admin/faq");
+
   let initialItems: Parameters<typeof FaqEditor>[0]["initialItems"] = [];
   let loadError: string | null = null;
 
   try {
-    const { requireAdmin } = await import("@/modules/auth/require-admin");
     const { DrizzleContentRepository } = await import(
       "@/modules/content/content.repository"
     );
-    await requireAdmin();
     initialItems = await new DrizzleContentRepository().listFaqs();
   } catch {
-    loadError = "Не удалось загрузить FAQ. Проверьте PostgreSQL и сессию.";
+    loadError = "Не удалось загрузить FAQ. Проверьте PostgreSQL.";
   }
 
   return (

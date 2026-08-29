@@ -4,6 +4,8 @@ import { useState, type ChangeEvent } from "react";
 
 import { AdminApiErrorSchema } from "@/modules/content/admin-content.schemas";
 
+import { copyTextToClipboard } from "./copy-text";
+
 export type UploadedMediaAsset = {
   id: string;
   url: string;
@@ -42,7 +44,7 @@ export function MediaUploader({
     kind: "url" | "path",
   ): Promise<void> {
     try {
-      await navigator.clipboard.writeText(value);
+      await copyTextToClipboard(value);
       setCopied(kind);
       window.setTimeout(() => setCopied(null), 2000);
     } catch {

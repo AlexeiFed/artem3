@@ -15,7 +15,11 @@ import {
   WorkflowSettingsSchema,
 } from "./content.schemas";
 import type { LandingData } from "./content.types";
+import { seedContent } from "@/db/seed-data";
+
 import { ensureHomeNavItem } from "./ensure-home-nav";
+import { OPERATOR_EMAIL } from "./legal-copy";
+import { mergeSeedHero } from "./merge-seed-hero";
 import { serviceAnchorHref } from "./service-anchors";
 
 export interface LandingContentSource {
@@ -38,7 +42,7 @@ export interface LandingContentSource {
 
 const DEFAULT_CONTACTS_EMAIL = {
   label: "Email",
-  address: "artem@vibespace27.ru",
+  address: OPERATOR_EMAIL,
 } as const;
 
 const DEFAULT_RESPONSE_SLA =
@@ -145,8 +149,9 @@ export function normalizeHonestySettings(raw: unknown): unknown {
 }
 
 export function mapLandingData(source: LandingContentSource): LandingData {
-  const hero = HeroSettingsSchema.parse(
-    normalizeHeroSettings(source.settings.hero),
+  const hero = mergeSeedHero(
+    HeroSettingsSchema.parse(normalizeHeroSettings(source.settings.hero)),
+    seedContent.settings.hero,
   );
   const trust = TrustBannerSettingsSchema.parse(
     normalizeHonestySettings(source.settings.trustBanner),
@@ -199,6 +204,7 @@ export function mapLandingData(source: LandingContentSource): LandingData {
         priceFromKopecks,
         isHighValue,
         ctaLabel,
+        iconUrl,
       }) => ({
         slug,
         title,
@@ -208,6 +214,7 @@ export function mapLandingData(source: LandingContentSource): LandingData {
         priceFromKopecks,
         isHighValue,
         ctaLabel,
+        iconUrl,
       }),
     ),
     consultation: trust.consultation,

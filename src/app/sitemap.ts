@@ -10,7 +10,7 @@ const STATIC_PATHS = [
   "/usloviya",
 ] as const;
 
-/** https://vibespace27.ru/sitemap.xml — для Яндекс.Вебмастера / Директа */
+/** Sitemap для Яндекс.Вебмастера / Директа. База URL — NEXT_PUBLIC_SITE_URL. */
 export default function sitemap(): MetadataRoute.Sitemap {
   const { NEXT_PUBLIC_SITE_URL, NEXT_PUBLIC_ALLOW_INDEXING } = getPublicEnv();
 

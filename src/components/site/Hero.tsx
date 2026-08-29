@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { motion } from "motion/react";
 
 import { useOptionalModal } from "@/components/forms/ModalProvider";
@@ -86,8 +86,36 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
   );
   const [videoFailed, setVideoFailed] = useState(false);
   const [posterFailed, setPosterFailed] = useState(false);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const shouldReduceMotion = hydrated && reduced;
   const renderVideo = hydrated && !shouldReduceMotion;
+
+  useEffect(() => {
+    if (!renderVideo) return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.muted = true;
+    video.defaultMuted = true;
+    video.setAttribute("muted", "");
+
+    const attemptPlay = () => {
+      void Promise.resolve(video.play())
+        .then(() => {
+          if (!video.paused) setVideoPlaying(true);
+        })
+        .catch(() => undefined);
+    };
+
+    attemptPlay();
+    video.addEventListener("canplay", attemptPlay);
+    video.addEventListener("playing", attemptPlay);
+    return () => {
+      video.removeEventListener("canplay", attemptPlay);
+      video.removeEventListener("playing", attemptPlay);
+    };
+  }, [renderVideo]);
 
   return (
     <section id="main" className="hero">
@@ -118,17 +146,21 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
 
         {renderVideo ? (
           <video
+            ref={videoRef}
             data-testid="hero-video"
             data-video-failed={videoFailed ? "true" : "false"}
-            className={videoFailed ? "is-failed" : undefined}
+            className={
+              videoFailed ? "is-failed" : videoPlaying ? "is-playing" : undefined
+            }
             src={data.video.fallbackUrl}
             poster={data.video.posterUrl}
             autoPlay
             muted
             loop
             playsInline
-            preload="metadata"
+            preload="auto"
             tabIndex={-1}
+            {...{ "webkit-playsinline": "" }}
             onError={() => setVideoFailed(true)}
           />
         ) : null}
@@ -193,7 +225,7 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
           >
             <MagneticButton
               type="button"
-              className="button button-light"
+              className="button"
               onClick={() => modal?.openModal("Главный экран")}
             >
               {data.cta.label}

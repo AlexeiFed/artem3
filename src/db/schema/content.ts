@@ -67,6 +67,7 @@ export const services = pgTable(
     ctaLabel: text("cta_label")
       .default("Получить оценку ситуации")
       .notNull(),
+    iconUrl: text("icon_url"),
     sortOrder: integer("sort_order").notNull(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

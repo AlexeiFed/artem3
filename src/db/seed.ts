@@ -18,6 +18,7 @@ import {
   AnalyticsSettingsSchema,
 } from "@/modules/content/content.schemas";
 import { normalizeHonestySettings } from "@/modules/content/map-landing-data";
+import { mergeSeedHero } from "@/modules/content/merge-seed-hero";
 import { getServerEnv } from "@/lib/env/server";
 import { seedAdminUser } from "@/modules/auth/seed-admin";
 
@@ -94,11 +95,22 @@ async function runSeed(): Promise<void> {
 
       // Legacy honesty.copy → items (не трогаем остальные settings).
       const [existingSettings] = await transaction
-        .select({ trustBanner: siteSettings.trustBanner })
+        .select({
+          hero: siteSettings.hero,
+          trustBanner: siteSettings.trustBanner,
+        })
         .from(siteSettings)
         .where(eq(siteSettings.id, "default"))
         .limit(1);
       if (existingSettings) {
+        await transaction
+          .update(siteSettings)
+          .set({
+            hero: mergeSeedHero(existingSettings.hero, settings.hero),
+            updatedAt: new Date(),
+          })
+          .where(eq(siteSettings.id, "default"));
+
         const current = existingSettings.trustBanner as {
           honesty?: { items?: unknown };
         };

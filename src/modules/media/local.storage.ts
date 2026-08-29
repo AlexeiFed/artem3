@@ -4,6 +4,7 @@ import { mkdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import type { ObjectStorage } from "./media.service";
+import { MediaCompleteSchema } from "./media.schemas";
 
 const MIME_BY_EXTENSION: Record<string, string> = {
   ".jpg": "image/jpeg",
@@ -65,12 +66,7 @@ export async function writeLocalMediaObject(input: {
 }
 
 function assertSafeObjectKey(objectKey: string): void {
-  if (
-    objectKey.includes("..") ||
-    objectKey.includes("/") ||
-    objectKey.includes("\\") ||
-    objectKey.length === 0
-  ) {
+  if (!MediaCompleteSchema.shape.objectKey.safeParse(objectKey).success) {
     throw new Error("Unsafe object key");
   }
 }

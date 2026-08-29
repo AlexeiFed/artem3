@@ -5,6 +5,7 @@ import { configDefaults, defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     exclude: [...configDefaults.exclude, "tests/e2e/**", ".next/**"],
+    setupFiles: [fileURLToPath(new URL("./src/test/setup-dom.ts", import.meta.url))],
   },
   resolve: {
     alias: {

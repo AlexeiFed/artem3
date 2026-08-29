@@ -63,7 +63,8 @@ export function EntityEditor({
       if (!(name in current)) {
         return current;
       }
-      const { [name]: _removed, ...rest } = current;
+      const rest = { ...current };
+      delete rest[name];
       return rest;
     });
   }

@@ -20,6 +20,15 @@ interface ReviewsEditorProps {
   loadError: string | null;
 }
 
+const NEW_REVIEW = {
+  author: "Новый отзыв",
+  quote: "Текст отзыва с публичной площадки",
+  imageUrl: null,
+  source: "Яндекс",
+  sourceUrl:
+    "https://yandex.ru/maps/org/yuridicheskaya_kompaniya_artema_sysuyeva/86909776127/reviews/",
+} as const;
+
 export function ReviewsEditor({
   initialItems,
   loadError,
@@ -30,31 +39,67 @@ export function ReviewsEditor({
   const selected = items.find((item) => item.id === selectedId) ?? null;
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[18rem_1fr]">
-      <SortableEntityList
-        items={items.map((item) => ({ id: item.id, label: item.author }))}
-        {...(selectedId ? { selectedId } : {})}
-        onSelect={setSelectedId}
-        onReorder={async (orderedIds) => {
-          const response = await fetch("/api/admin/content/reorder", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ entity: "reviews", orderedIds }),
-          });
-          if (!response.ok) {
-            const parsed = AdminApiErrorSchema.safeParse(await response.json());
-            setError(
-              parsed.success ? parsed.data.error.message : "Ошибка reorder",
+    <div className="grid items-start gap-8 lg:grid-cols-[18rem_1fr]">
+      <div className="flex flex-col gap-3 self-start">
+        <button
+          type="button"
+          className="shrink-0 rounded-card bg-forest px-4 py-2.5 font-sans text-sm text-background"
+          onClick={async () => {
+            const response = await fetch("/api/admin/content/reviews", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(NEW_REVIEW),
+            });
+            if (!response.ok) {
+              const parsed = AdminApiErrorSchema.safeParse(
+                await response.json(),
+              );
+              setError(
+                parsed.success
+                  ? parsed.data.error.message
+                  : "Не удалось создать отзыв",
+              );
+              return;
+            }
+            const body = (await response.json()) as {
+              ok: true;
+              data: ReviewEditorItem;
+            };
+            setItems((current) => [...current, body.data]);
+            setSelectedId(body.data.id);
+            setError(null);
+          }}
+        >
+          Добавить отзыв
+        </button>
+        <SortableEntityList
+          items={items.map((item) => ({ id: item.id, label: item.author }))}
+          {...(selectedId ? { selectedId } : {})}
+          onSelect={setSelectedId}
+          onReorder={async (orderedIds) => {
+            const response = await fetch("/api/admin/content/reorder", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ entity: "reviews", orderedIds }),
+            });
+            if (!response.ok) {
+              const parsed = AdminApiErrorSchema.safeParse(
+                await response.json(),
+              );
+              setError(
+                parsed.success ? parsed.data.error.message : "Ошибка reorder",
+              );
+              return;
+            }
+            setItems(
+              orderedIds
+                .map((id) => items.find((item) => item.id === id))
+                .filter((item): item is ReviewEditorItem => item !== undefined),
             );
-            return;
-          }
-          setItems(
-            orderedIds
-              .map((id) => items.find((item) => item.id === id))
-              .filter((item): item is ReviewEditorItem => item !== undefined),
-          );
-        }}
-      />
+            setError(null);
+          }}
+        />
+      </div>
       {selected ? (
         <EntityEditor
           key={selected.id}
@@ -88,7 +133,9 @@ export function ReviewsEditor({
               },
             );
             if (!response.ok) {
-              const parsed = AdminApiErrorSchema.safeParse(await response.json());
+              const parsed = AdminApiErrorSchema.safeParse(
+                await response.json(),
+              );
               throw new Error(
                 parsed.success
                   ? parsed.data.error.message
@@ -112,6 +159,29 @@ export function ReviewsEditor({
                   : item,
               ),
             );
+          }}
+          onDelete={async () => {
+            const response = await fetch(
+              `/api/admin/content/reviews/${selected.id}`,
+              { method: "DELETE" },
+            );
+            if (!response.ok) {
+              const parsed = AdminApiErrorSchema.safeParse(
+                await response.json(),
+              );
+              setError(
+                parsed.success
+                  ? parsed.data.error.message
+                  : "Не удалось удалить",
+              );
+              return;
+            }
+            setItems((current) => {
+              const next = current.filter((item) => item.id !== selected.id);
+              setSelectedId(next[0]?.id ?? null);
+              return next;
+            });
+            setError(null);
           }}
         />
       ) : null}

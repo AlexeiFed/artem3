@@ -4,6 +4,11 @@ import { useState } from "react";
 
 import { EntityEditor } from "@/components/admin/EntityEditor";
 import { AdminApiErrorSchema } from "@/modules/content/admin-content.schemas";
+import {
+  COOKIE_POLICY_TITLE,
+  PERSONAL_DATA_CONSENT_TITLE,
+  PERSONAL_DATA_PROCESSING_POLICY_TITLE,
+} from "@/modules/content/legal-copy";
 
 interface LegalEditorProps {
   initialLegal: Record<string, unknown>;
@@ -30,17 +35,17 @@ export function LegalEditor({ initialLegal, loadError }: LegalEditorProps) {
           { name: "entityText", label: "Реквизиты в подвале", type: "textarea" },
           {
             name: "privacyText",
-            label: "Политика конфиденциальности (/privacy)",
+            label: `${PERSONAL_DATA_PROCESSING_POLICY_TITLE} (/privacy)`,
             type: "textarea",
           },
           {
             name: "cookiesConsentText",
-            label: "Согласие на cookies (/cookies)",
+            label: `${COOKIE_POLICY_TITLE} (/cookies)`,
             type: "textarea",
           },
           {
             name: "personalDataText",
-            label: "Согласие на обработку ПДн (/personal-data)",
+            label: `${PERSONAL_DATA_CONSENT_TITLE} (/personal-data)`,
             type: "textarea",
           },
           {
