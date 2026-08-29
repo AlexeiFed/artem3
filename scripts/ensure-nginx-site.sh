@@ -24,6 +24,7 @@ fi
 
 mkdir -p "${UPLOADS_DIR}" /etc/nginx/sites-available /etc/nginx/sites-enabled
 
+write_http_only() {
   cat > "${SITE_CONFIG}" <<NGINX
 # Managed by scripts/ensure-nginx-site.sh — do not hand-edit.
 server {
