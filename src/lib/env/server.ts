@@ -31,6 +31,10 @@ const commonServerEnvSchema = z.object({
   TELEGRAM_API_IPS: optionalNonEmptyStringSchema,
   /** Полный base URL прокси/Worker, напр. https://xxx.workers.dev */
   TELEGRAM_API_BASE: optionalNonEmptyStringSchema,
+  MAX_BOT_TOKEN: optionalNonEmptyStringSchema,
+  MAX_CHAT_ID: optionalNonEmptyStringSchema,
+  /** Полный base URL прокси к platform-api2.max.ru */
+  MAX_API_BASE: optionalNonEmptyStringSchema,
 });
 
 const localMediaEnvSchema = commonServerEnvSchema.extend({

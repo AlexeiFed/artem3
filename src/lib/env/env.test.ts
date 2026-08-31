@@ -140,6 +140,54 @@ describe("server environment", () => {
     });
   });
 
+  it("parses optional MAX credentials on local and s3 drivers", async () => {
+    const { parseServerEnv } = await import("./server");
+
+    expect(
+      parseServerEnv({
+        ...validLocalEnv,
+        MAX_BOT_TOKEN: "max-token",
+        MAX_CHAT_ID: "-123456789",
+      }),
+    ).toEqual({
+      ...validLocalEnv,
+      TRUSTED_PROXY_HOPS: 1,
+      MAX_BOT_TOKEN: "max-token",
+      MAX_CHAT_ID: "-123456789",
+    });
+
+    expect(
+      parseServerEnv({
+        ...validS3Env,
+        MAX_BOT_TOKEN: "max-token-s3",
+        MAX_CHAT_ID: "987654321",
+        MAX_API_BASE: "https://max-proxy.example",
+      }),
+    ).toEqual({
+      ...validS3Env,
+      TRUSTED_PROXY_HOPS: 1,
+      MAX_BOT_TOKEN: "max-token-s3",
+      MAX_CHAT_ID: "987654321",
+      MAX_API_BASE: "https://max-proxy.example",
+    });
+  });
+
+  it("treats empty MAX env values as absent", async () => {
+    const { parseServerEnv } = await import("./server");
+
+    expect(
+      parseServerEnv({
+        ...validLocalEnv,
+        MAX_BOT_TOKEN: "",
+        MAX_CHAT_ID: "",
+        MAX_API_BASE: "",
+      }),
+    ).toEqual({
+      ...validLocalEnv,
+      TRUSTED_PROXY_HOPS: 1,
+    });
+  });
+
   it("rejects weak credentials", async () => {
     const { parseServerEnv } = await import("./server");
 

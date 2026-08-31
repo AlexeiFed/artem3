@@ -1,15 +1,11 @@
 import "server-only";
 
 import { getServerEnv } from "@/lib/env/server";
+import type { NotifyLeadPayload } from "@/modules/leads/create-lead.service";
+import { formatLeadNotifyHtml } from "@/modules/leads/lead-notify-message";
 import { telegramBotCall } from "@/modules/leads/telegram-bot-api";
 
-export interface NotifyLeadTelegramInput {
-  id: string;
-  name: string;
-  phone: string;
-  situation?: string | undefined;
-  serviceName?: string | undefined;
-}
+export type NotifyLeadTelegramInput = NotifyLeadPayload;
 
 export async function notifyLeadTelegram(
   input: NotifyLeadTelegramInput,
@@ -23,7 +19,7 @@ export async function notifyLeadTelegram(
   try {
     const response = await telegramBotCall(token, "sendMessage", {
       chat_id: chatId,
-      text: formatLeadMessage(input),
+      text: formatLeadNotifyHtml(input),
       parse_mode: "HTML",
       disable_web_page_preview: true,
     });
@@ -45,31 +41,4 @@ export async function notifyLeadTelegram(
       leadId: input.id,
     });
   }
-}
-
-function formatLeadMessage(input: NotifyLeadTelegramInput): string {
-  const lines = [
-    "<b>Новая заявка</b>",
-    `Имя: ${escapeHtml(input.name)}`,
-    `Телефон: ${escapeHtml(input.phone)}`,
-  ];
-
-  if (input.situation) {
-    lines.push(`Ситуация: ${escapeHtml(input.situation)}`);
-  }
-
-  if (input.serviceName) {
-    lines.push(`Услуга: ${escapeHtml(input.serviceName)}`);
-  }
-
-  lines.push(`ID: ${escapeHtml(input.id)}`);
-
-  return lines.join("\n");
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
 }
