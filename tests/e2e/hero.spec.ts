@@ -35,6 +35,13 @@ for (const viewport of viewports) {
       );
     }
 
+    const dossier = page.locator(".hero-dossier");
+    const dossierBox = await dossier.boundingBox();
+    expect(dossierBox).not.toBeNull();
+    expect((dossierBox?.y ?? 0) + (dossierBox?.height ?? 0)).toBeLessThanOrEqual(
+      viewport.height + 1,
+    );
+
     const widths = await page.evaluate(() => ({
       content: document.documentElement.scrollWidth,
       viewport: document.documentElement.clientWidth,
@@ -43,7 +50,7 @@ for (const viewport of viewports) {
   });
 }
 
-test("aligns dossier and header CTA to the content column", async ({
+test("keeps header CTA on the content column and docks dossier to the viewport", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -72,12 +79,15 @@ test("aligns dossier and header CTA to the content column", async ({
       columnRight: columnBox.right,
       dossierRight: dossierBox.right,
       headerRight: headerBox.right,
+      viewportWidth: window.innerWidth,
     };
   });
 
   expect(alignment).not.toBeNull();
   expect(
-    Math.abs((alignment?.dossierRight ?? 0) - (alignment?.columnRight ?? 0)),
+    Math.abs(
+      (alignment?.dossierRight ?? 0) - (alignment?.viewportWidth ?? 0),
+    ),
   ).toBeLessThan(2);
   expect(
     Math.abs((alignment?.headerRight ?? 0) - (alignment?.columnRight ?? 0)),
@@ -115,83 +125,94 @@ test("covers the fixed AI mark throughout the video loop", async ({
     browserName === "webkit",
     "Playwright WebKit does not provide reliable H.264 seeking on macOS",
   );
-  await page.setViewportSize({ width: 1366, height: 768 });
-  await page.emulateMedia({ reducedMotion: "no-preference" });
-  await page.goto("/");
 
-  const video = page.getByTestId("hero-video");
+  for (const viewport of [
+    { width: 1366, height: 768 },
+    { width: 1440, height: 900 },
+  ] as const) {
+    await page.setViewportSize(viewport);
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await page.goto("/");
 
-  await expect
-    .poll(() =>
-      video.evaluate((element) =>
-        element instanceof HTMLVideoElement ? element.videoWidth : 0,
-      ),
-    )
-    .toBe(1280);
+    const video = page.getByTestId("hero-video");
 
-  for (const time of [0.2, 4.5, 8.8]) {
-    await video.evaluate(async (element, nextTime) => {
-      if (!(element instanceof HTMLVideoElement)) {
-        throw new Error("Hero media is not a video element");
-      }
-      element.currentTime = nextTime;
-      await new Promise<void>((resolve) => {
-        element.addEventListener("seeked", () => resolve(), { once: true });
-      });
-    }, time);
+    await expect
+      .poll(() =>
+        video.evaluate((element) =>
+          element instanceof HTMLVideoElement ? element.videoWidth : 0,
+        ),
+      )
+      .toBe(1280);
 
-    const markCoverage = await page.evaluate(
-      ({ sourceX, sourceY }) => {
-        const videoElement = document.querySelector<HTMLVideoElement>(
-          '[data-testid="hero-video"]',
-        );
-        const coverElement = document.querySelector<HTMLElement>(
-          ".hero-dossier li:last-child",
-        );
-        if (!videoElement || !coverElement) {
-          return { covered: false, reason: "missing element" };
+    for (const time of [0.2, 4.5, 8.8]) {
+      await video.evaluate(async (element, nextTime) => {
+        if (!(element instanceof HTMLVideoElement)) {
+          throw new Error("Hero media is not a video element");
         }
+        element.currentTime = nextTime;
+        await new Promise<void>((resolve) => {
+          element.addEventListener("seeked", () => resolve(), { once: true });
+        });
+      }, time);
 
-        const videoBox = videoElement.getBoundingClientRect();
-        const coverBox = coverElement.getBoundingClientRect();
-        const scale = Math.max(
-          videoBox.width / videoElement.videoWidth,
-          videoBox.height / videoElement.videoHeight,
-        );
-        const renderedWidth = videoElement.videoWidth * scale;
-        const renderedHeight = videoElement.videoHeight * scale;
-        const pointX =
-          videoBox.left + (videoBox.width - renderedWidth) / 2 + sourceX * scale;
-        const pointY =
-          videoBox.top +
-          (videoBox.height - renderedHeight) / 2 +
-          sourceY * scale;
-        const background = getComputedStyle(coverElement).backgroundColor;
+      const markCoverage = await page.evaluate(
+        ({ sourceX, sourceY }) => {
+          const videoElement = document.querySelector<HTMLVideoElement>(
+            '[data-testid="hero-video"]',
+          );
+          const coverElement = document.querySelector<HTMLElement>(
+            ".hero-dossier li:last-child",
+          );
+          if (!videoElement || !coverElement) {
+            return { covered: false, reason: "missing element" };
+          }
 
-        const covered =
-          pointX >= coverBox.left &&
-          pointX <= coverBox.right &&
-          pointY >= coverBox.top &&
-          pointY <= coverBox.bottom &&
-          background !== "transparent" &&
-          background !== "rgba(0, 0, 0, 0)";
+          const videoBox = videoElement.getBoundingClientRect();
+          const coverBox = coverElement.getBoundingClientRect();
+          const scale = Math.max(
+            videoBox.width / videoElement.videoWidth,
+            videoBox.height / videoElement.videoHeight,
+          );
+          const renderedWidth = videoElement.videoWidth * scale;
+          const renderedHeight = videoElement.videoHeight * scale;
+          const pointX =
+            videoBox.left +
+            (videoBox.width - renderedWidth) / 2 +
+            sourceX * scale;
+          const pointY =
+            videoBox.top +
+            (videoBox.height - renderedHeight) / 2 +
+            sourceY * scale;
+          const background = getComputedStyle(coverElement).backgroundColor;
 
-        return {
-          background,
-          cover: {
-            bottom: coverBox.bottom,
-            left: coverBox.left,
-            right: coverBox.right,
-            top: coverBox.top,
-          },
-          covered,
-          point: { x: pointX, y: pointY },
-        };
-      },
-      { sourceX: 1168, sourceY: 632 },
-    );
+          const covered =
+            pointX >= coverBox.left &&
+            pointX <= coverBox.right &&
+            pointY >= coverBox.top &&
+            pointY <= coverBox.bottom &&
+            background !== "transparent" &&
+            background !== "rgba(0, 0, 0, 0)";
 
-    expect(markCoverage.covered, JSON.stringify(markCoverage)).toBe(true);
+          return {
+            background,
+            cover: {
+              bottom: coverBox.bottom,
+              left: coverBox.left,
+              right: coverBox.right,
+              top: coverBox.top,
+            },
+            covered,
+            point: { x: pointX, y: pointY },
+          };
+        },
+        { sourceX: 1168, sourceY: 632 },
+      );
+
+      expect(
+        markCoverage.covered,
+        `${viewport.width}x${viewport.height} t=${time} ${JSON.stringify(markCoverage)}`,
+      ).toBe(true);
+    }
   }
 });
 

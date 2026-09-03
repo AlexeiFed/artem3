@@ -42,6 +42,52 @@ describe("Workflow", () => {
 });
 
 describe("Reviews", () => {
+  const clientHeight = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    "clientHeight",
+  );
+  const scrollHeight = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    "scrollHeight",
+  );
+
+  afterEach(() => {
+    if (clientHeight) {
+      Object.defineProperty(HTMLElement.prototype, "clientHeight", clientHeight);
+    } else {
+      delete (HTMLElement.prototype as { clientHeight?: number }).clientHeight;
+    }
+    if (scrollHeight) {
+      Object.defineProperty(HTMLElement.prototype, "scrollHeight", scrollHeight);
+    } else {
+      delete (HTMLElement.prototype as { scrollHeight?: number }).scrollHeight;
+    }
+  });
+
+  function mockQuoteOverflow(overflows: boolean) {
+    Object.defineProperty(HTMLElement.prototype, "clientHeight", {
+      configurable: true,
+      get() {
+        return this instanceof HTMLElement &&
+          this.classList.contains("review-quote")
+          ? 80
+          : 0;
+      },
+    });
+    Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
+      configurable: true,
+      get() {
+        if (
+          !(this instanceof HTMLElement) ||
+          !this.classList.contains("review-quote")
+        ) {
+          return 0;
+        }
+        return overflows ? 200 : 80;
+      },
+    });
+  }
+
   it("shows next/prev arrows when needed and one dot per review", () => {
     const data = getPreviewLandingData();
     HTMLElement.prototype.scrollIntoView = vi.fn();
@@ -65,6 +111,60 @@ describe("Reviews", () => {
     expect(
       screen.getByRole("button", { name: "Предыдущий отзыв" }),
     ).toBeInTheDocument();
+  });
+
+  it("clamps a long review to four lines and expands it from Читать далее", () => {
+    const data = getPreviewLandingData();
+    const [sample] = data.reviews;
+    if (!sample) throw new Error("Reviews fixture is empty");
+    mockQuoteOverflow(true);
+
+    render(
+      <Reviews
+        ratings={data.ratings}
+        reviews={[sample]}
+        certificates={data.certificates}
+      />,
+    );
+
+    const quote = screen.getByText(`«${sample.quote}»`);
+    expect(quote).toHaveAttribute("data-expanded", "false");
+    expect(quote).toHaveClass("review-quote");
+    const toggle = screen.getByRole("button", { name: "Читать далее" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveAttribute("aria-controls", "review-quote-0");
+
+    fireEvent.click(toggle);
+
+    expect(quote).toHaveAttribute("data-expanded", "true");
+    expect(
+      screen.getByRole("button", { name: "Свернуть" }),
+    ).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Свернуть" }));
+    expect(quote).toHaveAttribute("data-expanded", "false");
+    expect(
+      screen.getByRole("button", { name: "Читать далее" }),
+    ).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("does not show Читать далее when the quote fits in four lines", () => {
+    const data = getPreviewLandingData();
+    const [sample] = data.reviews;
+    if (!sample) throw new Error("Reviews fixture is empty");
+    mockQuoteOverflow(false);
+
+    render(
+      <Reviews
+        ratings={data.ratings}
+        reviews={[sample]}
+        certificates={data.certificates}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "Читать далее" }),
+    ).not.toBeInTheDocument();
   });
 });
 

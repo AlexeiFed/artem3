@@ -38,13 +38,13 @@ mkdir -p \
   "${SHARED_ROOT}/public/media/uploads" \
   "${REMOTE_DIR}/public/media"
 
-# Shared uploads: не теряем медиа между релизами
+# Shared uploads: не теряем медиа между релизами.
+# Симлинк ставим ПОСЛЕ build — Turbopack падает на symlink наружу из корня проекта.
 if [[ -d "${LIVE_LINK}/public/media/uploads" && ! -L "${LIVE_LINK}/public/media/uploads" ]]; then
   # разовый перенос со старого live-дерева
   cp -a "${LIVE_LINK}/public/media/uploads/." "${SHARED_ROOT}/public/media/uploads/" 2>/dev/null || true
 fi
-rm -rf "${REMOTE_DIR}/public/media/uploads"
-ln -sfn "${SHARED_ROOT}/public/media/uploads" "${REMOTE_DIR}/public/media/uploads"
+mkdir -p "${REMOTE_DIR}/public/media/uploads"
 
 if [[ ! -f "${ENV_STORE}" ]]; then
   DB_PASS="$(openssl rand -base64 24 | tr -d '/+=' | head -c 24)"
@@ -256,6 +256,9 @@ if [[ ! -d .next ]]; then
   echo "ERROR: .next отсутствует в релизе — сборка не попала на сервер" >&2
   exit 1
 fi
+
+rm -rf "${REMOTE_DIR}/public/media/uploads"
+ln -sfn "${SHARED_ROOT}/public/media/uploads" "${REMOTE_DIR}/public/media/uploads"
 
 echo "==> db:migrate (только pending)"
 npm run db:migrate

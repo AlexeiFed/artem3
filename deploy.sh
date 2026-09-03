@@ -51,7 +51,7 @@ ENV_STORE="/root/.config/artem-vibespace.env"
 KEEP_RELEASES="${KEEP_RELEASES:-1}"
 RELEASE_ID="$(date -u +%Y%m%d-%H%M%S)"
 RELEASE_DIR="${RELEASES_ROOT}/${RELEASE_ID}"
-SSH_OPTS=(-o ServerAliveInterval=15 -o ServerAliveCountMax=40 -o ConnectTimeout=20)
+SSH_OPTS=(-o ServerAliveInterval=15 -o ServerAliveCountMax=80 -o ConnectTimeout=20)
 
 ensure_node_modules() {
   local label="$1"
@@ -137,6 +137,9 @@ RSYNC_EXCLUDES=(
   --exclude 'test-results/'
   --exclude '.DS_Store'
   --exclude '*.log'
+  --exclude '*.map'
+  --exclude 'tests/'
+  --exclude 'docs/'
   --exclude '.next/cache/'
   --exclude '.next/dev/'
   --exclude 'public/media/uploads/*'
@@ -148,7 +151,7 @@ if [[ "${REMOTE_BUILD:-0}" == "1" ]]; then
   RSYNC_EXCLUDES+=(--exclude '.next/')
 fi
 
-rsync -az --partial --progress --timeout=120 \
+rsync -az --partial --progress --timeout=600 \
   -e "ssh ${SSH_OPTS[*]}" \
   "${RSYNC_EXCLUDES[@]}" \
   --include 'public/media/uploads/.gitkeep' \

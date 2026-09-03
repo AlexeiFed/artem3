@@ -4,6 +4,7 @@ import Image from "next/image";
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   useSyncExternalStore,
@@ -248,6 +249,46 @@ function ReviewChevron({ direction }: { direction: "prev" | "next" }) {
   );
 }
 
+function ReviewQuote({ quote, quoteId }: { quote: string; quoteId: string }) {
+  const textRef = useRef<HTMLParagraphElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+
+  useLayoutEffect(() => {
+    const node = textRef.current;
+    if (!node) {
+      setOverflows(false);
+      return;
+    }
+    if (expanded) return;
+    setOverflows(node.scrollHeight > node.clientHeight + 1);
+  }, [expanded, quote]);
+
+  return (
+    <div className="review-quote-block">
+      <p
+        id={quoteId}
+        ref={textRef}
+        className="review-quote"
+        data-expanded={expanded ? "true" : "false"}
+      >
+        «{quote}»
+      </p>
+      {overflows ? (
+        <button
+          type="button"
+          className="review-quote-more"
+          aria-expanded={expanded}
+          aria-controls={quoteId}
+          onClick={() => setExpanded((current) => !current)}
+        >
+          {expanded ? "Свернуть" : "Читать далее"}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function ReviewCarousel({ reviews }: { reviews: LandingData["reviews"] }) {
   const reduced = useReducedMotion();
   const trackRef = useRef<HTMLDivElement>(null);
@@ -302,7 +343,10 @@ function ReviewCarousel({ reviews }: { reviews: LandingData["reviews"] }) {
         <div ref={trackRef} className="review-carousel">
           {reviews.map((review, index) => (
             <article key={`${review.author}-${index}`}>
-              <p>«{review.quote}»</p>
+              <ReviewQuote
+                quote={review.quote}
+                quoteId={`review-quote-${index}`}
+              />
               <footer>
                 <strong>{review.author}</strong>
                 <a
