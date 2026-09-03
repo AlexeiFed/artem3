@@ -22,5 +22,14 @@ describe("buildContentSecurityPolicy", () => {
 
     expect(policy).toContain("script-src 'self' 'nonce-abc123' 'strict-dynamic'");
     expect(policy).not.toContain("'unsafe-inline' blob: https://api-maps.yandex.ru");
+    expect(policy).not.toContain("'unsafe-eval'");
+  });
+
+  it("allows eval only when React development diagnostics need it", () => {
+    const policy = buildContentSecurityPolicy("http://localhost:3000", "devnonce", {
+      allowUnsafeEval: true,
+    });
+
+    expect(policy).toContain("'unsafe-eval'");
   });
 });

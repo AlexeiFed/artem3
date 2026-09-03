@@ -4,6 +4,7 @@ import {
   AdminFormError,
   formatAdminApiError,
   humanizeValidationMessage,
+  readAdminErrorMessage,
 } from "./format-admin-error";
 
 describe("formatAdminApiError", () => {
@@ -36,6 +37,24 @@ describe("formatAdminApiError", () => {
     expect(error.message).toContain("Email");
     expect(error.fields.emailAddress?.[0]).toMatch(/email/i);
     expect(error.fields.responseSla?.[0]).toMatch(/заполните/i);
+  });
+});
+
+describe("readAdminErrorMessage", () => {
+  it("prefers the domain _form message over the generic conflict title", () => {
+    expect(
+      readAdminErrorMessage(
+        {
+          ok: false,
+          error: {
+            code: "CONFLICT",
+            message: "Конфликт данных.",
+            fields: { _form: ["Достигнут лимит записей (6)"] },
+          },
+        },
+        "Не удалось создать отзыв",
+      ),
+    ).toBe("Достигнут лимит записей (6)");
   });
 });
 

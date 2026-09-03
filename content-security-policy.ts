@@ -1,10 +1,12 @@
 export function buildContentSecurityPolicy(
   siteUrl: string,
   nonce?: string,
+  options?: { allowUnsafeEval?: boolean },
 ): string {
+  const evalSrc = options?.allowUnsafeEval ? " 'unsafe-eval'" : "";
   const scriptSrc = nonce
-    ? `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' blob:`
-    : "script-src 'self' 'unsafe-inline' blob: https://api-maps.yandex.ru https://yastatic.net https://mc.yandex.ru https://vk.com https://*.vk.com https://vkvideo.ru https://*.vkvideo.ru";
+    ? `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${evalSrc} blob:`
+    : `script-src 'self' 'unsafe-inline'${evalSrc} blob: https://api-maps.yandex.ru https://yastatic.net https://mc.yandex.ru https://vk.com https://*.vk.com https://vkvideo.ru https://*.vkvideo.ru`;
 
   const directives: string[] = [
     "default-src 'self'",

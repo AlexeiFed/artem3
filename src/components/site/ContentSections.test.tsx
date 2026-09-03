@@ -2,12 +2,12 @@
 
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { getPreviewLandingData } from "@/modules/content/preview-landing-data";
 
-import { HonestyBanner, Workflow } from "./ContentSections";
+import { HonestyBanner, Reviews, Workflow } from "./ContentSections";
 
 vi.stubGlobal(
   "matchMedia",
@@ -38,6 +38,33 @@ describe("Workflow", () => {
       screen.getByRole("heading", { level: 3, name: data.workflow.title }),
     ).toBeInTheDocument();
     expect(document.querySelectorAll(".eyebrow")).toHaveLength(1);
+  });
+});
+
+describe("Reviews", () => {
+  it("shows next/prev arrows when needed and one dot per review", () => {
+    const data = getPreviewLandingData();
+    HTMLElement.prototype.scrollIntoView = vi.fn();
+
+    render(
+      <Reviews
+        ratings={data.ratings}
+        reviews={data.reviews}
+        certificates={data.certificates}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Предыдущий отзыв" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Следующий отзыв" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Показать отзыв/ })).toHaveLength(
+      data.reviews.length,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Следующий отзыв" }));
+
+    expect(
+      screen.getByRole("button", { name: "Предыдущий отзыв" }),
+    ).toBeInTheDocument();
   });
 });
 

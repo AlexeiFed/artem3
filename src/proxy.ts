@@ -18,7 +18,9 @@ export function proxy(request: NextRequest): NextResponse {
   const { pathname, search } = request.nextUrl;
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const csp = buildContentSecurityPolicy(siteUrl, nonce);
+  const csp = buildContentSecurityPolicy(siteUrl, nonce, {
+    allowUnsafeEval: process.env.NODE_ENV !== "production",
+  });
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);

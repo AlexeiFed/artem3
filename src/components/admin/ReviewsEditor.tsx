@@ -3,8 +3,8 @@
 import { useState } from "react";
 
 import { EntityEditor } from "@/components/admin/EntityEditor";
+import { readAdminErrorMessage } from "@/components/admin/format-admin-error";
 import { SortableEntityList } from "@/components/admin/SortableEntityList";
-import { AdminApiErrorSchema } from "@/modules/content/admin-content.schemas";
 
 export interface ReviewEditorItem {
   id: string;
@@ -51,13 +51,11 @@ export function ReviewsEditor({
               body: JSON.stringify(NEW_REVIEW),
             });
             if (!response.ok) {
-              const parsed = AdminApiErrorSchema.safeParse(
-                await response.json(),
-              );
               setError(
-                parsed.success
-                  ? parsed.data.error.message
-                  : "Не удалось создать отзыв",
+                readAdminErrorMessage(
+                  await response.json(),
+                  "Не удалось создать отзыв",
+                ),
               );
               return;
             }
@@ -83,11 +81,11 @@ export function ReviewsEditor({
               body: JSON.stringify({ entity: "reviews", orderedIds }),
             });
             if (!response.ok) {
-              const parsed = AdminApiErrorSchema.safeParse(
-                await response.json(),
-              );
               setError(
-                parsed.success ? parsed.data.error.message : "Ошибка reorder",
+                readAdminErrorMessage(
+                  await response.json(),
+                  "Ошибка reorder",
+                ),
               );
               return;
             }
@@ -133,13 +131,11 @@ export function ReviewsEditor({
               },
             );
             if (!response.ok) {
-              const parsed = AdminApiErrorSchema.safeParse(
-                await response.json(),
-              );
               throw new Error(
-                parsed.success
-                  ? parsed.data.error.message
-                  : "Ошибка сохранения",
+                readAdminErrorMessage(
+                  await response.json(),
+                  "Ошибка сохранения",
+                ),
               );
             }
             setItems((current) =>
@@ -166,13 +162,11 @@ export function ReviewsEditor({
               { method: "DELETE" },
             );
             if (!response.ok) {
-              const parsed = AdminApiErrorSchema.safeParse(
-                await response.json(),
-              );
               setError(
-                parsed.success
-                  ? parsed.data.error.message
-                  : "Не удалось удалить",
+                readAdminErrorMessage(
+                  await response.json(),
+                  "Не удалось удалить",
+                ),
               );
               return;
             }
@@ -186,7 +180,7 @@ export function ReviewsEditor({
         />
       ) : null}
       {error ? (
-        <p className="text-sm text-secondary lg:col-span-2" role="alert">
+        <p className="text-sm text-error lg:col-span-2" role="alert">
           {error}
         </p>
       ) : null}

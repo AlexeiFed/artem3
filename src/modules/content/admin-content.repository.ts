@@ -39,7 +39,7 @@ type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 const ENTITY_LIMITS = {
   cases: { min: 1, max: 12 },
   faqs: { min: 6, max: 20 },
-  reviews: { min: 3, max: 6 },
+  reviews: { min: 3, max: 12 },
   certificates: { min: 1, max: 4 },
   services: { min: 1, max: 12 },
 } as const;

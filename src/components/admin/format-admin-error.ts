@@ -86,6 +86,21 @@ export function humanizeValidationMessage(
   return "Исправьте значение в этом поле";
 }
 
+export function readAdminErrorMessage(
+  payload: unknown,
+  fallback: string,
+): string {
+  const parsed = AdminApiErrorSchema.safeParse(payload);
+  if (!parsed.success) {
+    return fallback;
+  }
+  const form = parsed.data.error.fields?._form?.[0];
+  if (form) {
+    return form;
+  }
+  return parsed.data.error.message;
+}
+
 export function formatAdminApiError(
   payload: unknown,
   options: FormatAdminApiErrorOptions = {},

@@ -1603,8 +1603,21 @@ h2 {
   font-size: 0.8rem;
 }
 
+.review-carousel-wrap {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.review-carousel-stage {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
 .review-carousel {
   display: grid;
+  width: 100%;
   grid-auto-columns: calc(100vw - 4rem);
   grid-auto-flow: column;
   overflow-x: auto;
@@ -1613,6 +1626,67 @@ h2 {
   padding-inline: max(2rem, calc((100vw - 82rem) / 2));
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
+}
+
+.review-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  transform: translateY(-50%);
+  place-items: center;
+  border: 0;
+  border-radius: var(--token-radius-control);
+  background: var(--token-color-accent-forest);
+  color: var(--token-color-background);
+  box-shadow: var(--token-shadow-lift);
+}
+
+.review-arrow:focus-visible {
+  outline: 2px solid var(--token-color-accent-sage);
+  outline-offset: 3px;
+}
+
+.review-arrow-prev {
+  left: 0.15rem;
+}
+
+.review-arrow-next {
+  right: 0.15rem;
+}
+
+.review-dots {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  padding: 0.25rem 0 0.1rem;
+}
+
+.review-dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+  background: color-mix(
+    in srgb,
+    var(--token-color-accent-sage) 42%,
+    var(--token-color-background)
+  );
+  cursor: pointer;
+  transition: background var(--token-motion-duration-fast);
+}
+
+.review-dot:focus-visible {
+  outline: 2px solid var(--token-color-accent-sage);
+  outline-offset: 3px;
+}
+
+.review-dot[aria-current="true"] {
+  background: var(--token-color-accent-forest);
 }
 
 .review-carousel article {
@@ -1628,9 +1702,11 @@ h2 {
 }
 
 .review-carousel article > p {
-  font-family: var(--font-cormorant), serif;
-  font-size: clamp(1.2rem, 4.4vw, 2.4rem);
-  line-height: 1.2;
+  margin: 0;
+  color: var(--token-color-text-primary);
+  font-family: var(--font-inter), sans-serif;
+  font-size: 1rem;
+  line-height: 1.65;
 }
 
 .review-carousel footer {
@@ -2811,15 +2887,8 @@ h2 {
   }
 
   .review-carousel article {
-    min-height: 18rem;
     justify-content: space-between;
-    gap: 0;
     padding: 1.5rem;
-  }
-
-  .review-carousel article > p {
-    font-size: clamp(1.5rem, 3vw, 2.4rem);
-    line-height: 1.15;
   }
 
   /* 7: 4 + 3 без «хвоста» */
@@ -2889,6 +2958,10 @@ h2 {
 }
 
 @media (min-width: 64rem) {
+  .review-arrow-next {
+    right: 4.75rem;
+  }
+
   .desktop-nav {
     display: flex;
     min-width: 0;

@@ -47,6 +47,32 @@ describe("ReviewsEditor", () => {
     );
   });
 
+  it("shows the review limit from a 409 conflict instead of the generic title", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        Response.json(
+          {
+            ok: false,
+            error: {
+              code: "CONFLICT",
+              message: "Конфликт данных.",
+              fields: { _form: ["Достигнут лимит записей (6)"] },
+            },
+          },
+          { status: 409 },
+        ),
+      ),
+    );
+
+    render(<ReviewsEditor initialItems={[item]} loadError={null} />);
+    fireEvent.click(screen.getByRole("button", { name: "Добавить отзыв" }));
+
+    expect(
+      await screen.findByRole("alert"),
+    ).toHaveTextContent("Достигнут лимит записей (6)");
+  });
+
   it("deletes the selected review through the admin API", async () => {
     vi.stubGlobal(
       "fetch",

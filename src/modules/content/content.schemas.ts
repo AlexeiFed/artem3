@@ -411,7 +411,7 @@ export const LandingDataSchema = z.object({
   honesty: HonestyBannerSchema,
   cases: z.array(CaseSchema).min(1).max(12),
   ratings: RatingsSettingsSchema,
-  reviews: z.array(ReviewSchema).min(3).max(6),
+  reviews: z.array(ReviewSchema).min(3).max(12),
   certificates: z.array(CertificateSchema).min(1).max(4),
   faqs: z.array(FaqSchema).min(6).max(20),
   contacts: ContactsSchema,

@@ -222,6 +222,137 @@ function CasePart({
   );
 }
 
+function ReviewChevron({ direction }: { direction: "prev" | "next" }) {
+  return (
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+      {direction === "prev" ? (
+        <path
+          d="M10.5 3.5 6 8l4.5 4.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ) : (
+        <path
+          d="M5.5 3.5 10 8l-4.5 4.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      )}
+    </svg>
+  );
+}
+
+function ReviewCarousel({ reviews }: { reviews: LandingData["reviews"] }) {
+  const reduced = useReducedMotion();
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const syncActiveIndex = useCallback(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    const cards = Array.from(track.querySelectorAll<HTMLElement>("article"));
+    if (cards.length === 0) return;
+    const trackCenter =
+      track.getBoundingClientRect().left + track.clientWidth / 2;
+    let closest = 0;
+    let closestDistance = Number.POSITIVE_INFINITY;
+    cards.forEach((card, index) => {
+      const cardCenter =
+        card.getBoundingClientRect().left + card.offsetWidth / 2;
+      const distance = Math.abs(cardCenter - trackCenter);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closest = index;
+      }
+    });
+    setActiveIndex(closest);
+  }, []);
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    track.addEventListener("scroll", syncActiveIndex, { passive: true });
+    return () => track.removeEventListener("scroll", syncActiveIndex);
+  }, [syncActiveIndex]);
+
+  function scrollToIndex(index: number) {
+    const next = Math.min(Math.max(index, 0), reviews.length - 1);
+    const track = trackRef.current;
+    const card = track?.querySelectorAll<HTMLElement>("article")[next];
+    card?.scrollIntoView({
+      behavior: reduced ? "auto" : "smooth",
+      inline: "center",
+      block: "nearest",
+    });
+    setActiveIndex(next);
+  }
+
+  const canPrev = activeIndex > 0;
+  const canNext = activeIndex < reviews.length - 1;
+
+  return (
+    <div className="review-carousel-wrap">
+      <div className="review-carousel-stage">
+        <div ref={trackRef} className="review-carousel">
+          {reviews.map((review, index) => (
+            <article key={`${review.author}-${index}`}>
+              <p>«{review.quote}»</p>
+              <footer>
+                <strong>{review.author}</strong>
+                <a
+                  href={review.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {review.source} ↗
+                </a>
+              </footer>
+            </article>
+          ))}
+        </div>
+        {canPrev ? (
+          <button
+            type="button"
+            className="review-arrow review-arrow-prev"
+            aria-label="Предыдущий отзыв"
+            onClick={() => scrollToIndex(activeIndex - 1)}
+          >
+            <ReviewChevron direction="prev" />
+          </button>
+        ) : null}
+        {canNext ? (
+          <button
+            type="button"
+            className="review-arrow review-arrow-next"
+            aria-label="Следующий отзыв"
+            onClick={() => scrollToIndex(activeIndex + 1)}
+          >
+            <ReviewChevron direction="next" />
+          </button>
+        ) : null}
+      </div>
+      <div className="review-dots" aria-label="Отзывы">
+        {reviews.map((review, index) => (
+          <button
+            key={`${review.author}-${index}`}
+            type="button"
+            className="review-dot"
+            aria-label={`Показать отзыв ${index + 1}`}
+            aria-current={activeIndex === index ? "true" : undefined}
+            onClick={() => scrollToIndex(index)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function Reviews({
   ratings,
   reviews,
@@ -256,19 +387,7 @@ export function Reviews({
             </a>
           ))}
         </div>
-        <div className="review-carousel">
-          {reviews.map((review) => (
-            <article key={review.author}>
-              <p>«{review.quote}»</p>
-              <footer>
-                <strong>{review.author}</strong>
-                <a href={review.sourceUrl} target="_blank" rel="noopener noreferrer">
-                  {review.source} ↗
-                </a>
-              </footer>
-            </article>
-          ))}
-        </div>
+        <ReviewCarousel reviews={reviews} />
         <div className="certificates" aria-label="Документы об образовании">
           {certificates.map((certificate) => (
             <article key={certificate.title}>
