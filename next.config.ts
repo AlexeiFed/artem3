@@ -28,6 +28,14 @@ const nextConfig: NextConfig = {
   output: "standalone",
   serverExternalPackages: ["argon2"],
   allowedDevOrigins: ["127.0.0.1"],
+  async rewrites() {
+    return [
+      {
+        source: "/yandex_:code.html",
+        destination: "/api/yandex-verification/:code",
+      },
+    ];
+  },
   async headers() {
     if (process.env.NODE_ENV !== "production") {
       return [];

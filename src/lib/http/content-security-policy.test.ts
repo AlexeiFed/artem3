@@ -10,6 +10,13 @@ describe("buildContentSecurityPolicy", () => {
     expect(policy).toContain("upgrade-insecure-requests");
   });
 
+  it("allows Metrika Webvisor websocket and hdrc host", () => {
+    const policy = buildContentSecurityPolicy("https://artemsysuev.ru");
+
+    expect(policy).toContain("wss://mc.yandex.ru");
+    expect(policy).toContain("https://hdrc.yandex.net");
+  });
+
   it("skips upgrade-insecure-requests on http so local assets are not forced to https", () => {
     const policy = buildContentSecurityPolicy("http://localhost:3000");
 

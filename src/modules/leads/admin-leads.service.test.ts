@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  AdminLeadsDomainError,
   createAdminLeadsService,
   type AdminLeadRecord,
   type AdminLeadsRepository,
@@ -62,5 +63,50 @@ describe("admin leads CSV", () => {
 
     expect(csv).toContain("\"'=HYPERLINK(\"\"http://evil.test\"\")\"");
     expect(csv).not.toMatch(/(?:^|,)=HYPERLINK/m);
+  });
+});
+
+describe("admin leads list filter", () => {
+  const sample: AdminLeadRecord = {
+    id: "11111111-1111-4111-8111-111111111111",
+    name: "Алексей",
+    phone: "+79991234567",
+    situation: null,
+    serviceName: null,
+    status: "CLOSED",
+    isDataAgreed: true,
+    isMarketingAgreed: false,
+    consentAt: new Date("2026-07-12T10:00:00.000Z"),
+    createdAt: new Date("2026-07-12T10:00:00.000Z"),
+    updatedAt: new Date("2026-07-12T10:00:00.000Z"),
+  };
+
+  it("passes status to the repository", async () => {
+    let received: unknown;
+    const service = createAdminLeadsService({
+      listPage: async (input) => {
+        received = input;
+        return [sample];
+      },
+      updateStatus: async () => sample,
+    });
+
+    await service.listPage({ status: "CLOSED" });
+
+    expect(received).toMatchObject({ status: "CLOSED" });
+  });
+
+  it("rejects an invalid status", async () => {
+    const service = createAdminLeadsService({
+      listPage: async () => [sample],
+      updateStatus: async () => sample,
+    });
+
+    await expect(service.listPage({ status: "NOPE" })).rejects.toBeInstanceOf(
+      AdminLeadsDomainError,
+    );
+    await expect(service.listPage({ status: "NOPE" })).rejects.toMatchObject({
+      code: "VALIDATION",
+    });
   });
 });

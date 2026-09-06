@@ -3,7 +3,8 @@
 import { useState } from "react";
 
 import { EntityEditor } from "@/components/admin/EntityEditor";
-import { AdminApiErrorSchema } from "@/modules/content/admin-content.schemas";
+import { formatAdminApiError } from "@/components/admin/format-admin-error";
+import { extractYandexVerificationContent } from "@/modules/content/yandex-verification";
 
 interface AnalyticsEditorProps {
   initialAnalytics: {
@@ -11,14 +12,6 @@ interface AnalyticsEditorProps {
     yandexVerificationContent?: string;
   };
   loadError: string | null;
-}
-
-/** Accepts raw content=… or a full `<meta name="yandex-verification" …>` paste. */
-function extractVerificationContent(raw: string): string {
-  const trimmed = raw.trim();
-  const fromAttr = trimmed.match(/content\s*=\s*["']([^"']+)["']/iu);
-  if (fromAttr?.[1]) return fromAttr[1].trim();
-  return trimmed;
 }
 
 export function AnalyticsEditor({
@@ -31,14 +24,17 @@ export function AnalyticsEditor({
   return (
     <>
       <p className="mb-6 max-w-2xl font-sans text-sm text-secondary">
-        Счётчик Метрики и код проверки сайта для Яндекс Директа / Вебмастера
-        (meta content). Это публичные маркетинговые коды — не пароли и не токены
-        API. Цель <code className="text-primary">lead_success</code> создаётся в
-        кабинете Метрики (JavaScript-событие). Для Вебмастера также доступны{" "}
+        Счётчик Метрики и код проверки сайта для Яндекс Директа / Вебмастера.
+        Это публичные маркетинговые коды — не пароли и не токены API. Цель{" "}
+        <code className="text-primary">lead_success</code> создаётся в кабинете
+        Метрики (JavaScript-событие). Для Вебмастера также доступны{" "}
         <code className="text-primary">/robots.txt</code> и{" "}
-        <code className="text-primary">/sitemap.xml</code>.
+        <code className="text-primary">/sitemap.xml</code>. HTML-файл проверки
+        отдаётся с{" "}
+        <code className="text-primary">/yandex_…html</code>.
       </p>
       <EntityEditor
+        key={`${analytics.metrikaCounterId}|${analytics.yandexVerificationContent}`}
         title="Метрика и Директ"
         initialValue={{
           metrikaCounterId: String(analytics.metrikaCounterId ?? ""),
@@ -54,15 +50,15 @@ export function AnalyticsEditor({
           },
           {
             name: "yandexVerificationContent",
-            label:
-              "Код проверки Яндекса (content=… или весь meta-тег)",
-            type: "text",
+            label: "Код проверки Яндекса",
+            hint: "Вставьте content, весь meta-тег или HTML-файл с Verification: …",
+            type: "textarea",
           },
         ]}
         onSave={async (value) => {
           const next = {
             metrikaCounterId: String(value.metrikaCounterId ?? "").trim(),
-            yandexVerificationContent: extractVerificationContent(
+            yandexVerificationContent: extractYandexVerificationContent(
               String(value.yandexVerificationContent ?? ""),
             ),
           };
@@ -72,13 +68,13 @@ export function AnalyticsEditor({
             body: JSON.stringify({ analytics: next }),
           });
           if (!response.ok) {
-            const payload: unknown = await response.json().catch(() => null);
-            const parsed = AdminApiErrorSchema.safeParse(payload);
-            throw new Error(
-              parsed.success
-                ? parsed.data.error.message
-                : "Не удалось сохранить настройки аналитики",
-            );
+            throw formatAdminApiError(await response.json().catch(() => null), {
+              stripPrefix: "analytics.",
+              fieldLabels: {
+                metrikaCounterId: "Номер счётчика Яндекс Метрики",
+                yandexVerificationContent: "Код проверки Яндекса",
+              },
+            });
           }
           setAnalytics(next);
           setError(null);

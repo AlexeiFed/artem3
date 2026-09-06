@@ -100,17 +100,23 @@ describe("Reviews", () => {
       />,
     );
 
-    expect(screen.queryByRole("button", { name: "Предыдущий отзыв" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Следующий отзыв" })).toBeInTheDocument();
+    const prev = screen.getByRole("button", { name: "Предыдущий отзыв" });
+    const next = screen.getByRole("button", { name: "Следующий отзыв" });
+    expect(prev).toBeDisabled();
+    expect(next).toBeEnabled();
+    expect(prev.closest(".review-carousel-nav")).not.toBeNull();
+    expect(next.closest(".review-carousel-nav")).not.toBeNull();
+    expect(document.querySelector(".review-carousel-stage .review-arrow")).toBeNull();
     expect(screen.getAllByRole("button", { name: /Показать отзыв/ })).toHaveLength(
       data.reviews.length,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Следующий отзыв" }));
+    fireEvent.click(next);
 
-    expect(
-      screen.getByRole("button", { name: "Предыдущий отзыв" }),
-    ).toBeInTheDocument();
+    expect(prev).toBeEnabled();
+    expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalledWith(
+      expect.objectContaining({ inline: "start", block: "nearest" }),
+    );
   });
 
   it("clamps a long review to four lines and expands it from Читать далее", () => {

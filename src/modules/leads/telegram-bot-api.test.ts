@@ -116,6 +116,7 @@ describe("telegramBotCall", () => {
       servername: "api.telegram.org",
       method: "POST",
       path: "/bot123:ABC/sendMessage",
+      signal: expect.any(AbortSignal),
     });
   });
 
@@ -153,6 +154,7 @@ describe("telegramBotCall", () => {
       hostname: "tg-proxy.example",
       path: "/bottok/getMe",
       method: "GET",
+      signal: expect.any(AbortSignal),
     });
   });
 });

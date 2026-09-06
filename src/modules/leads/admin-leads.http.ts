@@ -76,6 +76,8 @@ export function createListLeadsHandler({
 
     const url = new URL(request.url);
     const cursor = url.searchParams.get("cursor") ?? undefined;
+    const statusRaw = url.searchParams.get("status");
+    const status = statusRaw ? statusRaw : undefined;
     const limitRaw = url.searchParams.get("limit");
     const limit = limitRaw ? Number(limitRaw) : LEADS_PAGE_DEFAULT;
 
@@ -83,6 +85,7 @@ export function createListLeadsHandler({
       const page = await service.listPage({
         limit,
         ...(cursor === undefined ? {} : { cursor }),
+        ...(status === undefined ? {} : { status }),
       });
       return okResponse({
         items: page.items.map((item) => ({
@@ -149,12 +152,15 @@ export function createUpdateLeadStatusHandler({
 export function createExportLeadsHandler({
   requireAdmin,
   service,
-}: ExportDependencies): () => Promise<Response> {
-  return async function handleExportLeads(): Promise<Response> {
+}: ExportDependencies): (request: Request) => Promise<Response> {
+  return async function handleExportLeads(request: Request): Promise<Response> {
     const blocked = await requireAdminOrResponse(requireAdmin);
     if (blocked) {
       return blocked;
     }
+
+    const statusRaw = new URL(request.url).searchParams.get("status");
+    const status = statusRaw ? statusRaw : undefined;
 
     try {
       const items = [];
@@ -163,6 +169,7 @@ export function createExportLeadsHandler({
         const page = await service.listPage({
           limit: LEADS_PAGE_MAX,
           ...(cursor === undefined ? {} : { cursor }),
+          ...(status === undefined ? {} : { status }),
         });
         items.push(...page.items);
         if (!page.nextCursor) {

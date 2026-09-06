@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { DEFAULT_TERMS_TEXT, OPERATOR_EMAIL } from "./legal-copy";
+import { extractYandexVerificationContent } from "./yandex-verification";
 
 const shortText = z.string().trim().min(1).max(160);
 /** Надзаголовок, который можно очистить в админке, чтобы убрать дубль на странице. */
@@ -310,13 +311,17 @@ export const AnalyticsSettingsSchema = z.object({
     .trim()
     .regex(/^(\d{0,15})$/u, "Номер счётчика — только цифры")
     .default(""),
-  /** content=… from Yandex Webmaster / Direct site verification meta */
-  yandexVerificationContent: z
-    .string()
-    .trim()
-    .max(128)
-    .regex(/^[A-Za-z0-9_-]*$/u, "Только латиница, цифры, _ и -")
-    .default(""),
+  /** Token from Webmaster/Direct: raw, meta tag, or HTML-file paste. */
+  yandexVerificationContent: z.preprocess(
+    (value) =>
+      typeof value === "string" ? extractYandexVerificationContent(value) : value,
+    z
+      .string()
+      .trim()
+      .max(128)
+      .regex(/^[A-Za-z0-9_-]*$/u, "Только латиница, цифры, _ и -")
+      .default(""),
+  ),
 });
 
 export const DEFAULT_ANALYTICS_SETTINGS: z.infer<typeof AnalyticsSettingsSchema> =

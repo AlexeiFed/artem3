@@ -299,14 +299,11 @@ function ReviewCarousel({ reviews }: { reviews: LandingData["reviews"] }) {
     if (!track) return;
     const cards = Array.from(track.querySelectorAll<HTMLElement>("article"));
     if (cards.length === 0) return;
-    const trackCenter =
-      track.getBoundingClientRect().left + track.clientWidth / 2;
+    const trackLeft = track.getBoundingClientRect().left;
     let closest = 0;
     let closestDistance = Number.POSITIVE_INFINITY;
     cards.forEach((card, index) => {
-      const cardCenter =
-        card.getBoundingClientRect().left + card.offsetWidth / 2;
-      const distance = Math.abs(cardCenter - trackCenter);
+      const distance = Math.abs(card.getBoundingClientRect().left - trackLeft);
       if (distance < closestDistance) {
         closestDistance = distance;
         closest = index;
@@ -328,7 +325,7 @@ function ReviewCarousel({ reviews }: { reviews: LandingData["reviews"] }) {
     const card = track?.querySelectorAll<HTMLElement>("article")[next];
     card?.scrollIntoView({
       behavior: reduced ? "auto" : "smooth",
-      inline: "center",
+      inline: "start",
       block: "nearest",
     });
     setActiveIndex(next);
@@ -360,38 +357,38 @@ function ReviewCarousel({ reviews }: { reviews: LandingData["reviews"] }) {
             </article>
           ))}
         </div>
-        {canPrev ? (
-          <button
-            type="button"
-            className="review-arrow review-arrow-prev"
-            aria-label="Предыдущий отзыв"
-            onClick={() => scrollToIndex(activeIndex - 1)}
-          >
-            <ReviewChevron direction="prev" />
-          </button>
-        ) : null}
-        {canNext ? (
-          <button
-            type="button"
-            className="review-arrow review-arrow-next"
-            aria-label="Следующий отзыв"
-            onClick={() => scrollToIndex(activeIndex + 1)}
-          >
-            <ReviewChevron direction="next" />
-          </button>
-        ) : null}
       </div>
-      <div className="review-dots" aria-label="Отзывы">
-        {reviews.map((review, index) => (
-          <button
-            key={`${review.author}-${index}`}
-            type="button"
-            className="review-dot"
-            aria-label={`Показать отзыв ${index + 1}`}
-            aria-current={activeIndex === index ? "true" : undefined}
-            onClick={() => scrollToIndex(index)}
-          />
-        ))}
+      <div className="review-carousel-nav" aria-label="Навигация по отзывам">
+        <button
+          type="button"
+          className="review-arrow review-arrow-prev"
+          aria-label="Предыдущий отзыв"
+          disabled={!canPrev}
+          onClick={() => scrollToIndex(activeIndex - 1)}
+        >
+          <ReviewChevron direction="prev" />
+        </button>
+        <div className="review-dots" aria-label="Отзывы">
+          {reviews.map((review, index) => (
+            <button
+              key={`${review.author}-${index}`}
+              type="button"
+              className="review-dot"
+              aria-label={`Показать отзыв ${index + 1}`}
+              aria-current={activeIndex === index ? "true" : undefined}
+              onClick={() => scrollToIndex(index)}
+            />
+          ))}
+        </div>
+        <button
+          type="button"
+          className="review-arrow review-arrow-next"
+          aria-label="Следующий отзыв"
+          disabled={!canNext}
+          onClick={() => scrollToIndex(activeIndex + 1)}
+        >
+          <ReviewChevron direction="next" />
+        </button>
       </div>
     </div>
   );

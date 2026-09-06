@@ -21,6 +21,33 @@ const STATUS_LABELS: Record<LeadStatus, string> = {
   CLOSED: "Закрыта",
 };
 
+type StatusFilter = LeadStatus | "ALL";
+
+const STATUS_FILTERS: ReadonlyArray<{ value: StatusFilter; label: string }> = [
+  { value: "ALL", label: "Все" },
+  { value: "NEW", label: STATUS_LABELS.NEW },
+  { value: "IN_PROGRESS", label: STATUS_LABELS.IN_PROGRESS },
+  { value: "CLOSED", label: STATUS_LABELS.CLOSED },
+];
+
+function leadsListUrl(status: StatusFilter, cursor?: string): string {
+  const params = new URLSearchParams();
+  if (status !== "ALL") {
+    params.set("status", status);
+  }
+  if (cursor !== undefined) {
+    params.set("cursor", cursor);
+  }
+  const query = params.toString();
+  return query === "" ? "/api/admin/leads" : `/api/admin/leads?${query}`;
+}
+
+function leadsExportUrl(status: StatusFilter): string {
+  return status === "ALL"
+    ? "/api/admin/leads/export"
+    : `/api/admin/leads/export?status=${status}`;
+}
+
 interface LeadsPanelProps {
   initialItems: LeadRow[];
   initialNextCursor: string | null;
@@ -75,11 +102,47 @@ export function LeadsPanel({
 }: LeadsPanelProps) {
   const [items, setItems] = useState(initialItems);
   const [nextCursor, setNextCursor] = useState(initialNextCursor);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [error, setError] = useState(loadError);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loadingFilter, setLoadingFilter] = useState(false);
+
+  async function readLeadsPage(
+    url: string,
+  ): Promise<{ items: LeadRow[]; nextCursor: string | null } | null> {
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) {
+      const parsed = AdminApiErrorSchema.safeParse(await response.json());
+      setError(
+        parsed.success
+          ? parsed.data.error.message
+          : "Не удалось загрузить заявки",
+      );
+      return null;
+    }
+    const body = (await response.json()) as {
+      data: {
+        items: LeadRow[];
+        nextCursor: string | null;
+      };
+    };
+    return body.data;
+  }
+
+  async function applyStatusFilter(next: StatusFilter): Promise<void> {
+    if (next === statusFilter) return;
+    setLoadingFilter(true);
+    const page = await readLeadsPage(leadsListUrl(next));
+    setLoadingFilter(false);
+    if (!page) return;
+    setStatusFilter(next);
+    setItems(page.items);
+    setNextCursor(page.nextCursor);
+    setError(null);
+  }
 
   async function downloadCsv(): Promise<void> {
-    const response = await fetch("/api/admin/leads/export", {
+    const response = await fetch(leadsExportUrl(statusFilter), {
       cache: "no-store",
     });
     if (!response.ok) {
@@ -100,7 +163,7 @@ export function LeadsPanel({
 
   return (
     <>
-      <div className="mb-6 flex flex-wrap gap-3">
+      <div className="mb-6 flex flex-wrap items-center gap-3">
         <button
           type="button"
           className="rounded-control bg-forest px-4 py-2 font-sans text-sm text-background"
@@ -110,6 +173,33 @@ export function LeadsPanel({
         >
           Скачать CSV
         </button>
+        <div
+          className="flex flex-wrap gap-2"
+          role="group"
+          aria-label="Фильтр по статусу"
+        >
+          {STATUS_FILTERS.map((filter) => {
+            const active = statusFilter === filter.value;
+            return (
+              <button
+                key={filter.value}
+                type="button"
+                className={
+                  active
+                    ? "rounded-control bg-forest px-4 py-2 font-sans text-sm text-background"
+                    : "rounded-control border border-sage px-4 py-2 font-sans text-sm text-secondary"
+                }
+                aria-pressed={active}
+                disabled={loadingFilter}
+                onClick={() => {
+                  void applyStatusFilter(filter.value);
+                }}
+              >
+                {filter.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -170,11 +260,15 @@ export function LeadsPanel({
                           );
                           return;
                         }
-                        setItems((current) =>
-                          current.map((row) =>
+                        setItems((current) => {
+                          const updated = current.map((row) =>
                             row.id === item.id ? { ...row, status } : row,
-                          ),
-                        );
+                          );
+                          if (statusFilter !== "ALL" && status !== statusFilter) {
+                            return updated.filter((row) => row.id !== item.id);
+                          }
+                          return updated;
+                        });
                       })();
                     }}
                   >
@@ -193,6 +287,14 @@ export function LeadsPanel({
         </table>
       </div>
 
+      {items.length === 0 && !error ? (
+        <p className="mt-4 font-sans text-sm text-secondary">
+          {statusFilter === "ALL"
+            ? "Нет заявок."
+            : "Нет заявок с выбранным статусом."}
+        </p>
+      ) : null}
+
       {nextCursor ? (
         <button
           type="button"
@@ -202,7 +304,10 @@ export function LeadsPanel({
             void (async () => {
               setLoadingMore(true);
               const response = await fetch(
-                `/api/admin/leads?cursor=${encodeURIComponent(nextCursor)}`,
+                leadsListUrl(
+                  statusFilter,
+                  nextCursor ?? undefined,
+                ),
                 { cache: "no-store" },
               );
               setLoadingMore(false);

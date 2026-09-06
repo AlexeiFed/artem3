@@ -170,19 +170,17 @@ export function createLeadService({
         });
 
         if (notifyLead) {
-          try {
-            await notifyLead({
-              id,
-              name: parsed.data.name,
-              phone,
-              ...(parsed.data.situation === undefined
-                ? {}
-                : { situation: parsed.data.situation }),
-              ...(parsed.data.service === undefined
-                ? {}
-                : { serviceName: parsed.data.service }),
-            });
-          } catch (error) {
+          void notifyLead({
+            id,
+            name: parsed.data.name,
+            phone,
+            ...(parsed.data.situation === undefined
+              ? {}
+              : { situation: parsed.data.situation }),
+            ...(parsed.data.service === undefined
+              ? {}
+              : { serviceName: parsed.data.service }),
+          }).catch((error: unknown) => {
             console.error({
               event: "lead_notify_failed",
               category: "external",
@@ -190,7 +188,7 @@ export function createLeadService({
               errorClass:
                 error instanceof Error ? error.name : "UnknownError",
             });
-          }
+          });
         }
 
         return { id };

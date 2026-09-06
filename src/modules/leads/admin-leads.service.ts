@@ -7,6 +7,7 @@ import { getDb } from "@/db/client";
 import { leads } from "@/db/schema";
 
 import {
+  LeadStatusSchema,
   UpdateLeadStatusSchema,
   type LeadStatus,
 } from "./admin-leads.schemas";
@@ -33,6 +34,7 @@ const LeadListQuerySchema = z.object({
       return { createdAt, id };
     })
     .optional(),
+  status: LeadStatusSchema.optional(),
 });
 
 export interface AdminLeadRecord {
@@ -67,6 +69,7 @@ export interface AdminLeadsRepository {
     limit: number;
     cursorCreatedAt?: Date;
     cursorId?: string;
+    status?: LeadStatus;
   }): Promise<AdminLeadRecord[]>;
   updateStatus(id: string, status: LeadStatus): Promise<AdminLeadRecord>;
 }
@@ -78,21 +81,26 @@ export class DrizzleAdminLeadsRepository implements AdminLeadsRepository {
     limit: number;
     cursorCreatedAt?: Date;
     cursorId?: string;
+    status?: LeadStatus;
   }): Promise<AdminLeadRecord[]> {
-    const cursor =
-      input.cursorCreatedAt && input.cursorId
-        ? or(
-            lt(leads.createdAt, input.cursorCreatedAt),
-            and(
-              eq(leads.createdAt, input.cursorCreatedAt),
-              lt(leads.id, input.cursorId),
+    const filters = [
+      ...(input.status === undefined ? [] : [eq(leads.status, input.status)]),
+      ...(input.cursorCreatedAt && input.cursorId
+        ? [
+            or(
+              lt(leads.createdAt, input.cursorCreatedAt),
+              and(
+                eq(leads.createdAt, input.cursorCreatedAt),
+                lt(leads.id, input.cursorId),
+              ),
             ),
-          )
-        : undefined;
+          ]
+        : []),
+    ];
     return this.db
       .select()
       .from(leads)
-      .where(cursor)
+      .where(filters.length > 0 ? and(...filters) : undefined)
       .orderBy(desc(leads.createdAt), desc(leads.id))
       .limit(input.limit);
   }
@@ -136,9 +144,13 @@ export function createAdminLeadsService(
     }> {
       const parsed = LeadListQuerySchema.safeParse(input ?? {});
       if (!parsed.success) {
-        throw new AdminLeadsDomainError("VALIDATION", {
-          cursor: ["Некорректный курсор"],
-        });
+        const fields: Record<string, string[]> = {};
+        for (const issue of parsed.error.issues) {
+          const path = issue.path.length > 0 ? issue.path.join(".") : "_form";
+          fields[path] ??= [];
+          fields[path].push(issue.message);
+        }
+        throw new AdminLeadsDomainError("VALIDATION", fields);
       }
       try {
         const rows = await repository.listPage({
@@ -149,6 +161,9 @@ export function createAdminLeadsService(
                 cursorCreatedAt: parsed.data.cursor.createdAt,
                 cursorId: parsed.data.cursor.id,
               }),
+          ...(parsed.data.status === undefined
+            ? {}
+            : { status: parsed.data.status }),
         });
         const hasMore = rows.length > parsed.data.limit;
         const items = hasMore ? rows.slice(0, parsed.data.limit) : rows;

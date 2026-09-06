@@ -274,6 +274,34 @@ describe("createLeadService", () => {
     });
   });
 
+  it("returns the lead id without waiting for notifyLead", async () => {
+    const repositories = createRepositories();
+    let finished = false;
+    const notifyLead = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          setTimeout(() => {
+            finished = true;
+            resolve();
+          }, 200);
+        }),
+    );
+    const service = createLeadService({
+      ...repositories,
+      sessionSecret: SESSION_SECRET,
+      notifyLead,
+    });
+
+    const result = await service.create(validLeadInput(), {
+      clientIp: "203.0.113.42",
+      now: NOW,
+    });
+
+    expect(result).toEqual({ id: "11111111-1111-4111-8111-111111111111" });
+    expect(notifyLead).toHaveBeenCalledOnce();
+    expect(finished).toBe(false);
+  });
+
   it("returns lead id when notifyLead rejects", async () => {
     const repositories = createRepositories();
     const notifyLead = vi.fn().mockRejectedValue(new Error("telegram down"));

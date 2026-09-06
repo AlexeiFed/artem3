@@ -11,6 +11,7 @@ import { getServerEnv } from "@/lib/env/server";
  * Устойчивый клиент Telegram Bot API (паттерн Titan).
  * На Timeweb DNS часто отдаёт заблокированный IP api.telegram.org → timeout.
  * Ходим на живой DC IP с SNI=api.telegram.org; опционально TELEGRAM_API_BASE.
+ * `timeout` в https.request не режет TCP connect — без AbortSignal висим до OS timeout (~минуты) и ловим 504.
  */
 
 const TELEGRAM_HOST = "api.telegram.org";
@@ -59,13 +60,24 @@ function envIps(): string[] {
     .filter((value) => /^\d{1,3}(?:\.\d{1,3}){3}$/.test(value));
 }
 
-async function candidateIps(): Promise<string[]> {
-  let dnsIps: string[] = [];
+async function resolveTelegramARecords(): Promise<string[]> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    dnsIps = await dns.resolve4(TELEGRAM_HOST);
+    return await Promise.race([
+      dns.resolve4(TELEGRAM_HOST),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error("Telegram DNS timeout")), 2_000);
+      }),
+    ]);
   } catch {
-    // DNS may be broken or return only dead IPs
+    return [];
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
   }
+}
+
+async function candidateIps(): Promise<string[]> {
+  const dnsIps = await resolveTelegramARecords();
 
   const ordered = [
     stickyIp,
@@ -105,6 +117,7 @@ function httpsJsonViaIp(
         method,
         headers,
         timeout: REQUEST_TIMEOUT_MS,
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       },
       (res) => {
         const chunks: Buffer[] = [];
@@ -154,6 +167,7 @@ function httpsJsonViaBase(
         method,
         headers,
         timeout: REQUEST_TIMEOUT_MS,
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       },
       (res) => {
         const chunks: Buffer[] = [];
