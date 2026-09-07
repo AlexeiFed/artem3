@@ -164,4 +164,17 @@ describe("Hero", () => {
       screen.getByRole("dialog", { name: "Обсудить ваш вопрос" }),
     ).toBeVisible();
   });
+
+  it("sizes the hero to the visual viewport so overlay chrome cannot clip the metrics plate", () => {
+    vi.stubGlobal("visualViewport", {
+      height: 700.4,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    });
+
+    const { container } = renderHero();
+    const hero = container.querySelector(".hero");
+
+    expect(hero).toHaveStyle({ "--hero-visual-height": "700px" });
+  });
 });

@@ -2786,13 +2786,21 @@ h2 {
     white-space: normal;
   }
 
+  /* visualViewport: 100svh на Android Chrome уходит под нижний тулбар */
+  .hero {
+    min-height: var(--hero-visual-height, 100svh);
+    overflow-x: clip;
+    overflow-y: visible;
+  }
+
   /* Метрики в потоке: absolute-панель обрезала первый экран на мобиле */
   .hero-content {
+    min-height: var(--hero-visual-height, 100svh);
     flex-direction: column;
     align-items: stretch;
     justify-content: center;
     gap: 1.75rem;
-    padding-block: 6.75rem 2.5rem;
+    padding-block: 6.75rem max(2.5rem, calc(2.5rem + env(safe-area-inset-bottom)));
   }
 
   .hero-copy {

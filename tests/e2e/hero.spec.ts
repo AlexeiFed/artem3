@@ -19,7 +19,9 @@ for (const viewport of viewports) {
       page.getByRole("heading", {
         name: "Развод, алименты и раздел имущества в Хабаровске",
       }),
-      page.getByRole("button", { name: "Получить оценку ситуации" }),
+      page.locator("#main").getByRole("button", {
+        name: "Получить оценку ситуации",
+      }),
       page.getByText("Опишите ваш вопрос — оценю перспективы и подскажу возможные действия.", {
         exact: false,
       }),
@@ -49,6 +51,60 @@ for (const viewport of viewports) {
     expect(widths.content).toBeLessThanOrEqual(widths.viewport);
   });
 }
+
+test("keeps the metrics plate inside a shorter visual viewport on mobile", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+
+  await page.evaluate(() => {
+    Object.defineProperty(window, "visualViewport", {
+      configurable: true,
+      value: {
+        get height() {
+          return 788;
+        },
+        width: 390,
+        offsetTop: 0,
+        offsetLeft: 0,
+        scale: 1,
+        addEventListener() {},
+        removeEventListener() {},
+        dispatchEvent() {
+          return true;
+        },
+      },
+    });
+    window.dispatchEvent(new Event("resize"));
+  });
+
+  await expect
+    .poll(async () =>
+      page.locator(".hero").evaluate((hero) => ({
+        minHeight: getComputedStyle(hero).minHeight,
+        visualHeight: window.visualViewport?.height ?? window.innerHeight,
+      })),
+    )
+    .toEqual({
+      minHeight: "788px",
+      visualHeight: 788,
+    });
+
+  const metrics = await page.locator(".hero").evaluate((hero) => {
+    const dossier = document.querySelector(".hero-dossier");
+    if (!dossier) return null;
+    return {
+      dossierBottom: dossier.getBoundingClientRect().bottom,
+      heroBottom: hero.getBoundingClientRect().bottom,
+    };
+  });
+
+  expect(metrics).not.toBeNull();
+  expect(metrics?.heroBottom ?? 0).toBeLessThanOrEqual(788 + 1);
+  expect(metrics?.dossierBottom ?? 0).toBeLessThanOrEqual(788 + 1);
+});
 
 test("keeps header CTA on the content column and docks dossier to the viewport", async ({
   page,

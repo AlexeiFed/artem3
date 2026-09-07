@@ -1,7 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+} from "react";
 import { motion } from "motion/react";
 
 import { useOptionalModal } from "@/components/forms/ModalProvider";
@@ -87,9 +94,26 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
   const [videoFailed, setVideoFailed] = useState(false);
   const [posterFailed, setPosterFailed] = useState(false);
   const [videoPlaying, setVideoPlaying] = useState(false);
+  const [visualHeight, setVisualHeight] = useState<number | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const shouldReduceMotion = hydrated && reduced;
   const renderVideo = hydrated && !shouldReduceMotion;
+
+  useLayoutEffect(() => {
+    const apply = () => {
+      setVisualHeight(
+        Math.round(window.visualViewport?.height ?? window.innerHeight),
+      );
+    };
+
+    apply();
+    window.addEventListener("resize", apply);
+    window.addEventListener("orientationchange", apply);
+    return () => {
+      window.removeEventListener("resize", apply);
+      window.removeEventListener("orientationchange", apply);
+    };
+  }, []);
 
   useEffect(() => {
     if (!renderVideo) return;
@@ -118,7 +142,15 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
   }, [renderVideo]);
 
   return (
-    <section id="main" className="hero">
+    <section
+      id="main"
+      className="hero"
+      style={
+        visualHeight === null
+          ? undefined
+          : ({ "--hero-visual-height": `${visualHeight}px` } as CSSProperties)
+      }
+    >
       <div
         className="hero-stage"
         data-testid="hero-stage"
