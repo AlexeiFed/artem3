@@ -42,6 +42,7 @@ vi.stubGlobal("IntersectionObserver", IntersectionObserverStub);
 afterEach(() => {
   observerCallback = null;
   observedTargets.length = 0;
+  document.getElementById("main")?.remove();
   cleanup();
 });
 
@@ -65,8 +66,25 @@ function emitIntersection(isIntersecting: boolean) {
   );
 }
 
+function emitTargetIntersection(target: Element, isIntersecting: boolean) {
+  observerCallback?.(
+    [
+      {
+        isIntersecting,
+        intersectionRatio: isIntersecting ? 0.4 : 0,
+        target,
+        boundingClientRect: {} as DOMRectReadOnly,
+        intersectionRect: {} as DOMRectReadOnly,
+        rootBounds: null,
+        time: 0,
+      },
+    ],
+    {} as IntersectionObserver,
+  );
+}
+
 describe("contact and FAQ presentation", () => {
-  it("shows a phone icon on the floating contact button", () => {
+  it("shows a phone icon on the floating contact button when there is no hero", async () => {
     const { contacts } = getPreviewLandingData();
     render(
       <ModalProvider metrikaId={undefined}>
@@ -74,7 +92,39 @@ describe("contact and FAQ presentation", () => {
       </ModalProvider>,
     );
 
-    expect(screen.getByTestId("phone-fab-icon")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId("phone-fab-icon")).toBeInTheDocument();
+    });
+  });
+
+  it("hides the phone FAB and top button while the hero is on screen", async () => {
+    const { contacts } = getPreviewLandingData();
+    const hero = document.createElement("section");
+    hero.id = "main";
+    hero.className = "hero";
+    document.body.appendChild(hero);
+
+    render(
+      <ModalProvider metrikaId={undefined}>
+        <FloatingActions contacts={contacts} />
+      </ModalProvider>,
+    );
+
+    expect(observedTargets.some((element) => element.id === "main")).toBe(true);
+    emitTargetIntersection(hero, true);
+
+    expect(screen.queryByTestId("phone-fab-icon")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Наверх" }),
+    ).not.toBeInTheDocument();
+
+    emitTargetIntersection(hero, false);
+    await waitFor(() => {
+      expect(screen.getByTestId("phone-fab-icon")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Наверх" })).toBeInTheDocument();
+    });
+
+    hero.remove();
   });
 
   it("renders the personal FAQ invite below the accordion", () => {

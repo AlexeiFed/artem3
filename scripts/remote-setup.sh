@@ -213,7 +213,7 @@ install_release_deps() {
     if ! npm ci; then
       echo "WARN: npm ci failed, falling back to npm install"
       rm -rf node_modules
-      npm install
+      npm install --no-audit --no-fund
     fi
     return
   fi
@@ -241,7 +241,7 @@ install_release_deps() {
   if ! npm ci; then
     echo "WARN: npm ci failed, falling back to npm install"
     rm -rf node_modules
-    npm install
+    npm install --no-audit --no-fund
   fi
 }
 

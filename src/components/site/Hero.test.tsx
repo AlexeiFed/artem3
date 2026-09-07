@@ -165,9 +165,9 @@ describe("Hero", () => {
     ).toBeVisible();
   });
 
-  it("sizes the hero to the visual viewport so overlay chrome cannot clip the metrics plate", () => {
+  it("does not shrink the hero to a short visual viewport", () => {
     vi.stubGlobal("visualViewport", {
-      height: 700.4,
+      height: 400,
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
     });
@@ -175,6 +175,6 @@ describe("Hero", () => {
     const { container } = renderHero();
     const hero = container.querySelector(".hero");
 
-    expect(hero).toHaveStyle({ "--hero-visual-height": "700px" });
+    expect(hero).not.toHaveStyle({ "--hero-visual-height": "400px" });
   });
 });

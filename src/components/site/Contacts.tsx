@@ -141,7 +141,7 @@ type ContactChannel = {
 
 export function FloatingActions({ contacts }: { contacts: LandingData["contacts"] }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [showTop, setShowTop] = useState(false);
+  const [showDock, setShowDock] = useState(false);
   const [overContacts, setOverContacts] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
@@ -183,24 +183,35 @@ export function FloatingActions({ contacts }: { contacts: LandingData["contacts"
     },
   ];
 
-  useMotionValueEvent(scrollY, "change", (value) => {
-    setShowTop(value > 400);
+  useMotionValueEvent(scrollY, "change", () => {
     if (menuOpen) setMenuOpen(false);
   });
 
   useEffect(() => {
+    const hero = document.getElementById("main");
     const section = document.getElementById("contacts");
-    if (!section) return;
+    if (!hero) setShowDock(true);
 
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        const visible = Boolean(entry?.isIntersecting);
-        setOverContacts(visible);
-        if (visible) setMenuOpen(false);
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.target.id === "contacts") {
+            const visible = entry.isIntersecting;
+            setOverContacts(visible);
+            if (visible) setMenuOpen(false);
+          }
+          if (entry.target.id === "main") {
+            const pastHero = !entry.isIntersecting;
+            setShowDock(pastHero);
+            if (!pastHero) setMenuOpen(false);
+          }
+        }
       },
       { threshold: 0.12 },
     );
-    observer.observe(section);
+
+    if (hero) observer.observe(hero);
+    if (section) observer.observe(section);
     return () => observer.disconnect();
   }, []);
 
@@ -253,7 +264,7 @@ export function FloatingActions({ contacts }: { contacts: LandingData["contacts"
         ref={rootRef}
       >
         <AnimatePresence>
-          {menuOpen ? (
+          {showDock && menuOpen ? (
             <motion.div
               className="contact-menu"
               initial={{ opacity: 0, y: 10 }}
@@ -277,23 +288,30 @@ export function FloatingActions({ contacts }: { contacts: LandingData["contacts"
             </motion.div>
           ) : null}
         </AnimatePresence>
-        <button
-          type="button"
-          className={`contact-fab${menuOpen ? " is-open" : ""}`}
-          aria-expanded={menuOpen}
-          aria-label={
-            menuOpen ? "Закрыть способы связи" : "Открыть способы связи"
-          }
-          onClick={() => setMenuOpen((value) => !value)}
-        >
-          {menuOpen ? (
-            <CloseIcon className="fab-close-icon" />
-          ) : (
-            <PhoneIcon className="fab-phone-icon" testId="phone-fab-icon" />
-          )}
-        </button>
         <AnimatePresence>
-          {showTop ? (
+          {showDock ? (
+            <motion.button
+              type="button"
+              className={`contact-fab${menuOpen ? " is-open" : ""}`}
+              aria-expanded={menuOpen}
+              aria-label={
+                menuOpen ? "Закрыть способы связи" : "Открыть способы связи"
+              }
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              onClick={() => setMenuOpen((value) => !value)}
+            >
+              {menuOpen ? (
+                <CloseIcon className="fab-close-icon" />
+              ) : (
+                <PhoneIcon className="fab-phone-icon" testId="phone-fab-icon" />
+              )}
+            </motion.button>
+          ) : null}
+        </AnimatePresence>
+        <AnimatePresence>
+          {showDock ? (
             <motion.button
               type="button"
               className="top-button"

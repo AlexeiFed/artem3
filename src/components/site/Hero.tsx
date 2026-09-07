@@ -1,19 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-  type CSSProperties,
-} from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { motion } from "motion/react";
 
 import { useOptionalModal } from "@/components/forms/ModalProvider";
 import { MagneticButton } from "@/components/motion/MagneticButton";
 import { designTokens } from "@/lib/design-tokens";
+import {
+  HERO_CHROME_GUTTER_VAR,
+  heroChromeGutter,
+} from "@/lib/hero-visual-height";
 import type { LandingData } from "@/modules/content/content.types";
 
 const subscribeHydration = () => () => {};
@@ -94,26 +91,9 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
   const [videoFailed, setVideoFailed] = useState(false);
   const [posterFailed, setPosterFailed] = useState(false);
   const [videoPlaying, setVideoPlaying] = useState(false);
-  const [visualHeight, setVisualHeight] = useState<number | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const shouldReduceMotion = hydrated && reduced;
   const renderVideo = hydrated && !shouldReduceMotion;
-
-  useLayoutEffect(() => {
-    const apply = () => {
-      setVisualHeight(
-        Math.round(window.visualViewport?.height ?? window.innerHeight),
-      );
-    };
-
-    apply();
-    window.addEventListener("resize", apply);
-    window.addEventListener("orientationchange", apply);
-    return () => {
-      window.removeEventListener("resize", apply);
-      window.removeEventListener("orientationchange", apply);
-    };
-  }, []);
 
   useEffect(() => {
     if (!renderVideo) return;
@@ -141,16 +121,32 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
     };
   }, [renderVideo]);
 
+  useEffect(() => {
+    const hero = document.getElementById("main");
+    if (!hero) return;
+
+    const applyGutter = () => {
+      hero.style.setProperty(
+        HERO_CHROME_GUTTER_VAR,
+        heroChromeGutter({
+          userAgent: navigator.userAgent,
+          visualHeight: window.visualViewport?.height ?? window.innerHeight,
+          layoutHeight: window.innerHeight,
+        }),
+      );
+    };
+
+    applyGutter();
+    window.visualViewport?.addEventListener("resize", applyGutter);
+    window.addEventListener("resize", applyGutter);
+    return () => {
+      window.visualViewport?.removeEventListener("resize", applyGutter);
+      window.removeEventListener("resize", applyGutter);
+    };
+  }, []);
+
   return (
-    <section
-      id="main"
-      className="hero"
-      style={
-        visualHeight === null
-          ? undefined
-          : ({ "--hero-visual-height": `${visualHeight}px` } as CSSProperties)
-      }
-    >
+    <section id="main" className="hero">
       <div
         className="hero-stage"
         data-testid="hero-stage"

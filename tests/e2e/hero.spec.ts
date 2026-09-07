@@ -64,7 +64,94 @@ test("keeps the metrics plate inside a shorter visual viewport on mobile", async
       configurable: true,
       value: {
         get height() {
-          return 788;
+          return 400;
+        },
+        width: 390,
+        offsetTop: 0,
+        offsetLeft: 0,
+        scale: 1,
+        addEventListener() {},
+        removeEventListener() {},
+        dispatchEvent() {
+          return true;
+        },
+      },
+    });
+    window.dispatchEvent(new Event("resize"));
+  });
+
+  const metrics = await page.locator(".hero").evaluate((hero) => {
+    const dossier = document.querySelector(".hero-dossier");
+    const next = document.querySelector(".quick-grid");
+    if (!dossier || !next) return null;
+    return {
+      heroHeight: hero.getBoundingClientRect().height,
+      dossierBottom: dossier.getBoundingClientRect().bottom,
+      nextTop: next.getBoundingClientRect().top,
+      minHeight: getComputedStyle(hero).minHeight,
+    };
+  });
+
+  expect(metrics).not.toBeNull();
+  expect(metrics?.heroHeight ?? 0).toBeGreaterThanOrEqual(844 - 1);
+  expect(metrics?.minHeight).toBe("844px");
+  expect(metrics?.dossierBottom ?? 0).toBeLessThanOrEqual(844 + 1);
+  expect(metrics?.nextTop ?? 0).toBeGreaterThanOrEqual(844 - 1);
+});
+
+test("keeps a chrome gutter under the metrics plate on mobile", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+
+  const metrics = await page.evaluate(() => {
+    const content = document.querySelector(".hero-content");
+    const dossier = document.querySelector(".hero-dossier");
+    const disclaimer = document.querySelector(".hero-disclaimer");
+    const fab = document.querySelector(".floating-actions");
+    if (!content || !dossier || !disclaimer || !fab) return null;
+    const contentStyle = getComputedStyle(content);
+    const dossierStyle = getComputedStyle(dossier);
+    const fabStyle = getComputedStyle(fab);
+    return {
+      paddingBottom: Number.parseFloat(contentStyle.paddingBottom),
+      dossierPosition: dossierStyle.position,
+      dossierCssBottom: Number.parseFloat(dossierStyle.bottom),
+      fabCssBottom: Number.parseFloat(fabStyle.bottom),
+      dossierBottom: dossier.getBoundingClientRect().bottom,
+      plateGap:
+        dossier.getBoundingClientRect().top -
+        disclaimer.getBoundingClientRect().bottom,
+      fabVisible: Boolean(document.querySelector(".contact-fab")),
+    };
+  });
+
+  expect(metrics).not.toBeNull();
+  expect(metrics?.dossierPosition).toBe("absolute");
+  expect(metrics?.dossierCssBottom ?? 0).toBeGreaterThanOrEqual(24);
+  expect(metrics?.dossierCssBottom ?? 0).toBeLessThan(48);
+  expect(metrics?.fabCssBottom ?? 0).toBeLessThan(32);
+  expect(metrics?.fabVisible).toBe(false);
+  expect(metrics?.paddingBottom ?? 0).toBeGreaterThanOrEqual(160);
+  expect(metrics?.plateGap ?? 0).toBeGreaterThanOrEqual(48);
+  expect(metrics?.dossierBottom ?? 0).toBeGreaterThan(844 - 48);
+});
+
+test("does not stretch the hero past svh when the visual viewport is larger", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+
+  await page.evaluate(() => {
+    Object.defineProperty(window, "visualViewport", {
+      configurable: true,
+      value: {
+        get height() {
+          return 920;
         },
         width: 390,
         offsetTop: 0,
@@ -82,28 +169,16 @@ test("keeps the metrics plate inside a shorter visual viewport on mobile", async
 
   await expect
     .poll(async () =>
-      page.locator(".hero").evaluate((hero) => ({
-        minHeight: getComputedStyle(hero).minHeight,
-        visualHeight: window.visualViewport?.height ?? window.innerHeight,
-      })),
+      page.locator(".hero").evaluate((hero) =>
+        Math.round(hero.getBoundingClientRect().height),
+      ),
     )
-    .toEqual({
-      minHeight: "788px",
-      visualHeight: 788,
-    });
+    .toBeLessThanOrEqual(844 + 1);
 
-  const metrics = await page.locator(".hero").evaluate((hero) => {
-    const dossier = document.querySelector(".hero-dossier");
-    if (!dossier) return null;
-    return {
-      dossierBottom: dossier.getBoundingClientRect().bottom,
-      heroBottom: hero.getBoundingClientRect().bottom,
-    };
+  const dossierBottom = await page.locator(".hero-dossier").evaluate((element) => {
+    return element.getBoundingClientRect().bottom;
   });
-
-  expect(metrics).not.toBeNull();
-  expect(metrics?.heroBottom ?? 0).toBeLessThanOrEqual(788 + 1);
-  expect(metrics?.dossierBottom ?? 0).toBeLessThanOrEqual(788 + 1);
+  expect(dossierBottom).toBeLessThanOrEqual(844 + 1);
 });
 
 test("keeps header CTA on the content column and docks dossier to the viewport", async ({

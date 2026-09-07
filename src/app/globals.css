@@ -2786,26 +2786,45 @@ h2 {
     white-space: normal;
   }
 
-  /* visualViewport: 100svh на Android Chrome уходит под нижний тулбар */
-  .hero {
-    min-height: var(--hero-visual-height, 100svh);
-    overflow-x: clip;
-    overflow-y: visible;
+  /* Навбар Яндекса/Internet рисуется поверх 100svh — padding плашку не двигает */
+  :root {
+    --hero-chrome-gutter: max(
+      1.5rem,
+      calc(100lvh - 100svh + 1.5rem),
+      calc(env(safe-area-inset-bottom, 0px) + 1.5rem)
+    );
+    --hero-dossier-stack: 8.5rem;
   }
 
-  /* Метрики в потоке: absolute-панель обрезала первый экран на мобиле */
+  .hero {
+    min-height: 100vh;
+    min-height: 100svh;
+    height: 100vh;
+    height: 100svh;
+    max-height: 100vh;
+    max-height: 100svh;
+  }
+
   .hero-content {
-    min-height: var(--hero-visual-height, 100svh);
+    min-height: 100vh;
+    min-height: 100svh;
     flex-direction: column;
     align-items: stretch;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 1.75rem;
-    padding-block: 6.75rem max(2.5rem, calc(2.5rem + env(safe-area-inset-bottom)));
+    padding-block: 6.75rem
+      calc(var(--hero-chrome-gutter) + var(--hero-dossier-stack));
   }
 
   .hero-copy {
     width: 100%;
+    min-height: 0;
+    flex: 0 0 auto;
     padding-top: 0;
+  }
+
+  .floating-actions {
+    bottom: max(1rem, calc(env(safe-area-inset-bottom, 0px) + 1rem));
   }
 
   .hero-eyebrow {
@@ -2828,7 +2847,7 @@ h2 {
 
   .hero-subtitle {
     max-width: 28rem;
-    margin-bottom: 2.5rem;
+    margin-bottom: 1.75rem;
     font-size: 0.95rem;
   }
 
@@ -2837,7 +2856,7 @@ h2 {
   }
 
   .hero-disclaimer {
-    margin-top: 2rem;
+    margin-top: 1.25rem;
     font-size: 0.95rem;
   }
 
@@ -2862,7 +2881,9 @@ h2 {
   }
 
   .hero-dossier {
-    position: static;
+    position: absolute;
+    inset-inline: 0;
+    bottom: var(--hero-chrome-gutter);
     width: auto;
     justify-items: start;
   }

@@ -67,7 +67,7 @@ ensure_node_modules() {
   echo "==> ${label}: нет node_modules → npm ci"
   if ! npm ci; then
     echo "WARN: npm ci failed, falling back to npm install"
-    npm install
+    npm install --no-audit --no-fund
   fi
 }
 
