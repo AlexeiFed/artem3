@@ -71,6 +71,13 @@ export function humanizeValidationMessage(
   }
 
   if (
+    lowerMessage.includes("too big") ||
+    lowerMessage.includes("too_big")
+  ) {
+    return "Слишком длинный текст — сократите";
+  }
+
+  if (
     lowerMessage.includes("too small") ||
     lowerMessage.includes("expected string") ||
     lowerMessage.includes("required") ||

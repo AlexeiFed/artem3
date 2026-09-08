@@ -3,13 +3,26 @@
 import { useState, type FormEvent } from "react";
 
 import { SaveBar } from "@/components/admin/SaveBar";
-import { AdminApiErrorSchema } from "@/modules/content/admin-content.schemas";
+import { formatAdminApiError } from "@/components/admin/format-admin-error";
+import { DEFAULT_SEO_SETTINGS } from "@/modules/content/content.schemas";
 import type { HeroSettings } from "@/modules/content/content.types";
 
 interface HeroLandingEditorProps {
   initialHero: HeroSettings;
   loadError: string | null;
 }
+
+const HERO_FIELD_LABELS: Record<string, string> = {
+  "hero.eyebrow": "Надзаголовок",
+  "hero.title": "Заголовок",
+  "hero.subtitle": "Подзаголовок",
+  "hero.offer": "Оффер",
+  "hero.disclaimer": "Дисклеймер под CTA",
+  "seo.title": "Title",
+  "seo.description": "Description",
+  "servicesIntro.eyebrow": "Практика — надзаголовок",
+  "servicesIntro.title": "Практика — заголовок",
+};
 
 export function HeroLandingEditor({
   initialHero,
@@ -19,6 +32,7 @@ export function HeroLandingEditor({
   const [error, setError] = useState(loadError);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
+  const seo = hero.seo ?? DEFAULT_SEO_SETTINGS;
 
   function patchHero(
     updater: (current: HeroSettings) => HeroSettings,
@@ -39,10 +53,10 @@ export function HeroLandingEditor({
         body: JSON.stringify({ hero }),
       });
       if (!response.ok) {
-        const parsed = AdminApiErrorSchema.safeParse(await response.json());
-        throw new Error(
-          parsed.success ? parsed.data.error.message : "Ошибка сохранения",
-        );
+        throw formatAdminApiError(await response.json().catch(() => null), {
+          stripPrefix: "hero.",
+          fieldLabels: HERO_FIELD_LABELS,
+        });
       }
       setDirty(false);
     } catch (err) {
@@ -54,6 +68,54 @@ export function HeroLandingEditor({
 
   return (
     <form className="grid max-w-3xl gap-8" onSubmit={submit} noValidate>
+      <section className="grid gap-4">
+        <h2 className="font-display text-3xl text-primary">
+          Title и Description
+        </h2>
+        <p className="font-sans text-sm text-secondary">
+          Вкладка браузера и сниппет в поиске. Яндекс иногда подменяет
+          Description карточкой организации (адрес и часы из «Контактов»).
+        </p>
+        <label className="grid gap-2 font-sans text-sm text-secondary">
+          Title
+          <input
+            className="rounded-card border border-sage/40 bg-background px-4 py-3 text-primary"
+            value={seo.title}
+            maxLength={200}
+            onChange={(event) =>
+              patchHero((current) => ({
+                ...current,
+                seo: {
+                  ...(current.seo ?? DEFAULT_SEO_SETTINGS),
+                  title: event.target.value,
+                },
+              }))
+            }
+          />
+          <span className="text-xs">До 200 символов. Сейчас {seo.title.length}.</span>
+        </label>
+        <label className="grid gap-2 font-sans text-sm text-secondary">
+          Description
+          <textarea
+            className="min-h-24 rounded-card border border-sage/40 bg-background px-4 py-3 text-primary"
+            value={seo.description}
+            maxLength={320}
+            onChange={(event) =>
+              patchHero((current) => ({
+                ...current,
+                seo: {
+                  ...(current.seo ?? DEFAULT_SEO_SETTINGS),
+                  description: event.target.value,
+                },
+              }))
+            }
+          />
+          <span className="text-xs">
+            До 320 символов. Сейчас {seo.description.length}.
+          </span>
+        </label>
+      </section>
+
       <section className="grid gap-4">
         <h2 className="font-display text-3xl text-primary">Hero</h2>
         <label className="grid gap-2 font-sans text-sm text-secondary">
@@ -68,6 +130,10 @@ export function HeroLandingEditor({
               }))
             }
           />
+          <span className="text-xs">
+            Необязательно. Пустое поле скроет строку — H1 поднимется на её
+            место.
+          </span>
         </label>
         <label className="grid gap-2 font-sans text-sm text-secondary">
           Заголовок
@@ -98,6 +164,24 @@ export function HeroLandingEditor({
               }))
             }
           />
+          <span className="text-xs">
+            Строка под H1, например практики. Пустое поле скроет её — оффер
+            поднимется.
+          </span>
+        </label>
+        <label className="grid gap-2 font-sans text-sm text-secondary">
+          Оффер
+          <textarea
+            className="min-h-24 rounded-card border border-sage/40 bg-background px-4 py-3 text-primary"
+            value={hero.hero.offer}
+            onChange={(event) =>
+              patchHero((current) => ({
+                ...current,
+                hero: { ...current.hero, offer: event.target.value },
+              }))
+            }
+          />
+          <span className="text-xs">Абзац над кнопкой.</span>
         </label>
         <label className="grid gap-2 font-sans text-sm text-secondary">
           Кнопка CTA
@@ -223,7 +307,7 @@ export function HeroLandingEditor({
       </section>
 
       {error ? (
-        <p className="text-sm text-secondary" role="alert">
+        <p className="text-sm text-error" role="alert">
           {error}
         </p>
       ) : null}

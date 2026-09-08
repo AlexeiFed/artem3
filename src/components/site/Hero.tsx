@@ -207,14 +207,16 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
 
       <div className="hero-content shell">
         <div className="hero-copy">
-          <motion.p
-            className="eyebrow hero-eyebrow"
-            initial={shouldReduceMotion ? false : { opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: durationFast }}
-          >
-            {data.eyebrow}
-          </motion.p>
+          {data.eyebrow ? (
+            <motion.p
+              className="eyebrow hero-eyebrow"
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: durationFast }}
+            >
+              {data.eyebrow}
+            </motion.p>
+          ) : null}
 
           <h1 aria-label={data.title.replace(/\s+/gu, " ").trim()}>
             {titleLines(data.title).map((line, index) => (
@@ -236,13 +238,24 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
             ))}
           </h1>
 
+          {data.subtitle ? (
+            <motion.p
+              className="hero-subtitle"
+              initial={shouldReduceMotion ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: subtitleDelay, duration: durationBase }}
+            >
+              {data.subtitle}
+            </motion.p>
+          ) : null}
+
           <motion.p
-            className="hero-subtitle"
+            className="hero-offer"
             initial={shouldReduceMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: subtitleDelay, duration: durationBase }}
           >
-            {data.subtitle}
+            {data.offer}
           </motion.p>
 
           <motion.div

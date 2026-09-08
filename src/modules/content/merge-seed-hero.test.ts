@@ -51,6 +51,34 @@ describe("mergeSeedHero", () => {
     expect(merged.servicesIntro.title).toBe("Заголовок услуг");
   });
 
+  it("keeps kicker and offer from admin", () => {
+    const stored = {
+      ...seedHero,
+      hero: {
+        ...seedHero.hero,
+        subtitle: "Развод, алименты, раздел имущества и споры о детях",
+        offer: "Оффер из админки",
+      },
+    };
+
+    const merged = mergeSeedHero(stored, seedHero);
+
+    expect(merged.hero.subtitle).toBe(stored.hero.subtitle);
+    expect(merged.hero.offer).toBe("Оффер из админки");
+  });
+
+  it("keeps SEO title and description from admin", () => {
+    const stored = {
+      ...seedHero,
+      seo: {
+        title: "Семейный юрист в Хабаровске",
+        description: "Оценю перспективы дела. Стоимость известна заранее.",
+      },
+    };
+
+    expect(mergeSeedHero(stored, seedHero).seo).toEqual(stored.seo);
+  });
+
   it("falls back to seed when stored settings are invalid", () => {
     expect(mergeSeedHero({ header: null }, seedHero)).toEqual(
       mergeSeedHero(seedHero, seedHero),

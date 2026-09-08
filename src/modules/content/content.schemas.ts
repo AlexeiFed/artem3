@@ -1,11 +1,15 @@
 import { z } from "zod";
 
 import { DEFAULT_TERMS_TEXT, OPERATOR_EMAIL } from "./legal-copy";
+import { SITE_DESCRIPTION, SITE_TITLE } from "./site-metadata";
 import { extractYandexVerificationContent } from "./yandex-verification";
 
 const shortText = z.string().trim().min(1).max(160);
 /** Надзаголовок, который можно очистить в админке, чтобы убрать дубль на странице. */
 const optionalShortText = z.string().trim().max(160);
+const seoTitleText = z.string().trim().min(1).max(200);
+const seoDescriptionText = z.string().trim().min(1).max(320);
+const optionalMediumText = z.string().trim().max(500);
 const mediumText = z.string().trim().min(1).max(500);
 const longText = z.string().trim().min(1).max(2_500);
 const legalPageText = z.string().trim().min(1).max(20_000);
@@ -33,8 +37,25 @@ export const PublicHttpsUrlSchema = z
     }
   });
 
-export const APPROVED_HERO_SUBTITLE =
+export const APPROVED_HERO_OFFER =
   "Нахожу оптимальное решение в семейных и имущественных спорах — через переговоры или в суде. Стоимость работы известна заранее.";
+
+export const DEFAULT_HERO_SUBTITLE =
+  "Развод, алименты, раздел имущества и споры о детях";
+
+/** @deprecated слот оффера — используйте APPROVED_HERO_OFFER */
+export const APPROVED_HERO_SUBTITLE = APPROVED_HERO_OFFER;
+
+export function migrateLegacyHeroCopy(value: unknown): unknown {
+  if (!value || typeof value !== "object") return value;
+  const record = value as Record<string, unknown>;
+  if (typeof record.offer === "string") return value;
+  return {
+    ...record,
+    offer: typeof record.subtitle === "string" ? record.subtitle : "",
+    subtitle: "",
+  };
+}
 
 export const ServiceSlugSchema = z
   .string()
@@ -113,10 +134,23 @@ export const VkEmbedSchema = z.object({
   title: shortText,
 });
 
-export const HeroContentSchema = z.object({
-  eyebrow: shortText,
+export const DEFAULT_SEO_SETTINGS = {
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+} as const;
+
+export const SeoSettingsSchema = z
+  .object({
+    title: seoTitleText,
+    description: seoDescriptionText,
+  })
+  .default(DEFAULT_SEO_SETTINGS);
+
+export const HeroContentObjectSchema = z.object({
+  eyebrow: optionalShortText,
   title: shortText,
-  subtitle: mediumText,
+  subtitle: optionalMediumText,
+  offer: mediumText,
   badges: z.array(HeroBadgeSchema).length(4),
   metrics: HeroMetricsSchema,
   cta: CtaSchema,
@@ -127,6 +161,11 @@ export const HeroContentSchema = z.object({
     vkEmbed: VkEmbedSchema.optional(),
   }),
 });
+
+export const HeroContentSchema = z.preprocess(
+  migrateLegacyHeroCopy,
+  HeroContentObjectSchema,
+);
 
 export const QuickLinkSchema = z.object({
   slug: ServiceSlugSchema,
@@ -170,12 +209,16 @@ export const ServicesIntroSchema = z
 export const HeroSettingsSchema = z.object({
   meta: MetaSchema,
   header: HeaderSchema,
-  hero: HeroContentSchema.omit({ video: true }).extend({
-    video: z.object({
-      fallbackUrl: localAssetUrl,
-      posterUrl: localAssetUrl,
+  seo: SeoSettingsSchema,
+  hero: z.preprocess(
+    migrateLegacyHeroCopy,
+    HeroContentObjectSchema.omit({ video: true }).extend({
+      video: z.object({
+        fallbackUrl: localAssetUrl,
+        posterUrl: localAssetUrl,
+      }),
     }),
-  }),
+  ),
   quickLinks: QuickLinksSchema,
   hiddenRisks: HiddenRisksSchema,
   servicesIntro: ServicesIntroSchema,

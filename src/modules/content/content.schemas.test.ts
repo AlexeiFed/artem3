@@ -33,7 +33,7 @@ function createValidHeroSettings(): HeroSettings {
     ...settings,
     hero: {
       ...settings.hero,
-      subtitle: APPROVED_SUBTITLE,
+      offer: APPROVED_SUBTITLE,
     },
   };
 }
@@ -96,6 +96,32 @@ describe("HeroSettingsSchema", () => {
     expect(HeroSettingsSchema.safeParse(createValidHeroSettings()).success).toBe(
       true,
     );
+  });
+
+  it("moves a legacy subtitle into offer so the kicker slot stays free", () => {
+    const settings = createValidHeroSettings();
+    const legacyHero = { ...settings.hero };
+    Reflect.deleteProperty(legacyHero, "offer");
+    legacyHero.subtitle = APPROVED_SUBTITLE;
+
+    const parsed = HeroSettingsSchema.parse({
+      ...settings,
+      hero: legacyHero,
+    });
+
+    expect(parsed.hero.offer).toBe(APPROVED_SUBTITLE);
+    expect(parsed.hero.subtitle).toBe("");
+  });
+
+  it("accepts an empty hero subtitle so the kicker can be omitted", () => {
+    const settings = createValidHeroSettings();
+    const parsed = HeroSettingsSchema.safeParse({
+      ...settings,
+      hero: { ...settings.hero, subtitle: "" },
+    });
+
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.hero.subtitle).toBe("");
   });
 
   it("rejects empty quick links", () => {
@@ -385,5 +411,48 @@ describe("optional eyebrows", () => {
 
     expect(parsed.success).toBe(true);
     if (parsed.success) expect(parsed.data.honesty.theme).toBe("");
+  });
+
+  it("accepts an empty hero eyebrow so the first screen can start at H1", () => {
+    const settings = createValidHeroSettings();
+    const parsed = HeroSettingsSchema.safeParse({
+      ...settings,
+      hero: { ...settings.hero, eyebrow: "" },
+    });
+
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.hero.eyebrow).toBe("");
+  });
+});
+
+describe("hero SEO metadata", () => {
+  it("fills Title and Description from defaults when the stored hero has no seo", () => {
+    const settings = createValidHeroSettings();
+    const legacy = { ...settings };
+    Reflect.deleteProperty(legacy, "seo");
+
+    const parsed = HeroSettingsSchema.parse(legacy);
+
+    expect(parsed.seo.title.length).toBeGreaterThan(0);
+    expect(parsed.seo.description.length).toBeGreaterThan(0);
+  });
+
+  it("accepts a long SERP description beyond the old 130-character window", () => {
+    const settings = createValidHeroSettings();
+    const description =
+      "Семейный и имущественный юрист в Хабаровске. 11+ лет практики, более 380 клиентов получили помощь. Стоимость работы известна заранее. Ответ в течение 1 часа в рабочее время.";
+
+    const parsed = HeroSettingsSchema.safeParse({
+      ...settings,
+      seo: {
+        title:
+          "Семейный юрист в Хабаровске — Артём Сысуев | Развод, алименты, раздел имущества, споры о детях",
+        description,
+      },
+    });
+
+    expect(description.length).toBeGreaterThan(130);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.seo.description).toBe(description);
   });
 });

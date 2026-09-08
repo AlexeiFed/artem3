@@ -21,6 +21,10 @@ import {
   DEFAULT_TERMS_TEXT,
   OPERATOR_EMAIL,
 } from "@/modules/content/legal-copy";
+import {
+  DEFAULT_HERO_SUBTITLE,
+  DEFAULT_SEO_SETTINGS,
+} from "@/modules/content/content.schemas";
 
 type SeedEntity<T> = T & {
   id: string;
@@ -71,12 +75,17 @@ export const seedContent = {
         ],
         cta: { label: "Получить оценку ситуации", target: "#contacts" },
       },
+      seo: {
+        title: DEFAULT_SEO_SETTINGS.title,
+        description: DEFAULT_SEO_SETTINGS.description,
+      },
       hero: {
         eyebrow: "Семейный и имущественный юрист",
         title:
           "Развод, алименты\nи раздел имущества\nв Хабаровске",
-        subtitle:
-          "Нахожу оптимальное решение в семейных и имущественных спорах — через переговоры или в суде. Стоимость работы известна заранее.",
+        subtitle: DEFAULT_HERO_SUBTITLE,
+        offer:
+          "Разберу вашу ситуацию и предложу оптимальный путь решения — через переговоры или в суде. Стоимость работы известна заранее.",
         badges: [
           { label: "Личная работа юриста" },
           { label: "Понятный план действий" },
@@ -141,7 +150,7 @@ export const seedContent = {
     trustBanner: {
       consultation: {
         eyebrow: "Как проходит работа",
-        title: "Что вы получите на первой консультации",
+        title: "На первой консультации вы получите",
         benefits: [
           "Оценку перспектив вашего дела",
           "Возможные варианты решения",
@@ -155,9 +164,9 @@ export const seedContent = {
         title: "Почему мне доверяют",
         items: [
           {
-            title: "Честно оцениваю перспективы",
+            title: "Честно оцениваю риски",
             copy:
-              "Если понимаю, что добиться желаемого результата невозможно, говорю об этом сразу — ещё на первой консультации.",
+              "Объясняю возможный результат и что может повлиять на исход дела.",
           },
           {
             title: "Работаю только с реальными задачами",
@@ -174,11 +183,11 @@ export const seedContent = {
     },
     workflow: {
       eyebrow: "Как проходит работа",
-      title: "Как проходит дальнейшая работа",
+      title: "Что делаем после знакомства",
       bullets: [
         {
-          title: "Изучение ситуации и документов",
-          copy: "Разбираю факты, бумаги и сроки до выбора тактики.",
+          title: "Изучение документов",
+          copy: "Проверяю документы и определяю возможные варианты решения.",
         },
         {
           title: "Разработка стратегии действий",

@@ -58,6 +58,51 @@ describe("Hero", () => {
     expect(html).toContain('data-testid="hero-poster"');
   });
 
+  it("renders the kicker and the offer as separate lines", () => {
+    const data = getPreviewLandingData().hero;
+
+    render(
+      <ModalProvider metrikaId={undefined}>
+        <Hero data={data} />
+      </ModalProvider>,
+    );
+
+    expect(document.querySelector(".hero-subtitle")).toHaveTextContent(
+      data.subtitle,
+    );
+    expect(document.querySelector(".hero-offer")).toHaveTextContent(data.offer);
+  });
+
+  it("omits the kicker when the subtitle is empty", () => {
+    const data = { ...getPreviewLandingData().hero, subtitle: "" };
+
+    render(
+      <ModalProvider metrikaId={undefined}>
+        <Hero data={data} />
+      </ModalProvider>,
+    );
+
+    expect(document.querySelector(".hero-subtitle")).not.toBeInTheDocument();
+    expect(document.querySelector(".hero-offer")).toHaveTextContent(data.offer);
+  });
+
+  it("omits the eyebrow when it is empty so H1 takes its place", () => {
+    const data = { ...getPreviewLandingData().hero, eyebrow: "" };
+
+    render(
+      <ModalProvider metrikaId={undefined}>
+        <Hero data={data} />
+      </ModalProvider>,
+    );
+
+    expect(document.querySelector(".hero-eyebrow")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "Развод, алименты и раздел имущества в Хабаровске",
+      }),
+    ).toBeVisible();
+  });
+
   it("renders the approved heading, CTA and consultation note", () => {
     renderHero();
 

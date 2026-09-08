@@ -69,5 +69,11 @@ describe("humanizeValidationMessage", () => {
         "Too small: expected string to have >=1 characters",
       ),
     ).toMatch(/заполните/i);
+    expect(
+      humanizeValidationMessage(
+        "seo.description",
+        "Too big: expected string to have <=320 characters",
+      ),
+    ).toMatch(/длинн/i);
   });
 });

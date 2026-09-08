@@ -13,6 +13,7 @@ import {
 } from "@/lib/design-tokens";
 import { getPublicEnv } from "@/lib/env/public";
 import { getPublicAnalytics } from "@/modules/content/public-analytics";
+import { getPublicSeo } from "@/modules/content/public-seo";
 import { buildSiteMetadata } from "@/modules/content/site-metadata";
 import "./globals.css";
 
@@ -37,13 +38,18 @@ const rootStyle: CSSProperties & DesignTokenCssVariables = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  const analytics = await getPublicAnalytics();
+  const [analytics, seo] = await Promise.all([
+    getPublicAnalytics(),
+    getPublicSeo(),
+  ]);
   const { NEXT_PUBLIC_SITE_URL, NEXT_PUBLIC_ALLOW_INDEXING } = getPublicEnv();
 
   return buildSiteMetadata({
     siteUrl: NEXT_PUBLIC_SITE_URL,
     allowIndexing: NEXT_PUBLIC_ALLOW_INDEXING,
     yandexVerificationContent: analytics.yandexVerificationContent,
+    title: seo.title,
+    description: seo.description,
   });
 }
 

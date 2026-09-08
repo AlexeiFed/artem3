@@ -690,6 +690,18 @@ h2 {
 
 .hero-subtitle {
   max-width: 38rem;
+  margin-bottom: 0.9rem;
+  color: color-mix(
+    in srgb,
+    var(--token-color-background) 92%,
+    var(--token-color-accent-sage)
+  );
+  font-size: clamp(1.15rem, 1.7vw, 1.4rem);
+  line-height: 1.35;
+}
+
+.hero-offer {
+  max-width: 38rem;
   margin-bottom: 2.35rem;
   color: color-mix(
     in srgb,
@@ -850,6 +862,10 @@ h2 {
   }
 
   .hero-subtitle {
+    margin-bottom: 0.7rem;
+  }
+
+  .hero-offer {
     margin-bottom: 1.65rem;
   }
 
@@ -877,6 +893,10 @@ h2 {
   }
 
   .hero-subtitle {
+    margin-bottom: 1rem;
+  }
+
+  .hero-offer {
     margin-bottom: 2.75rem;
   }
 
@@ -2846,6 +2866,12 @@ h2 {
   }
 
   .hero-subtitle {
+    max-width: 28rem;
+    margin-bottom: 0.7rem;
+    font-size: 1.05rem;
+  }
+
+  .hero-offer {
     max-width: 28rem;
     margin-bottom: 1.75rem;
     font-size: 0.95rem;
