@@ -58,7 +58,7 @@ describe("Hero", () => {
     expect(html).toContain('data-testid="hero-poster"');
   });
 
-  it("renders the kicker and the offer as separate lines", () => {
+  it("renders the kicker and offer bullets as separate lines", () => {
     const data = getPreviewLandingData().hero;
 
     render(
@@ -70,7 +70,10 @@ describe("Hero", () => {
     expect(document.querySelector(".hero-subtitle")).toHaveTextContent(
       data.subtitle,
     );
-    expect(document.querySelector(".hero-offer")).toHaveTextContent(data.offer);
+    const bullets = document.querySelectorAll(".hero-offer li");
+    expect(bullets).toHaveLength(2);
+    expect(bullets[0]).toHaveTextContent(data.offerBullets[0] ?? "");
+    expect(bullets[1]).toHaveTextContent(data.offerBullets[1] ?? "");
   });
 
   it("omits the kicker when the subtitle is empty", () => {
@@ -83,7 +86,27 @@ describe("Hero", () => {
     );
 
     expect(document.querySelector(".hero-subtitle")).not.toBeInTheDocument();
-    expect(document.querySelector(".hero-offer")).toHaveTextContent(data.offer);
+    expect(document.querySelectorAll(".hero-offer li").length).toBeGreaterThan(
+      0,
+    );
+  });
+
+  it("omits offer bullets that are empty", () => {
+    const data = {
+      ...getPreviewLandingData().hero,
+      offerBullets: ["Стратегия: мирные переговоры или суд — без воды", ""] as [
+        string,
+        string,
+      ],
+    };
+
+    render(
+      <ModalProvider metrikaId={undefined}>
+        <Hero data={data} />
+      </ModalProvider>,
+    );
+
+    expect(document.querySelectorAll(".hero-offer li")).toHaveLength(1);
   });
 
   it("omits the eyebrow when it is empty so H1 takes its place", () => {
@@ -118,10 +141,16 @@ describe("Hero", () => {
     expect(cta).toHaveClass("button");
     expect(cta).not.toHaveClass("button-light");
     expect(
-      screen.getByText("Опишите ваш вопрос — оценю перспективы и подскажу возможные действия.", {
+      screen.getByText("Конфиденциально. Ответ в течение 1 часа в рабочее время.", {
         exact: false,
       }),
     ).toBeVisible();
+  });
+
+  it("does not render the dossier tab label", () => {
+    renderHero();
+
+    expect(document.querySelector(".hero-dossier-tab")).not.toBeInTheDocument();
   });
 
   it("renders all three proof metrics", () => {

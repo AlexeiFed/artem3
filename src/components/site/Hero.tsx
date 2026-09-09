@@ -94,6 +94,7 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const shouldReduceMotion = hydrated && reduced;
   const renderVideo = hydrated && !shouldReduceMotion;
+  const offerBullets = data.offerBullets.filter(Boolean);
 
   useEffect(() => {
     if (!renderVideo) return;
@@ -249,14 +250,23 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
             </motion.p>
           ) : null}
 
-          <motion.p
-            className="hero-offer"
-            initial={shouldReduceMotion ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: subtitleDelay, duration: durationBase }}
-          >
-            {data.offer}
-          </motion.p>
+          {offerBullets.length > 0 ? (
+            <motion.ul
+              className="hero-offer"
+              initial={shouldReduceMotion ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: subtitleDelay, duration: durationBase }}
+            >
+              {offerBullets.map((bullet) => (
+                <li key={bullet}>
+                  <span className="hero-offer-check" aria-hidden="true">
+                    ✓
+                  </span>
+                  {bullet}
+                </li>
+              ))}
+            </motion.ul>
+          ) : null}
 
           <motion.div
             className="hero-actions"
@@ -285,7 +295,6 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
         />
 
         <aside className="hero-dossier" aria-label="Практика в цифрах">
-          <span className="hero-dossier-tab">Практика в цифрах</span>
           <ol aria-label="Практика в цифрах">
             {data.metrics.map((metric, index) => (
               <li key={metric.label}>

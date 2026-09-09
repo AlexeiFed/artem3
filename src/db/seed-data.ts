@@ -22,6 +22,8 @@ import {
   OPERATOR_EMAIL,
 } from "@/modules/content/legal-copy";
 import {
+  DEFAULT_HERO_DISCLAIMER,
+  DEFAULT_HERO_OFFER_BULLETS,
   DEFAULT_HERO_SUBTITLE,
   DEFAULT_SEO_SETTINGS,
 } from "@/modules/content/content.schemas";
@@ -84,8 +86,7 @@ export const seedContent = {
         title:
           "Развод, алименты\nи раздел имущества\nв Хабаровске",
         subtitle: DEFAULT_HERO_SUBTITLE,
-        offer:
-          "Разберу вашу ситуацию и предложу оптимальный путь решения — через переговоры или в суде. Стоимость работы известна заранее.",
+        offerBullets: [...DEFAULT_HERO_OFFER_BULLETS],
         badges: [
           { label: "Личная работа юриста" },
           { label: "Понятный план действий" },
@@ -98,8 +99,7 @@ export const seedContent = {
           { value: "0 ₽", label: "скрытых платежей" },
         ],
         cta: { label: "Получить оценку ситуации", target: "#contacts" },
-        disclaimer:
-          "Опишите ваш вопрос — оценю перспективы и подскажу возможные действия.",
+        disclaimer: DEFAULT_HERO_DISCLAIMER,
         video: {
           fallbackUrl: "/media/artem-hero-loop.mp4",
           posterUrl: "/media/artem-hero-poster.jpg",

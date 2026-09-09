@@ -12,11 +12,22 @@ interface HeroLandingEditorProps {
   loadError: string | null;
 }
 
+function nextOfferBullets(
+  bullets: HeroSettings["hero"]["offerBullets"],
+  index: 0 | 1,
+  value: string,
+): [string, string] {
+  return index === 0
+    ? [value, bullets[1] ?? ""]
+    : [bullets[0] ?? "", value];
+}
+
 const HERO_FIELD_LABELS: Record<string, string> = {
   "hero.eyebrow": "Надзаголовок",
   "hero.title": "Заголовок",
   "hero.subtitle": "Подзаголовок",
-  "hero.offer": "Оффер",
+  "hero.offerBullets.0": "Оффер — строка 1",
+  "hero.offerBullets.1": "Оффер — строка 2",
   "hero.disclaimer": "Дисклеймер под CTA",
   "seo.title": "Title",
   "seo.description": "Description",
@@ -170,18 +181,47 @@ export function HeroLandingEditor({
           </span>
         </label>
         <label className="grid gap-2 font-sans text-sm text-secondary">
-          Оффер
-          <textarea
-            className="min-h-24 rounded-card border border-sage/40 bg-background px-4 py-3 text-primary"
-            value={hero.hero.offer}
+          Оффер — строка 1
+          <input
+            className="rounded-card border border-sage/40 bg-background px-4 py-3 text-primary"
+            value={hero.hero.offerBullets[0] ?? ""}
             onChange={(event) =>
               patchHero((current) => ({
                 ...current,
-                hero: { ...current.hero, offer: event.target.value },
+                hero: {
+                  ...current.hero,
+                  offerBullets: nextOfferBullets(
+                    current.hero.offerBullets,
+                    0,
+                    event.target.value,
+                  ),
+                },
               }))
             }
           />
-          <span className="text-xs">Абзац над кнопкой.</span>
+        </label>
+        <label className="grid gap-2 font-sans text-sm text-secondary">
+          Оффер — строка 2
+          <input
+            className="rounded-card border border-sage/40 bg-background px-4 py-3 text-primary"
+            value={hero.hero.offerBullets[1] ?? ""}
+            onChange={(event) =>
+              patchHero((current) => ({
+                ...current,
+                hero: {
+                  ...current.hero,
+                  offerBullets: nextOfferBullets(
+                    current.hero.offerBullets,
+                    1,
+                    event.target.value,
+                  ),
+                },
+              }))
+            }
+          />
+          <span className="text-xs">
+            Две выгоды над кнопкой. Пустая строка скроется.
+          </span>
         </label>
         <label className="grid gap-2 font-sans text-sm text-secondary">
           Кнопка CTA

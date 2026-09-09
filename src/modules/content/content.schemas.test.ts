@@ -33,7 +33,10 @@ function createValidHeroSettings(): HeroSettings {
     ...settings,
     hero: {
       ...settings.hero,
-      offer: APPROVED_SUBTITLE,
+      offerBullets: [
+        "Стратегия: мирные переговоры или суд — без воды",
+        "Бюджет: цена в договоре до старта, без скрытых доплат",
+      ],
     },
   };
 }
@@ -98,19 +101,46 @@ describe("HeroSettingsSchema", () => {
     );
   });
 
-  it("moves a legacy subtitle into offer so the kicker slot stays free", () => {
+  it("moves a legacy offer paragraph into the approved bullets", () => {
     const settings = createValidHeroSettings();
-    const legacyHero = { ...settings.hero };
-    Reflect.deleteProperty(legacyHero, "offer");
-    legacyHero.subtitle = APPROVED_SUBTITLE;
+    const legacyHero: Record<string, unknown> = { ...settings.hero };
+    delete legacyHero.offerBullets;
+    legacyHero.offer = APPROVED_SUBTITLE;
 
     const parsed = HeroSettingsSchema.parse({
       ...settings,
       hero: legacyHero,
     });
 
-    expect(parsed.hero.offer).toBe(APPROVED_SUBTITLE);
-    expect(parsed.hero.subtitle).toBe("");
+    expect(parsed.hero.offerBullets[0]).toMatch(/стратегия/iu);
+    expect(parsed.hero.offerBullets[1]).toMatch(/бюджет/iu);
+  });
+
+  it("replaces the live hero disclaimer with the SLA copy", () => {
+    const settings = createValidHeroSettings();
+    const parsed = HeroSettingsSchema.parse({
+      ...settings,
+      hero: {
+        ...settings.hero,
+        disclaimer:
+          "Первая консультация — бесплатная. Результат по делу заранее не гарантируется.",
+      },
+    });
+
+    expect(parsed.hero.disclaimer).toBe(
+      "Конфиденциально. Ответ в течение 1 часа в рабочее время.",
+    );
+  });
+
+  it("accepts empty offer bullets so the list can be omitted", () => {
+    const settings = createValidHeroSettings();
+    const parsed = HeroSettingsSchema.safeParse({
+      ...settings,
+      hero: { ...settings.hero, offerBullets: ["", ""] },
+    });
+
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.hero.offerBullets).toEqual(["", ""]);
   });
 
   it("accepts an empty hero subtitle so the kicker can be omitted", () => {

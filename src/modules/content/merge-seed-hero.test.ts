@@ -51,20 +51,20 @@ describe("mergeSeedHero", () => {
     expect(merged.servicesIntro.title).toBe("Заголовок услуг");
   });
 
-  it("keeps kicker and offer from admin", () => {
+  it("keeps kicker and offer bullets from admin", () => {
     const stored = {
       ...seedHero,
       hero: {
         ...seedHero.hero,
         subtitle: "Развод, алименты, раздел имущества и споры о детях",
-        offer: "Оффер из админки",
+        offerBullets: ["Буллет один", "Буллет два"] as [string, string],
       },
     };
 
     const merged = mergeSeedHero(stored, seedHero);
 
     expect(merged.hero.subtitle).toBe(stored.hero.subtitle);
-    expect(merged.hero.offer).toBe("Оффер из админки");
+    expect(merged.hero.offerBullets).toEqual(["Буллет один", "Буллет два"]);
   });
 
   it("keeps SEO title and description from admin", () => {

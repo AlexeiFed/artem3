@@ -44,8 +44,26 @@ export function Header({
   const { openModal } = useModal();
   const [menuOpen, setMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
+  const [overHero, setOverHero] = useState(true);
   const firstLink = useRef<HTMLAnchorElement>(null);
   const { durationBase, easeCinematic } = designTokens.motion;
+
+  useEffect(() => {
+    const hero = document.getElementById("main");
+    if (!hero || typeof IntersectionObserver === "undefined") {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        setOverHero(entry?.isIntersecting === true);
+      },
+      { threshold: 0.12 },
+    );
+    observer.observe(hero);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -155,7 +173,7 @@ export function Header({
   }
 
   return (
-    <header className="site-header">
+    <header className={`site-header${overHero ? " is-over-hero" : ""}`}>
       <div className="header-inner shell">
         <a className="logo" href="#main" aria-label={data.logo.ariaLabel}>
           {data.logo.text}
@@ -182,6 +200,8 @@ export function Header({
         <button
           type="button"
           className="header-cta"
+          aria-hidden={overHero}
+          tabIndex={overHero ? -1 : undefined}
           onClick={() => openModal("Шапка сайта")}
         >
           {data.cta.label}

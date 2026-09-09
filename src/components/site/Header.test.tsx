@@ -2,15 +2,19 @@
 
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ModalProvider } from "@/components/forms/ModalProvider";
 import { getPreviewLandingData } from "@/modules/content/preview-landing-data";
 
 import { Header } from "./Header";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  document.getElementById("main")?.remove();
+  vi.unstubAllGlobals();
+});
 
 function renderHeader(hoursNote?: string) {
   const data = getPreviewLandingData();
@@ -120,5 +124,57 @@ describe("Header", () => {
     expect(
       mobileNav?.querySelector('a[href="#main"]'),
     ).toHaveTextContent("Главная");
+  });
+
+  it("hides the header CTA while the hero is on screen", () => {
+    const hero = document.createElement("section");
+    hero.id = "main";
+    document.body.append(hero);
+
+    let observerCallback: IntersectionObserverCallback | undefined;
+    const observe = vi.fn();
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        constructor(callback: IntersectionObserverCallback) {
+          observerCallback = callback;
+        }
+        observe = observe;
+        disconnect = vi.fn();
+        unobserve = vi.fn();
+        takeRecords = () => [];
+        root = null;
+        rootMargin = "";
+        thresholds = [];
+      },
+    );
+
+    renderHeader();
+    expect(observe).toHaveBeenCalled();
+    expect(document.querySelector(".site-header")).toHaveClass("is-over-hero");
+    expect(document.querySelector(".header-cta")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
+
+    act(() => {
+      observerCallback?.(
+        [
+          {
+            isIntersecting: false,
+            target: hero,
+          } as unknown as IntersectionObserverEntry,
+        ],
+        {} as IntersectionObserver,
+      );
+    });
+
+    expect(document.querySelector(".site-header")).not.toHaveClass(
+      "is-over-hero",
+    );
+    expect(document.querySelector(".header-cta")).not.toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
   });
 });

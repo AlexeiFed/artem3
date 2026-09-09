@@ -22,7 +22,7 @@ for (const viewport of viewports) {
       page.locator("#main").getByRole("button", {
         name: "Получить оценку ситуации",
       }),
-      page.getByText("Опишите ваш вопрос — оценю перспективы и подскажу возможные действия.", {
+      page.getByText("Конфиденциально. Ответ в течение 1 часа в рабочее время.", {
         exact: false,
       }),
       page.getByRole("list", { name: "Практика в цифрах" }),
@@ -179,6 +179,20 @@ test("does not stretch the hero past svh when the visual viewport is larger", as
     return element.getBoundingClientRect().bottom;
   });
   expect(dossierBottom).toBeLessThanOrEqual(844 + 1);
+});
+
+test("hides the header CTA until the hero leaves the viewport", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+
+  const cta = page.locator(".header-cta");
+  await expect(cta).toHaveCSS("visibility", "hidden");
+
+  await page.locator("#uslugi").scrollIntoViewIfNeeded();
+  await expect(cta).toHaveCSS("visibility", "visible");
 });
 
 test("keeps header CTA on the content column and docks dossier to the viewport", async ({

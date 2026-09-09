@@ -43,18 +43,46 @@ export const APPROVED_HERO_OFFER =
 export const DEFAULT_HERO_SUBTITLE =
   "Развод, алименты, раздел имущества и споры о детях";
 
-/** @deprecated слот оффера — используйте APPROVED_HERO_OFFER */
+export const DEFAULT_HERO_OFFER_BULLETS = [
+  "Стратегия: мирные переговоры или суд — без воды",
+  "Бюджет: цена в договоре до старта, без скрытых доплат",
+] as const;
+
+export const DEFAULT_HERO_DISCLAIMER =
+  "Конфиденциально. Ответ в течение 1 часа в рабочее время.";
+
+const LEGACY_HERO_DISCLAIMERS: readonly string[] = [
+  "Опишите ваш вопрос — оценю перспективы и подскажу возможные действия.",
+  "Первая консультация — бесплатная. Результат по делу заранее не гарантируется.",
+];
+
+/** @deprecated слот оффера — используйте DEFAULT_HERO_OFFER_BULLETS */
 export const APPROVED_HERO_SUBTITLE = APPROVED_HERO_OFFER;
 
 export function migrateLegacyHeroCopy(value: unknown): unknown {
   if (!value || typeof value !== "object") return value;
   const record = value as Record<string, unknown>;
-  if (typeof record.offer === "string") return value;
-  return {
-    ...record,
-    offer: typeof record.subtitle === "string" ? record.subtitle : "",
-    subtitle: "",
-  };
+  const next: Record<string, unknown> = { ...record };
+
+  if (
+    typeof next.disclaimer === "string" &&
+    LEGACY_HERO_DISCLAIMERS.includes(next.disclaimer)
+  ) {
+    next.disclaimer = DEFAULT_HERO_DISCLAIMER;
+  }
+
+  const bullets = next.offerBullets;
+  if (Array.isArray(bullets) && bullets.length === 2) {
+    return next;
+  }
+
+  next.offerBullets = [...DEFAULT_HERO_OFFER_BULLETS];
+
+  if (typeof next.offer !== "string") {
+    next.subtitle = "";
+  }
+
+  return next;
 }
 
 export const ServiceSlugSchema = z
@@ -150,7 +178,7 @@ export const HeroContentObjectSchema = z.object({
   eyebrow: optionalShortText,
   title: shortText,
   subtitle: optionalMediumText,
-  offer: mediumText,
+  offerBullets: z.tuple([optionalMediumText, optionalMediumText]),
   badges: z.array(HeroBadgeSchema).length(4),
   metrics: HeroMetricsSchema,
   cta: CtaSchema,

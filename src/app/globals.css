@@ -701,15 +701,36 @@ h2 {
 }
 
 .hero-offer {
+  display: grid;
+  gap: 0.7rem;
   max-width: 38rem;
-  margin-bottom: 2.35rem;
+  margin: 0 0 2.1rem;
+  padding: 0;
+  list-style: none;
   color: color-mix(
     in srgb,
-    var(--token-color-background) 88%,
+    var(--token-color-background) 92%,
     var(--token-color-text-secondary)
   );
-  font-size: clamp(1rem, 1.4vw, 1.2rem);
-  line-height: 1.55;
+  font-size: clamp(0.98rem, 1.25vw, 1.12rem);
+  line-height: 1.4;
+}
+
+.hero-offer li {
+  display: grid;
+  grid-template-columns: 1.1rem minmax(0, 1fr);
+  gap: 0.7rem;
+  align-items: start;
+}
+
+.hero-offer-check {
+  color: color-mix(
+    in srgb,
+    var(--token-color-background) 55%,
+    var(--token-color-accent-sage)
+  );
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .hero-actions .button {
@@ -835,9 +856,9 @@ h2 {
 }
 
 .hero-dossier strong {
-  font-family: var(--font-cormorant), serif;
+  font-family: var(--font-inter), sans-serif;
   font-size: clamp(2.2rem, 4vw, 4rem);
-  font-weight: 500;
+  font-weight: 700;
   line-height: 0.88;
 }
 
@@ -3293,7 +3314,17 @@ h2 {
       background var(--token-motion-duration-fast)
         var(--token-motion-ease-cinematic),
       color var(--token-motion-duration-fast)
+        var(--token-motion-ease-cinematic),
+      opacity var(--token-motion-duration-fast)
+        var(--token-motion-ease-cinematic),
+      visibility var(--token-motion-duration-fast)
         var(--token-motion-ease-cinematic);
+  }
+
+  .site-header.is-over-hero .header-cta {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
   }
 
   .header-cta:hover {
