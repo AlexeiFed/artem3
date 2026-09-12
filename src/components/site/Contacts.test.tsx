@@ -2,6 +2,9 @@
 
 import "@testing-library/jest-dom/vitest";
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -96,5 +99,19 @@ describe("Contacts panel", () => {
     expect(cta).toBeVisible();
     expect(cta).toHaveClass("button");
     expect(cta).not.toHaveClass("button-light");
+  });
+
+  it("uses the same ink background as the contract x-ray section", () => {
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+    const backgroundOf = (selector: string) => {
+      const escaped = selector.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+      const match = css.match(
+        new RegExp(`${escaped} \\{[^}]*background: ([^;]+);`, "u"),
+      );
+      return match?.[1];
+    };
+
+    expect(backgroundOf(".xray")).toBe("var(--token-color-surface-ink)");
+    expect(backgroundOf(".contacts")).toBe(backgroundOf(".xray"));
   });
 });

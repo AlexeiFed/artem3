@@ -2140,7 +2140,7 @@ h2 {
 }
 
 .contacts {
-  background: var(--token-color-text-primary);
+  background: var(--token-color-surface-ink);
   color: var(--token-color-background);
 }
 
