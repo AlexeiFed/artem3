@@ -27,6 +27,7 @@ import {
   DEFAULT_HERO_SUBTITLE,
   DEFAULT_SEO_SETTINGS,
 } from "@/modules/content/content.schemas";
+import { defaultPreviewSituations } from "@/modules/content/quick-access-preview";
 
 type SeedEntity<T> = T & {
   id: string;
@@ -284,6 +285,7 @@ export const seedContent = {
         "Развод при наличии несовершеннолетних детей",
         "Супруг не выходит на связь или находится в другом городе",
       ],
+      previewSituations: defaultPreviewSituations("razvod"),
       trustNote:
         "В ряде дел возможно рассмотрение без личного участия — зависит от состава требований",
       priceFromKopecks: 2_500_000,
@@ -306,6 +308,7 @@ export const seedContent = {
         "Увеличение или уменьшение размера алиментов",
         "Взыскание неустойки за неуплату алиментов",
       ],
+      previewSituations: defaultPreviewSituations("alimenty"),
       trustNote:
         "Можно взыскать алименты даже если второй родитель официально не трудоустроен",
       priceFromKopecks: 3_000_000,
@@ -326,6 +329,7 @@ export const seedContent = {
         "Раздел ипотеки, кредитов и общих долгов",
         "Поиск и раздел скрытого имущества",
       ],
+      previewSituations: defaultPreviewSituations("imushchestvo"),
       trustNote:
         "Даже если имущество оформлено не на вас, его можно включить в раздел.",
       priceFromKopecks: 4_000_000,
@@ -346,6 +350,7 @@ export const seedContent = {
         "Порядок общения с ребёнком",
         "Установление отцовства и лишение родительских прав",
       ],
+      previewSituations: defaultPreviewSituations("deti"),
       trustNote:
         "Суд учитывает интересы ребёнка — важно правильно подготовиться к делу",
       priceFromKopecks: 3_000_000,
@@ -365,11 +370,12 @@ export const seedContent = {
         "Приватизация и узаконивание построек",
         "Споры по границам земельных участков",
       ],
+      previewSituations: defaultPreviewSituations("zemlya"),
       trustNote:
         "Можно оформить даже проблемные участки и объекты без документов",
       priceFromKopecks: 3_000_000,
       isHighValue: true,
-      isHidden: true,
+      isHidden: false,
       ctaLabel: "Проверить возможность оформления",
       iconUrl: null,
       sortOrder: 4,
@@ -386,6 +392,7 @@ export const seedContent = {
         "Участие в одном судебном заседании — 5 000 ₽",
         "Досудебное урегулирование споров и переговоры — от 15 000 ₽",
       ],
+      previewSituations: defaultPreviewSituations("uslugi"),
       trustNote:
         "Можно обратиться за отдельной услугой или полным сопровождением дела.",
       priceFromKopecks: 200_000,

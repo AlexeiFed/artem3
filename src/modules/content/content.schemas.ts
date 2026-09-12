@@ -406,6 +406,9 @@ export const ServiceSchema = z.object({
   title: shortText,
   description: longText,
   situations: z.array(mediumText).min(3).max(6),
+  previewSituations: z
+    .tuple([optionalShortText, optionalShortText])
+    .default(["", ""]),
   trustNote: mediumText,
   priceFromKopecks: z.number().int().min(0).max(100_000_000),
   isHighValue: z.boolean(),

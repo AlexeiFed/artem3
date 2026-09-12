@@ -1,6 +1,7 @@
 export interface LegalServiceJsonLdInput {
   siteUrl: string;
   name: string;
+  description?: string;
   telephone: string;
   streetAddress: string;
   addressLocality: string;
@@ -16,6 +17,7 @@ export function buildLegalServiceJsonLd(input: LegalServiceJsonLdInput) {
     "@context": "https://schema.org",
     "@type": "LegalService",
     name: input.name,
+    ...(input.description ? { description: input.description } : {}),
     image: input.imageUrl,
     url: input.siteUrl,
     telephone: input.telephone,

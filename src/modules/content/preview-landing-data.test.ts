@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { seedContent } from "@/db/seed-data";
+
 import { LandingDataSchema } from "./content.schemas";
 import {
   getLandingPageData,
@@ -11,8 +13,12 @@ describe("getPreviewLandingData", () => {
     const data = getPreviewLandingData();
 
     expect(LandingDataSchema.safeParse(data).success).toBe(true);
-    expect(data.services).toHaveLength(5);
-    expect(data.services.map((item) => item.slug)).not.toContain("zemlya");
+    const visibleSlugs = seedContent.services
+      .filter((item) => !item.isHidden)
+      .map((item) => item.slug);
+    expect(data.services).toHaveLength(visibleSlugs.length);
+    expect(data.quickLinks).toHaveLength(visibleSlugs.length);
+    expect(data.quickLinks.map((item) => item.slug)).toEqual(visibleSlugs);
     expect(data.cases).toHaveLength(4);
     expect(data.faqs.length).toBeGreaterThanOrEqual(6);
   });

@@ -201,47 +201,95 @@ PY
 
 cd "${REMOTE_DIR}"
 
-# deps: переиспользовать node_modules с live (тот же lockfile) или npm ci
-install_release_deps() {
+# deps: Linux node_modules только с live/прошлого релиза.
+# Полный npm ci с VPS на registry часто зависает (esbuild packument).
+copy_linux_node_modules() {
+  local src="$1"
+  echo "==> remote: копирую node_modules с ${src}"
+  rm -rf node_modules
+  if ! cp -al "${src}/node_modules" node_modules 2>/dev/null; then
+    cp -a "${src}/node_modules" node_modules
+  fi
+}
+
+find_linux_node_modules_src() {
   local live_resolved=""
   if [[ -L "${LIVE_LINK}" || -d "${LIVE_LINK}" ]]; then
     live_resolved="$(readlink -f "${LIVE_LINK}" 2>/dev/null || true)"
   fi
+  if [[ -n "${live_resolved}" && -d "${live_resolved}/node_modules/next" ]]; then
+    echo "${live_resolved}"
+    return
+  fi
+  local candidate resolved current
+  current="$(readlink -f "${REMOTE_DIR}" 2>/dev/null || true)"
+  for candidate in "${RELEASES_ROOT}"/*/; do
+    resolved="$(readlink -f "${candidate}" 2>/dev/null || true)"
+    if [[ -n "${current}" && "${resolved}" == "${current}" ]]; then
+      continue
+    fi
+    if [[ -d "${candidate}node_modules/next" ]]; then
+      echo "${candidate%/}"
+      return
+    fi
+  done
+}
+
+npm_with_timeout() {
+  export npm_config_progress=true
+  export npm_config_fetch_retries=2
+  export npm_config_fetch_retry_maxtimeout=15000
+  export npm_config_fetch_timeout=30000
+  if command -v timeout >/dev/null 2>&1; then
+    timeout --foreground --signal=INT 180 "$@"
+  else
+    "$@"
+  fi
+}
+
+install_release_deps() {
+  local modules_src=""
+  modules_src="$(find_linux_node_modules_src || true)"
 
   if [[ "${FORCE_NPM_CI}" == "1" ]]; then
     echo "==> remote: FORCE_NPM_CI=1 → npm ci"
-    if ! npm ci; then
+    if ! npm_with_timeout npm ci --no-audit --no-fund; then
       echo "WARN: npm ci failed, falling back to npm install"
       rm -rf node_modules
-      npm install --no-audit --no-fund
+      npm_with_timeout npm install --no-audit --no-fund
     fi
     return
   fi
 
-  if [[ -n "${live_resolved}" \
-    && -d "${live_resolved}/node_modules/next" \
-    && -f "${live_resolved}/package-lock.json" \
-    && -f package-lock.json ]] \
-    && cmp -s package-lock.json "${live_resolved}/package-lock.json"; then
-    echo "==> remote: копирую node_modules с live (lockfile совпал)"
-    rm -rf node_modules
-    # hardlink-копия на том же FS — быстро; fallback на обычный cp
-    if ! cp -al "${live_resolved}/node_modules" node_modules 2>/dev/null; then
-      cp -a "${live_resolved}/node_modules" node_modules
+  if [[ -n "${modules_src}" ]]; then
+    copy_linux_node_modules "${modules_src}"
+    if [[ -f package-lock.json && -f "${modules_src}/package-lock.json" ]] \
+      && cmp -s package-lock.json "${modules_src}/package-lock.json"; then
+      echo "==> remote: lockfile совпал → skip npm"
+      return
     fi
-    return
+    echo "==> remote: lockfile другой → npm install поверх копии (не ci)"
+    if npm_with_timeout npm install --no-audit --no-fund --prefer-offline; then
+      return
+    fi
+    if [[ -d node_modules/next ]]; then
+      echo "WARN: npm install timed out/failed — оставляю скопированные node_modules"
+      return
+    fi
+    echo "ERROR: нет node_modules/next после npm install" >&2
+    exit 1
   fi
 
   if [[ -x node_modules/.bin/next && -d node_modules/next ]]; then
-    echo "==> remote: node_modules уже в релизе → skip npm ci"
+    echo "==> remote: node_modules уже в релизе → skip npm"
     return
   fi
 
-  echo "==> remote: npm ci"
-  if ! npm ci; then
+  echo "==> remote: нет live node_modules → npm ci"
+  if ! npm_with_timeout npm ci --no-audit --no-fund; then
     echo "WARN: npm ci failed, falling back to npm install"
     rm -rf node_modules
-    npm install --no-audit --no-fund
+    npm_with_timeout npm install --no-audit --no-fund
   fi
 }
 

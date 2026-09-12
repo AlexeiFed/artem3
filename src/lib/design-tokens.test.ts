@@ -10,6 +10,8 @@ describe("design tokens", () => {
       "--token-color-text-secondary": designTokens.color.textSecondary,
       "--token-color-accent-sage": designTokens.color.accentSage,
       "--token-color-accent-forest": designTokens.color.accentForest,
+      "--token-color-accent-brass": designTokens.color.accentBrass,
+      "--token-color-accent-brass-dark": designTokens.color.accentBrassDark,
       "--token-color-error": designTokens.color.error,
       "--token-motion-ease-cinematic": `cubic-bezier(${designTokens.motion.easeCinematic.join(
         ", ",

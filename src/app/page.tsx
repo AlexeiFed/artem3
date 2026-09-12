@@ -14,14 +14,21 @@ import { QuickAccess } from "@/components/site/QuickAccess";
 import { ServicesSection } from "@/components/site/ServicesSection";
 import { getPublicEnv } from "@/lib/env/public";
 import { getLandingPageData } from "@/modules/content/preview-landing-data";
+import { getPublicSeo } from "@/modules/content/public-seo";
 
 export default async function HomePage() {
-  const data = await getLandingPageData();
+  const [data, seo] = await Promise.all([
+    getLandingPageData(),
+    getPublicSeo(),
+  ]);
   const { NEXT_PUBLIC_YANDEX_MAPS_API_KEY: yandexMapsApiKey } = getPublicEnv();
 
   return (
     <>
-      <LegalServiceJsonLd contacts={data.contacts} />
+      <LegalServiceJsonLd
+        contacts={data.contacts}
+        description={seo.description}
+      />
       <Header
         data={data.header}
         address={data.contacts.address}
@@ -32,7 +39,7 @@ export default async function HomePage() {
       />
       <main>
         <Hero data={data.hero} />
-        <QuickAccess items={data.quickLinks} />
+        <QuickAccess items={data.quickLinks} services={data.services} />
         <ContractXRay data={data.hiddenRisks} />
         <ServicesSection
           services={data.services}

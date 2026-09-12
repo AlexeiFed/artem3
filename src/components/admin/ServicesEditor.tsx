@@ -19,6 +19,7 @@ export interface ServiceEditorItem {
   isHidden: boolean;
   ctaLabel: string;
   iconUrl: string | null;
+  previewSituations: [string, string];
 }
 
 interface ServicesEditorProps {
@@ -73,6 +74,7 @@ async function persistServiceIcon(
     body: JSON.stringify({
       slug: selected.slug,
       situations: selected.situations,
+      previewSituations: selected.previewSituations,
       title: selected.title,
       description: selected.description,
       trustNote: selected.trustNote,
@@ -131,6 +133,7 @@ export function ServicesEditor({
                   "Типовая ситуация 2",
                   "Типовая ситуация 3",
                 ],
+                previewSituations: ["", ""],
                 trustNote: "Короткое пояснение для клиента.",
                 priceFromKopecks: 0,
                 isHighValue: false,
@@ -214,6 +217,8 @@ export function ServicesEditor({
               isHighValue: selected.isHighValue,
               ctaLabel: selected.ctaLabel,
               iconUrl: selected.iconUrl ?? "",
+              cardPreview1: selected.previewSituations[0] ?? "",
+              cardPreview2: selected.previewSituations[1] ?? "",
             }}
             fields={[
               { name: "title", label: "Название", type: "text" },
@@ -223,9 +228,20 @@ export function ServicesEditor({
                 type: "textarea",
               },
               {
+                name: "cardPreview1",
+                label: "Карточка «С чем помочь» — строка 1",
+                type: "text",
+                hint: "Короткий превью-текст на лендинге, не дублирует «Практику».",
+              },
+              {
+                name: "cardPreview2",
+                label: "Карточка «С чем помочь» — строка 2",
+                type: "text",
+              },
+              {
                 name: "situationsText",
                 label:
-                  "Пункты списка на карточке — каждый с новой строки (3–6 пунктов)",
+                  "Пункты списка в «Практике» — каждый с новой строки (3–6 пунктов)",
                 type: "textarea",
               },
               { name: "trustNote", label: "Заметка «Важно»", type: "text" },
@@ -243,7 +259,7 @@ export function ServicesEditor({
                 name: "iconUrl",
                 label: "Иконка (/media/...)",
                 type: "text",
-                hint: "PNG, JPEG или WebP. Загрузите файл ниже — путь подставится сам. Пустое поле вернёт стандартную иконку.",
+                hint: "PNG, JPEG или WebP. Та же иконка в карточках «С чем помочь» и в «Практике». Загрузите файл ниже — путь подставится сам.",
               },
               {
                 name: "isHighValue",
@@ -271,6 +287,7 @@ export function ServicesEditor({
                     isHidden: nextHidden,
                     ctaLabel: selected.ctaLabel,
                     iconUrl: selected.iconUrl,
+                    previewSituations: selected.previewSituations,
                   }),
                 },
               );
@@ -308,6 +325,10 @@ export function ServicesEditor({
               if (situations.length < 3 || situations.length > 6) {
                 throw new Error("Нужно от 3 до 6 пунктов списка (по одному в строке)");
               }
+              const previewSituations: [string, string] = [
+                String(value.cardPreview1 ?? "").trim(),
+                String(value.cardPreview2 ?? "").trim(),
+              ];
               const response = await fetch(
                 `/api/admin/content/services/${selected.id}`,
                 {
@@ -316,6 +337,7 @@ export function ServicesEditor({
                   body: JSON.stringify({
                     slug: selected.slug,
                     situations,
+                    previewSituations,
                     title: value.title,
                     description: value.description,
                     trustNote: value.trustNote,
@@ -354,6 +376,7 @@ export function ServicesEditor({
                         ),
                         ctaLabel,
                         iconUrl,
+                        previewSituations,
                       }
                     : item,
                 ),

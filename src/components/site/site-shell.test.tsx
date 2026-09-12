@@ -15,13 +15,16 @@ describe("public landing shell", () => {
   const data = getPreviewLandingData();
 
   it("links all quick cards to exact service anchors", () => {
-    render(<QuickAccess items={data.quickLinks} />);
+    render(
+      <QuickAccess items={data.quickLinks} services={data.services} />,
+    );
 
     for (const item of data.quickLinks) {
-      expect(screen.getByRole("link", { name: item.label })).toHaveAttribute(
-        "href",
-        item.href,
-      );
+      expect(
+        screen.getByRole("link", {
+          name: (accessibleName) => accessibleName.includes(item.label),
+        }),
+      ).toHaveAttribute("href", item.href);
     }
   });
 });

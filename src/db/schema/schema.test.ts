@@ -77,11 +77,12 @@ describe("database schema contracts", () => {
     expect(columns.ctaLabel?.hasDefault).toBe(true);
   });
 
-  it("stores services.icon_url as optional text", () => {
+  it("stores services.preview_situations as required jsonb", () => {
     const columns = getTableColumns(services);
 
-    expect(columns.iconUrl?.name).toBe("icon_url");
-    expect(columns.iconUrl?.notNull).toBe(false);
+    expect(columns.previewSituations?.name).toBe("preview_situations");
+    expect(columns.previewSituations?.notNull).toBe(true);
+    expect(columns.previewSituations?.hasDefault).toBe(true);
   });
 
   it.each(sortableTables)(

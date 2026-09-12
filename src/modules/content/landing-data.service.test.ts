@@ -67,6 +67,7 @@ describe("buildLandingData", () => {
       "alimenty",
       "imushchestvo",
       "deti",
+      "zemlya",
       "uslugi",
     ]);
     expect(data.services[0]).toEqual({
@@ -79,6 +80,7 @@ describe("buildLandingData", () => {
       isHighValue: seedContent.services[0]?.isHighValue,
       ctaLabel: seedContent.services[0]?.ctaLabel,
       iconUrl: null,
+      previewSituations: seedContent.services[0]?.previewSituations,
     });
     expect(data.cases).toHaveLength(4);
     expect(data.faqs.length).toBeGreaterThanOrEqual(6);
@@ -174,8 +176,6 @@ describe("buildLandingData", () => {
   it("omits hidden services from public landing services and quick links", async () => {
     const baseRepository = createFakeRepository();
     const serviceRows = await baseRepository.listServices();
-    const hidden = serviceRows.find((item) => item.slug === "zemlya");
-    if (!hidden) throw new Error("Missing zemlya fixture");
     const withHidden = serviceRows.map((item) =>
       item.slug === "zemlya" ? { ...item, isHidden: true } : item,
     );
@@ -184,21 +184,13 @@ describe("buildLandingData", () => {
       createFakeRepository(undefined, withHidden),
     );
 
-    expect(data.services.map((item) => item.slug)).toEqual([
-      "razvod",
-      "alimenty",
-      "imushchestvo",
-      "deti",
-      "uslugi",
-    ]);
-    expect(data.quickLinks.map((item) => item.slug)).toEqual([
-      "razvod",
-      "alimenty",
-      "imushchestvo",
-      "deti",
-      "uslugi",
-    ]);
+    const visible = withHidden
+      .filter((item) => !item.isHidden)
+      .map((item) => item.slug);
+    expect(data.services.map((item) => item.slug)).toEqual(visible);
+    expect(data.quickLinks.map((item) => item.slug)).toEqual(visible);
     expect(data.services.some((item) => item.slug === "zemlya")).toBe(false);
+    expect(data.quickLinks.some((item) => item.slug === "zemlya")).toBe(false);
   });
 
   it("preserves the original internal failure as ContentDataError cause", async () => {

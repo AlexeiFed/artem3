@@ -130,13 +130,14 @@ test("keeps a chrome gutter under the metrics plate on mobile", async ({
 
   expect(metrics).not.toBeNull();
   expect(metrics?.dossierPosition).toBe("absolute");
-  expect(metrics?.dossierCssBottom ?? 0).toBeGreaterThanOrEqual(24);
-  expect(metrics?.dossierCssBottom ?? 0).toBeLessThan(48);
+  expect(metrics?.dossierCssBottom ?? 0).toBeGreaterThanOrEqual(36);
+  expect(metrics?.dossierCssBottom ?? 0).toBeLessThan(56);
   expect(metrics?.fabCssBottom ?? 0).toBeLessThan(32);
   expect(metrics?.fabVisible).toBe(false);
   expect(metrics?.paddingBottom ?? 0).toBeGreaterThanOrEqual(160);
   expect(metrics?.plateGap ?? 0).toBeGreaterThanOrEqual(48);
-  expect(metrics?.dossierBottom ?? 0).toBeGreaterThan(844 - 48);
+  expect(metrics?.dossierBottom ?? 0).toBeGreaterThan(844 - 56);
+  expect(metrics?.dossierBottom ?? 0).toBeLessThanOrEqual(844 - 32);
 });
 
 test("does not stretch the hero past svh when the visual viewport is larger", async ({
@@ -181,6 +182,27 @@ test("does not stretch the hero past svh when the visual viewport is larger", as
   expect(dossierBottom).toBeLessThanOrEqual(844 + 1);
 });
 
+test("shifts desktop nav toward the phone while the header CTA is hidden", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+
+  const overHeroNavRight = await page.locator(".desktop-nav").evaluate((el) => {
+    return el.getBoundingClientRect().right;
+  });
+
+  await page.locator("#uslugi").scrollIntoViewIfNeeded();
+  await expect(page.locator(".header-cta")).toHaveCSS("display", "block");
+
+  const afterScrollNavRight = await page
+    .locator(".desktop-nav")
+    .evaluate((el) => el.getBoundingClientRect().right);
+
+  expect(overHeroNavRight).toBeGreaterThan(afterScrollNavRight + 40);
+});
+
 test("hides the header CTA until the hero leaves the viewport", async ({
   page,
 }) => {
@@ -189,9 +211,10 @@ test("hides the header CTA until the hero leaves the viewport", async ({
   await page.goto("/");
 
   const cta = page.locator(".header-cta");
-  await expect(cta).toHaveCSS("visibility", "hidden");
+  await expect(cta).toHaveCSS("display", "none");
 
   await page.locator("#uslugi").scrollIntoViewIfNeeded();
+  await expect(cta).toHaveCSS("display", "block");
   await expect(cta).toHaveCSS("visibility", "visible");
 });
 
@@ -207,7 +230,8 @@ test("keeps header CTA on the content column and docks dossier to the viewport",
     const headerInner = document.querySelector(".header-inner");
     const headerCta = document.querySelector(".header-cta");
     const column = document.querySelector(".services.section");
-    if (!dossier || !copy || !headerInner || !headerCta || !column) {
+    const rail = document.querySelector(".contact-rail");
+    if (!dossier || !copy || !headerInner || !headerCta || !column || !rail) {
       return null;
     }
 
@@ -216,6 +240,7 @@ test("keeps header CTA on the content column and docks dossier to the viewport",
     const headerBox = headerInner.getBoundingClientRect();
     const ctaBox = headerCta.getBoundingClientRect();
     const columnBox = column.getBoundingClientRect();
+    const railBox = rail.getBoundingClientRect();
 
     return {
       copyLeft: copyBox.left,
@@ -223,6 +248,7 @@ test("keeps header CTA on the content column and docks dossier to the viewport",
       columnLeft: columnBox.left,
       columnRight: columnBox.right,
       dossierRight: dossierBox.right,
+      railRight: railBox.right,
       headerRight: headerBox.right,
       viewportWidth: window.innerWidth,
     };
@@ -230,12 +256,10 @@ test("keeps header CTA on the content column and docks dossier to the viewport",
 
   expect(alignment).not.toBeNull();
   expect(
-    Math.abs(
-      (alignment?.dossierRight ?? 0) - (alignment?.viewportWidth ?? 0),
-    ),
+    Math.abs((alignment?.dossierRight ?? 0) - (alignment?.railRight ?? 0)),
   ).toBeLessThan(2);
   expect(
-    Math.abs((alignment?.headerRight ?? 0) - (alignment?.columnRight ?? 0)),
+    Math.abs((alignment?.headerRight ?? 0) - (alignment?.railRight ?? 0)),
   ).toBeLessThan(2);
   expect(alignment?.ctaRight).toBeLessThanOrEqual(
     (alignment?.columnRight ?? 0) + 1,

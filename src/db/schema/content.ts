@@ -60,6 +60,10 @@ export const services = pgTable(
       .$type<string[]>()
       .default(sql`'[]'::jsonb`)
       .notNull(),
+    previewSituations: jsonb("preview_situations")
+      .$type<[string, string]>()
+      .default(sql`'["",""]'::jsonb`)
+      .notNull(),
     trustNote: text("trust_note").notNull(),
     priceFromKopecks: integer("price_from_kopecks").notNull(),
     isHighValue: boolean("is_high_value").default(false).notNull(),

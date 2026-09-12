@@ -74,7 +74,7 @@ export function Faq({ items }: { items: LandingData["faqs"] }) {
             изучу ваши вводные и скажу, есть ли перспектива у дела.
           </p>
           <MagneticButton
-            className="button faq-invite-cta"
+            className="button button-brass-glow faq-invite-cta"
             onClick={() => openModal("FAQ")}
           >
             Задать вопрос Артёму

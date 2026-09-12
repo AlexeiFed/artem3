@@ -64,6 +64,13 @@
       "when": 1787999272678,
       "tag": "0008_silly_xavin",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789079257739,
+      "tag": "0009_sharp_green_goblin",
+      "breakpoints": true
     }
   ]
 }

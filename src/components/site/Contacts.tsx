@@ -92,7 +92,7 @@ export function Contacts({
             </div>
             <button
               type="button"
-              className="button contacts-cta"
+              className="button button-brass-glow contacts-cta"
               onClick={() => openModal("Контакты")}
             >
               Рассказать о ситуации

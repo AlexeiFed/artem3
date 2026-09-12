@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 
 import { SaveBar } from "@/components/admin/SaveBar";
+import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { formatAdminApiError } from "@/components/admin/format-admin-error";
 import { DEFAULT_SEO_SETTINGS } from "@/modules/content/content.schemas";
 import type { HeroSettings } from "@/modules/content/content.types";
@@ -129,32 +130,35 @@ export function HeroLandingEditor({
 
       <section className="grid gap-4">
         <h2 className="font-display text-3xl text-primary">Hero</h2>
-        <label className="grid gap-2 font-sans text-sm text-secondary">
+        <div className="grid gap-2 font-sans text-sm text-secondary">
           Надзаголовок
-          <input
+          <RichTextEditor
+            label="Надзаголовок"
+            multiline={false}
             className="rounded-card border border-sage/40 bg-background px-4 py-3 text-primary"
             value={hero.hero.eyebrow}
-            onChange={(event) =>
+            onChange={(val) =>
               patchHero((current) => ({
                 ...current,
-                hero: { ...current.hero, eyebrow: event.target.value },
+                hero: { ...current.hero, eyebrow: val },
               }))
             }
           />
           <span className="text-xs">
-            Необязательно. Пустое поле скроет строку — H1 поднимется на её
-            место.
+            Необязательно. Пустое поле скроет текст, место над заголовком
+            сохранится.
           </span>
-        </label>
-        <label className="grid gap-2 font-sans text-sm text-secondary">
+        </div>
+        <div className="grid gap-2 font-sans text-sm text-secondary">
           Заголовок
-          <textarea
+          <RichTextEditor
+            label="Заголовок"
             className="min-h-24 rounded-card border border-sage/40 bg-background px-4 py-3 text-primary"
             value={hero.hero.title}
-            onChange={(event) =>
+            onChange={(val) =>
               patchHero((current) => ({
                 ...current,
-                hero: { ...current.hero, title: event.target.value },
+                hero: { ...current.hero, title: val },
               }))
             }
           />
@@ -162,16 +166,17 @@ export function HeroLandingEditor({
             Перенос строки = новая строка на лендинге. Без переносов дефолтный
             текст разобьётся сам на 3 строки.
           </span>
-        </label>
-        <label className="grid gap-2 font-sans text-sm text-secondary">
+        </div>
+        <div className="grid gap-2 font-sans text-sm text-secondary">
           Подзаголовок
-          <textarea
+          <RichTextEditor
+            label="Подзаголовок"
             className="min-h-24 rounded-card border border-sage/40 bg-background px-4 py-3 text-primary"
             value={hero.hero.subtitle}
-            onChange={(event) =>
+            onChange={(val) =>
               patchHero((current) => ({
                 ...current,
-                hero: { ...current.hero, subtitle: event.target.value },
+                hero: { ...current.hero, subtitle: val },
               }))
             }
           />
@@ -179,13 +184,15 @@ export function HeroLandingEditor({
             Строка под H1, например практики. Пустое поле скроет её — оффер
             поднимется.
           </span>
-        </label>
-        <label className="grid gap-2 font-sans text-sm text-secondary">
+        </div>
+        <div className="grid gap-2 font-sans text-sm text-secondary">
           Оффер — строка 1
-          <input
+          <RichTextEditor
+            label="Оффер — строка 1"
+            multiline={false}
             className="rounded-card border border-sage/40 bg-background px-4 py-3 text-primary"
             value={hero.hero.offerBullets[0] ?? ""}
-            onChange={(event) =>
+            onChange={(val) =>
               patchHero((current) => ({
                 ...current,
                 hero: {
@@ -193,19 +200,21 @@ export function HeroLandingEditor({
                   offerBullets: nextOfferBullets(
                     current.hero.offerBullets,
                     0,
-                    event.target.value,
+                    val,
                   ),
                 },
               }))
             }
           />
-        </label>
-        <label className="grid gap-2 font-sans text-sm text-secondary">
+        </div>
+        <div className="grid gap-2 font-sans text-sm text-secondary">
           Оффер — строка 2
-          <input
+          <RichTextEditor
+            label="Оффер — строка 2"
+            multiline={false}
             className="rounded-card border border-sage/40 bg-background px-4 py-3 text-primary"
             value={hero.hero.offerBullets[1] ?? ""}
-            onChange={(event) =>
+            onChange={(val) =>
               patchHero((current) => ({
                 ...current,
                 hero: {
@@ -213,7 +222,7 @@ export function HeroLandingEditor({
                   offerBullets: nextOfferBullets(
                     current.hero.offerBullets,
                     1,
-                    event.target.value,
+                    val,
                   ),
                 },
               }))
@@ -222,7 +231,7 @@ export function HeroLandingEditor({
           <span className="text-xs">
             Две выгоды над кнопкой. Пустая строка скроется.
           </span>
-        </label>
+        </div>
         <label className="grid gap-2 font-sans text-sm text-secondary">
           Кнопка CTA
           <input
@@ -239,19 +248,20 @@ export function HeroLandingEditor({
             }
           />
         </label>
-        <label className="grid gap-2 font-sans text-sm text-secondary">
+        <div className="grid gap-2 font-sans text-sm text-secondary">
           Дисклеймер под CTA
-          <textarea
+          <RichTextEditor
+            label="Дисклеймер под CTA"
             className="min-h-24 rounded-card border border-sage/40 bg-background px-4 py-3 text-primary"
             value={hero.hero.disclaimer}
-            onChange={(event) =>
+            onChange={(val) =>
               patchHero((current) => ({
                 ...current,
-                hero: { ...current.hero, disclaimer: event.target.value },
+                hero: { ...current.hero, disclaimer: val },
               }))
             }
           />
-        </label>
+        </div>
       </section>
 
       <section className="grid gap-4">
@@ -260,16 +270,18 @@ export function HeroLandingEditor({
         </h2>
         {hero.hero.metrics.map((metric, index) => (
           <div key={index} className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-2 font-sans text-sm text-secondary">
+            <div className="grid gap-2 font-sans text-sm text-secondary">
               Значение {index + 1}
-              <input
+              <RichTextEditor
+                label={`Значение ${index + 1}`}
+                multiline={false}
                 className="rounded-card border border-sage/40 bg-background px-4 py-3 text-primary"
                 value={metric.value}
-                onChange={(event) =>
+                onChange={(val) =>
                   patchHero((current) => {
                     const metrics = current.hero.metrics.map((item, i) =>
                       i === index
-                        ? { ...item, value: event.target.value }
+                        ? { ...item, value: val }
                         : item,
                     );
                     return {
@@ -279,17 +291,19 @@ export function HeroLandingEditor({
                   })
                 }
               />
-            </label>
-            <label className="grid gap-2 font-sans text-sm text-secondary">
+            </div>
+            <div className="grid gap-2 font-sans text-sm text-secondary">
               Подпись {index + 1}
-              <input
+              <RichTextEditor
+                label={`Подпись ${index + 1}`}
+                multiline={false}
                 className="rounded-card border border-sage/40 bg-background px-4 py-3 text-primary"
                 value={metric.label}
-                onChange={(event) =>
+                onChange={(val) =>
                   patchHero((current) => {
                     const metrics = current.hero.metrics.map((item, i) =>
                       i === index
-                        ? { ...item, label: event.target.value }
+                        ? { ...item, label: val }
                         : item,
                     );
                     return {
@@ -299,7 +313,7 @@ export function HeroLandingEditor({
                   })
                 }
               />
-            </label>
+            </div>
           </div>
         ))}
       </section>
@@ -312,38 +326,42 @@ export function HeroLandingEditor({
           Карточки и вкладки берутся из раздела «Услуги». Здесь — заголовки
           секции.
         </p>
-        <label className="grid gap-2 font-sans text-sm text-secondary">
+        <div className="grid gap-2 font-sans text-sm text-secondary">
           Надзаголовок
-          <input
+          <RichTextEditor
+            label="Практика — надзаголовок"
+            multiline={false}
             className="rounded-card border border-sage/40 bg-background px-4 py-3 text-primary"
             value={hero.servicesIntro.eyebrow}
-            onChange={(event) =>
+            onChange={(val) =>
               patchHero((current) => ({
                 ...current,
                 servicesIntro: {
                   ...current.servicesIntro,
-                  eyebrow: event.target.value,
+                  eyebrow: val,
                 },
               }))
             }
           />
-        </label>
-        <label className="grid gap-2 font-sans text-sm text-secondary">
+        </div>
+        <div className="grid gap-2 font-sans text-sm text-secondary">
           Заголовок
-          <input
+          <RichTextEditor
+            label="Практика — заголовок"
+            multiline={false}
             className="rounded-card border border-sage/40 bg-background px-4 py-3 text-primary"
             value={hero.servicesIntro.title}
-            onChange={(event) =>
+            onChange={(val) =>
               patchHero((current) => ({
                 ...current,
                 servicesIntro: {
                   ...current.servicesIntro,
-                  title: event.target.value,
+                  title: val,
                 },
               }))
             }
           />
-        </label>
+        </div>
       </section>
 
       {error ? (

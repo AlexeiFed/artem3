@@ -33,6 +33,7 @@ function createLandingDataFixture() {
         isHighValue,
         ctaLabel,
         iconUrl,
+        previewSituations,
       }) => ({
         slug,
         title,
@@ -43,6 +44,7 @@ function createLandingDataFixture() {
         isHighValue,
         ctaLabel,
         iconUrl,
+        previewSituations,
       }),
     ),
     consultation: settings.trustBanner.consultation,

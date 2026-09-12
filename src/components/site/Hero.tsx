@@ -11,6 +11,10 @@ import {
   HERO_CHROME_GUTTER_VAR,
   heroChromeGutter,
 } from "@/lib/hero-visual-height";
+import {
+  sanitizeHeroMarkup,
+  stripHeroMarkup,
+} from "@/lib/hero-markup";
 import type { LandingData } from "@/modules/content/content.types";
 
 const subscribeHydration = () => () => {};
@@ -51,7 +55,8 @@ const DEFAULT_TITLE_JOINED = DEFAULT_TITLE_LINES.map((line) => line.text).join(
 function titleLines(
   title: string,
 ): Array<{ text: string; place: boolean; wrap: boolean }> {
-  const byNewline = title
+  const markup = sanitizeHeroMarkup(title);
+  const byNewline = markup
     .split(/\n/u)
     .map((line) => line.trim())
     .filter(Boolean);
@@ -59,12 +64,12 @@ function titleLines(
   if (byNewline.length > 1) {
     return byNewline.map((text) => ({
       text,
-      place: /хабаровске/iu.test(text),
+      place: /хабаровске/iu.test(stripHeroMarkup(text)),
       wrap: false,
     }));
   }
 
-  const collapsed = title.replace(/\s+/gu, " ").trim();
+  const collapsed = stripHeroMarkup(markup);
   if (collapsed === DEFAULT_TITLE_JOINED) {
     return DEFAULT_TITLE_LINES.map((line) => ({
       text: line.text,
@@ -73,7 +78,7 @@ function titleLines(
     }));
   }
 
-  return [{ text: collapsed, place: false, wrap: true }];
+  return [{ text: markup, place: false, wrap: true }];
 }
 
 export function Hero({ data }: { data: LandingData["hero"] }) {
@@ -208,19 +213,21 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
 
       <div className="hero-content shell">
         <div className="hero-copy">
-          {data.eyebrow ? (
-            <motion.p
-              className="eyebrow hero-eyebrow"
-              initial={shouldReduceMotion ? false : { opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: durationFast }}
-            >
-              {data.eyebrow}
-            </motion.p>
-          ) : null}
+          <motion.p
+            className="eyebrow hero-eyebrow"
+            aria-hidden={data.eyebrow ? undefined : true}
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: durationFast }}
+            dangerouslySetInnerHTML={{
+              __html: data.eyebrow
+                ? sanitizeHeroMarkup(data.eyebrow)
+                : "&nbsp;",
+            }}
+          />
 
-          <h1 aria-label={data.title.replace(/\s+/gu, " ").trim()}>
-            {titleLines(data.title).map((line, index) => (
+          <h1 aria-label={stripHeroMarkup(data.title)}>
+            {titleLines(data.title).map((line, index, lines) => (
               <motion.span
                 aria-hidden="true"
                 className={`hero-title-line${line.place ? " hero-title-place" : ""}${line.wrap ? " hero-title-line-wrap" : ""}`}
@@ -233,21 +240,25 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
                   delay: titleDelay + index * titleStagger,
                   duration: durationBase,
                 }}
-              >
-                {line.text}
-              </motion.span>
+                dangerouslySetInnerHTML={{
+                  __html: sanitizeHeroMarkup(
+                    index < lines.length - 1 ? `${line.text} ` : line.text,
+                  ),
+                }}
+              />
             ))}
           </h1>
 
           {data.subtitle ? (
-            <motion.p
+            <motion.h2
               className="hero-subtitle"
               initial={shouldReduceMotion ? false : { opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: subtitleDelay, duration: durationBase }}
-            >
-              {data.subtitle}
-            </motion.p>
+              dangerouslySetInnerHTML={{
+                __html: sanitizeHeroMarkup(data.subtitle),
+              }}
+            />
           ) : null}
 
           {offerBullets.length > 0 ? (
@@ -262,7 +273,11 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
                   <span className="hero-offer-check" aria-hidden="true">
                     ✓
                   </span>
-                  {bullet}
+                  <span
+                    dangerouslySetInnerHTML={{
+                      __html: sanitizeHeroMarkup(bullet),
+                    }}
+                  />
                 </li>
               ))}
             </motion.ul>
@@ -276,14 +291,19 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
           >
             <MagneticButton
               type="button"
-              className="button"
+              className="button button-brass-glow"
               onClick={() => modal?.openModal("Главный экран")}
             >
               {data.cta.label}
             </MagneticButton>
           </motion.div>
 
-          <p className="hero-disclaimer">{data.disclaimer}</p>
+          <p
+            className="hero-disclaimer"
+            dangerouslySetInnerHTML={{
+              __html: sanitizeHeroMarkup(data.disclaimer),
+            }}
+          />
         </div>
 
         <motion.span
@@ -295,6 +315,7 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
         />
 
         <aside className="hero-dossier" aria-label="Практика в цифрах">
+          <span className="hero-dossier-tab">Практика в цифрах</span>
           <ol aria-label="Практика в цифрах">
             {data.metrics.map((metric, index) => (
               <li key={metric.label}>
@@ -310,8 +331,8 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
                   <span className="hero-metric-index" aria-hidden="true">
                     {String(index + 1).padStart(2, "0")}
                   </span>
-                  <strong>{metric.value}</strong>
-                  <span>{metric.label}</span>
+                  <strong dangerouslySetInnerHTML={{ __html: sanitizeHeroMarkup(metric.value) }} />
+                  <span dangerouslySetInnerHTML={{ __html: sanitizeHeroMarkup(metric.label) }} />
                 </motion.div>
               </li>
             ))}

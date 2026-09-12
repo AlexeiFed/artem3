@@ -40,6 +40,27 @@ describe("buildLegalServiceJsonLd", () => {
     });
   });
 
+  it("includes the public SEO description when provided", () => {
+    const jsonLd = buildLegalServiceJsonLd({
+      siteUrl: "https://example.com",
+      name: "Артём Сысуев",
+      description:
+        "Юрист по семейным и имущественным спорам в Хабаровске: развод, алименты, раздел имущества и споры о детях.",
+      telephone: "+74212931547",
+      streetAddress: "ул. Ленина, 22, офис 12",
+      addressLocality: "Хабаровск",
+      postalCode: "680000",
+      latitude: 48.47085,
+      longitude: 135.07446,
+      imageUrl: "https://example.com/media/artem-desk-cases.jpg",
+      sameAs: ["https://vk.com/tvoe_pravo_tut"],
+    });
+
+    expect(jsonLd.description).toBe(
+      "Юрист по семейным и имущественным спорам в Хабаровске: развод, алименты, раздел имущества и споры о детях.",
+    );
+  });
+
   it("escapes < so JSON-LD cannot break out of a script tag", () => {
     const jsonLd = buildLegalServiceJsonLd({
       siteUrl: "https://example.com",

@@ -1,0 +1,1 @@
+ALTER TABLE "services" ADD COLUMN "preview_situations" jsonb DEFAULT '["",""]'::jsonb NOT NULL;

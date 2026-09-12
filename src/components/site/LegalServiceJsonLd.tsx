@@ -18,13 +18,16 @@ function resolveSiteUrl(): string {
 
 export function LegalServiceJsonLd({
   contacts,
+  description,
 }: {
   contacts: LandingData["contacts"];
+  description: string;
 }) {
   const siteUrl = resolveSiteUrl();
   const jsonLd = buildLegalServiceJsonLd({
     siteUrl,
     name: "Артём Сысуев — семейный и имущественный юрист",
+    description,
     telephone: contacts.phone.href.replace(/^tel:/, ""),
     streetAddress: contacts.address.replace(/^г\.\s*Хабаровск,\s*/i, ""),
     addressLocality: "Хабаровск",

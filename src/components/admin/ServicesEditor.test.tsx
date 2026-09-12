@@ -25,6 +25,7 @@ const item: ServiceEditorItem = {
   isHidden: false,
   ctaLabel: "Получить оценку ситуации",
   iconUrl: null,
+  previewSituations: ["Без согласия супруга", "При наличии детей"],
 };
 
 describe("ServicesEditor", () => {
@@ -35,6 +36,12 @@ describe("ServicesEditor", () => {
     expect(
       screen.getByLabelText("Загрузка файла (локально или S3)"),
     ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Карточка «С чем помочь» — строка 1"),
+    ).toHaveValue("Без согласия супруга");
+    expect(
+      screen.getByLabelText("Карточка «С чем помочь» — строка 2"),
+    ).toHaveValue("При наличии детей");
   });
 
   it("resets the file input when switching to another service", () => {

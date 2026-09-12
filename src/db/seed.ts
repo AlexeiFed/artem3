@@ -141,6 +141,26 @@ async function runSeed(): Promise<void> {
           .set({ trustNote: razvod.trustNote, updatedAt: new Date() })
           .where(eq(services.id, razvod.id));
       }
+      for (const row of serviceRows) {
+        const [current] = await transaction
+          .select({ previewSituations: services.previewSituations })
+          .from(services)
+          .where(eq(services.id, row.id))
+          .limit(1);
+        const stored = current?.previewSituations;
+        const empty =
+          !stored ||
+          (stored[0]?.trim() === "" && stored[1]?.trim() === "");
+        if (empty && (row.previewSituations[0] || row.previewSituations[1])) {
+          await transaction
+            .update(services)
+            .set({
+              previewSituations: row.previewSituations,
+              updatedAt: new Date(),
+            })
+            .where(eq(services.id, row.id));
+        }
+      }
       await transaction.insert(cases).values(caseRows).onConflictDoNothing();
       for (const row of caseRows) {
         await transaction

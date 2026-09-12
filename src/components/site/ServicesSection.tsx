@@ -3,6 +3,7 @@
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 import { useModal } from "@/components/forms/ModalProvider";
+import { sanitizeHeroMarkup } from "@/lib/hero-markup";
 import type { LandingData } from "@/modules/content/content.types";
 import {
   serviceAnchorHref,
@@ -74,8 +75,13 @@ export function ServicesSection({
 
   return (
     <section className="services section shell">
-      <p className="eyebrow">{intro.eyebrow}</p>
-      <h2>{intro.title}</h2>
+      <p
+        className="eyebrow"
+        dangerouslySetInnerHTML={{ __html: sanitizeHeroMarkup(intro.eyebrow) }}
+      />
+      <h2
+        dangerouslySetInnerHTML={{ __html: sanitizeHeroMarkup(intro.title) }}
+      />
       <nav className="service-tabs" aria-label="Разделы услуг">
         {services.map((service) => (
           <a
@@ -131,7 +137,7 @@ export function ServicesSection({
               </p>
               <button
                 type="button"
-                className="button service-cta"
+                className="button button-brass-glow service-cta"
                 onClick={() => openModal(service.title)}
               >
                 {service.ctaLabel}

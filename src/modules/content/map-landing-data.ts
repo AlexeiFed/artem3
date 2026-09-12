@@ -205,6 +205,7 @@ export function mapLandingData(source: LandingContentSource): LandingData {
         isHighValue,
         ctaLabel,
         iconUrl,
+        previewSituations,
       }) => ({
         slug,
         title,
@@ -215,6 +216,7 @@ export function mapLandingData(source: LandingContentSource): LandingData {
         isHighValue,
         ctaLabel,
         iconUrl,
+        previewSituations,
       }),
     ),
     consultation: trust.consultation,

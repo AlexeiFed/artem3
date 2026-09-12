@@ -44,9 +44,9 @@ describe("HeroLandingEditor", () => {
       />,
     );
 
-    fireEvent.change(screen.getAllByLabelText("Заголовок")[0]!, {
-      target: { value: "Семейный юрист в Хабаровске" },
-    });
+    const title = screen.getByRole("textbox", { name: "Заголовок" });
+    title.innerHTML = "Семейный юрист в Хабаровске";
+    fireEvent.input(title);
     fireEvent.click(screen.getByRole("button", { name: "Сохранить" }));
 
     await waitFor(() => {

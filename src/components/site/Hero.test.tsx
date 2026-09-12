@@ -67,6 +67,19 @@ describe("Hero", () => {
       </ModalProvider>,
     );
 
+    expect(document.querySelector(".hero h1")).toHaveAttribute(
+      "aria-label",
+      data.title.replace(/\s+/gu, " ").trim(),
+    );
+    expect(document.querySelector(".hero h1")?.textContent).toBe(
+      `${data.title.replace(/\s+/gu, " ").trim()}`,
+    );
+    expect(document.querySelector(".hero h1")?.textContent).not.toMatch(
+      /алиментыи|имуществав/,
+    );
+    expect(document.querySelector(".hero h2.hero-subtitle")?.tagName).toBe(
+      "H2",
+    );
     expect(document.querySelector(".hero-subtitle")).toHaveTextContent(
       data.subtitle,
     );
@@ -86,6 +99,7 @@ describe("Hero", () => {
     );
 
     expect(document.querySelector(".hero-subtitle")).not.toBeInTheDocument();
+    expect(document.querySelector(".hero h2")).toBeNull();
     expect(document.querySelectorAll(".hero-offer li").length).toBeGreaterThan(
       0,
     );
@@ -109,7 +123,7 @@ describe("Hero", () => {
     expect(document.querySelectorAll(".hero-offer li")).toHaveLength(1);
   });
 
-  it("omits the eyebrow when it is empty so H1 takes its place", () => {
+  it("keeps the eyebrow slot when the eyebrow is empty", () => {
     const data = { ...getPreviewLandingData().hero, eyebrow: "" };
 
     render(
@@ -118,7 +132,10 @@ describe("Hero", () => {
       </ModalProvider>,
     );
 
-    expect(document.querySelector(".hero-eyebrow")).not.toBeInTheDocument();
+    expect(document.querySelector(".hero-eyebrow")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
     expect(
       screen.getByRole("heading", {
         name: "Развод, алименты и раздел имущества в Хабаровске",
@@ -147,10 +164,12 @@ describe("Hero", () => {
     ).toBeVisible();
   });
 
-  it("does not render the dossier tab label", () => {
+  it("renders the dossier tab over the hero video mark", () => {
     renderHero();
 
-    expect(document.querySelector(".hero-dossier-tab")).not.toBeInTheDocument();
+    expect(document.querySelector(".hero-dossier-tab")).toHaveTextContent(
+      "Практика в цифрах",
+    );
   });
 
   it("renders all three proof metrics", () => {

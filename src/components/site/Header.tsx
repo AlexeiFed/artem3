@@ -176,12 +176,12 @@ export function Header({
     <header className={`site-header${overHero ? " is-over-hero" : ""}`}>
       <div className="header-inner shell">
         <a className="logo" href="#main" aria-label={data.logo.ariaLabel}>
-          {data.logo.text}
+          {`${data.logo.text} `}
           <small>Семейный юрист</small>
         </a>
         <p className="header-meta">
-          <span>{address}</span>
-          <span>{workHours}</span>
+          <span>{`${address} `}</span>
+          <span>{`${workHours} `}</span>
           {hoursNote ? (
             <span className="header-meta-note">{hoursNote}</span>
           ) : null}
@@ -239,7 +239,7 @@ export function Header({
               transition={{ duration: durationBase * 0.7, ease: easeCinematic }}
             >
               <p className="mobile-menu-brand">
-                {data.logo.text}
+                {`${data.logo.text} `}
                 <small>Семейный юрист</small>
               </p>
               <nav aria-label="Мобильная навигация">
@@ -249,8 +249,8 @@ export function Header({
               </nav>
               <div className="mobile-menu-footer">
                 <p className="mobile-menu-meta">
-                  <span>{address}</span>
-                  <span>{workHours}</span>
+                  <span>{`${address} `}</span>
+                  <span>{`${workHours} `}</span>
                   {hoursNote ? (
                     <span className="mobile-menu-meta-note">{hoursNote}</span>
                   ) : null}

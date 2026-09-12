@@ -286,6 +286,26 @@ describe("ServiceSchema", () => {
       ).iconUrl,
     ).toBe("/media/razvod-icon.png");
   });
+
+  it("defaults card preview lines to empty when the admin has not filled them", () => {
+    const withoutPreview = serviceContentInput();
+    delete withoutPreview.previewSituations;
+
+    expect(ServiceSchema.parse(withoutPreview).previewSituations).toEqual([
+      "",
+      "",
+    ]);
+  });
+
+  it("keeps two short card preview lines from admin", () => {
+    expect(
+      ServiceSchema.parse(
+        serviceContentInput({
+          previewSituations: ["Без согласия супруга", "При наличии детей"],
+        }),
+      ).previewSituations,
+    ).toEqual(["Без согласия супруга", "При наличии детей"]);
+  });
 });
 
 describe("CertificateSchema", () => {
@@ -336,40 +356,38 @@ describe("CertificateSchema", () => {
         map: seedContent.settings.map,
       },
       legal: seedContent.settings.legal,
-      quickLinks: seedContent.services
-        .filter((item) => !item.isHidden)
-        .map(({ slug, title }) => ({
-          slug,
-          label: title,
-          href: `#${slug}`,
-        })),
+      quickLinks: seedContent.services.map(({ slug, title }) => ({
+        slug,
+        label: title,
+        href: `#${slug}`,
+      })),
       hiddenRisks: seedContent.settings.hero.hiddenRisks,
       servicesIntro: seedContent.settings.hero.servicesIntro,
-      services: seedContent.services
-        .filter((item) => !item.isHidden)
-        .map(
-          ({
-            slug,
-            title,
-            description,
-            situations,
-            trustNote,
-            priceFromKopecks,
-            isHighValue,
-            ctaLabel,
-            iconUrl,
-          }) => ({
-            slug,
-            title,
-            description,
-            situations,
-            trustNote,
-            priceFromKopecks,
-            isHighValue,
-            ctaLabel,
-            iconUrl,
-          }),
-        ),
+      services: seedContent.services.map(
+        ({
+          slug,
+          title,
+          description,
+          situations,
+          trustNote,
+          priceFromKopecks,
+          isHighValue,
+          ctaLabel,
+          iconUrl,
+          previewSituations,
+        }) => ({
+          slug,
+          title,
+          description,
+          situations,
+          trustNote,
+          priceFromKopecks,
+          isHighValue,
+          ctaLabel,
+          iconUrl,
+          previewSituations,
+        }),
+      ),
       meta: seedContent.settings.hero.meta,
       header: seedContent.settings.hero.header,
       hero: seedContent.settings.hero.hero,

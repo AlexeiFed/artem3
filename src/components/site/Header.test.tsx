@@ -45,6 +45,19 @@ describe("Header", () => {
     expect(meta).toHaveTextContent("Пн–Пт, 09:00–18:00");
   });
 
+  it("keeps spaces between logo, address, hours and note for crawlers", () => {
+    renderHeader();
+
+    expect(document.querySelector(".header-inner .logo")?.textContent).toBe(
+      "Артём Сысуев Семейный юрист",
+    );
+    expect(
+      document.querySelector(".header-inner .header-meta")?.textContent,
+    ).toBe(
+      "г. Хабаровск, ул. Ленина, 22, офис 12 Пн–Пт, 09:00–18:00 (по предварительной записи)",
+    );
+  });
+
   it("shows address, work hours and note inside the mobile menu sheet", () => {
     renderHeader();
 
