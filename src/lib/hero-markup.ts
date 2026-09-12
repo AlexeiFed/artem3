@@ -92,3 +92,12 @@ export function stripHeroMarkup(html: string): string {
 export function heroMarkupToEditorHtml(html: string): string {
   return sanitizeHeroMarkup(html).replace(/\n/gu, "<br>");
 }
+
+/** Two visual lines: keep CMS markup, split after the first sentence. */
+export function disclaimerToHtml(html: string): string {
+  const sanitized = sanitizeHeroMarkup(html);
+  if (sanitized.includes("\n")) {
+    return heroMarkupToEditorHtml(sanitized);
+  }
+  return heroMarkupToEditorHtml(sanitized.replace(/\.\s+/u, ".\n"));
+}

@@ -1,3 +1,4 @@
+import { sanitizeHeroMarkup, stripHeroMarkup } from "@/lib/hero-markup";
 import type { LandingData } from "@/modules/content/content.types";
 
 import { ServiceIcon } from "./ServiceIcon";
@@ -6,7 +7,7 @@ function cardPreviewLines(
   preview: readonly [string, string] | undefined,
 ): string[] {
   if (!preview) return [];
-  return preview.filter((line) => line.trim().length > 0);
+  return preview.filter((line) => stripHeroMarkup(line).length > 0);
 }
 
 export function QuickAccess({
@@ -40,14 +41,19 @@ export function QuickAccess({
                 <strong>{`${item.label} `}</strong>
                 {preview.length > 0 ? (
                   <span className="quick-card-situations">
-                    {preview.map((line) => (
-                      <span key={line}>{`${line} `}</span>
+                    {preview.map((line, index) => (
+                      <span
+                        key={`${item.slug}-${index}`}
+                        dangerouslySetInnerHTML={{
+                          __html: sanitizeHeroMarkup(line),
+                        }}
+                      />
                     ))}
                   </span>
                 ) : null}
               </span>
               <span className="quick-card-more">
-                Подробнее
+                <span className="quick-card-more-label">Подробнее</span>
                 <span className="quick-card-arrow" aria-hidden="true">
                   →
                 </span>

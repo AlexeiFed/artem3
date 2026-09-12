@@ -77,9 +77,10 @@ describe("Hero", () => {
     expect(document.querySelector(".hero h1")?.textContent).not.toMatch(
       /алиментыи|имуществав/,
     );
-    expect(document.querySelector(".hero h2.hero-subtitle")?.tagName).toBe(
-      "H2",
+    expect(document.querySelector(".hero p.hero-subtitle")?.tagName).toBe(
+      "P",
     );
+    expect(document.querySelector(".hero h2")).toBeNull();
     expect(document.querySelector(".hero-subtitle")).toHaveTextContent(
       data.subtitle,
     );
@@ -157,11 +158,12 @@ describe("Hero", () => {
     expect(cta).toBeInTheDocument();
     expect(cta).toHaveClass("button");
     expect(cta).not.toHaveClass("button-light");
-    expect(
-      screen.getByText("Конфиденциально. Ответ в течение 1 часа в рабочее время.", {
-        exact: false,
-      }),
-    ).toBeVisible();
+    const disclaimer = document.querySelector(".hero-disclaimer");
+    expect(disclaimer).toHaveTextContent("Оценю вашу ситуацию.");
+    expect(disclaimer).toHaveTextContent(
+      "Ответ в течение 1 часа в рабочее время",
+    );
+    expect(disclaimer?.innerHTML).toMatch(/<br/u);
   });
 
   it("renders the dossier tab over the hero video mark", () => {

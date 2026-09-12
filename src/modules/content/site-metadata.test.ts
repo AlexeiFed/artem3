@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { SITE_DESCRIPTION, buildSiteMetadata } from "./site-metadata";
+import {
+  OG_DESCRIPTION,
+  OG_SITE_NAME,
+  OG_TITLE,
+  SITE_DESCRIPTION,
+  buildSiteMetadata,
+} from "./site-metadata";
 
 const SITE_URL = "https://example.test";
 
@@ -29,8 +35,28 @@ describe("buildSiteMetadata", () => {
       template: "%s — Артём Сысуев",
     });
     expect(metadata.description).toBe(description);
-    expect(metadata.openGraph?.title).toBe(title);
-    expect(metadata.openGraph?.description).toBe(description);
+    expect(metadata.openGraph?.siteName).toBe(OG_SITE_NAME);
+    expect(metadata.openGraph?.title).toBe(OG_TITLE);
+    expect(metadata.openGraph?.description).toBe(OG_DESCRIPTION);
+  });
+
+  it("lets admin Open Graph fields override the share card", () => {
+    const metadata = buildSiteMetadata({
+      siteUrl: SITE_URL,
+      allowIndexing: true,
+      yandexVerificationContent: "",
+      title: "Page title",
+      description: "Page description",
+      ogSiteName: "Артём Сысуев — семейный юрист",
+      ogTitle: "OG title",
+      ogDescription: "OG description",
+    });
+
+    expect(metadata.openGraph?.siteName).toBe(
+      "Артём Сысуев — семейный юрист",
+    );
+    expect(metadata.openGraph?.title).toBe("OG title");
+    expect(metadata.openGraph?.description).toBe("OG description");
   });
 
   it("blocks indexing and still exposes a shareable Open Graph card", () => {
@@ -47,7 +73,7 @@ describe("buildSiteMetadata", () => {
     });
     expect(String(metadata.metadataBase)).toBe(`${SITE_URL}/`);
     expect(metadata.alternates?.canonical).toBe("/");
-    expect(metadata.openGraph?.description).toBe(SITE_DESCRIPTION);
+    expect(metadata.openGraph?.description).toBe(OG_DESCRIPTION);
     expect(metadata.verification).toBeUndefined();
   });
 

@@ -78,10 +78,7 @@ export const seedContent = {
         ],
         cta: { label: "Получить оценку ситуации", target: "#contacts" },
       },
-      seo: {
-        title: DEFAULT_SEO_SETTINGS.title,
-        description: DEFAULT_SEO_SETTINGS.description,
-      },
+      seo: { ...DEFAULT_SEO_SETTINGS },
       hero: {
         eyebrow: "Семейный и имущественный юрист",
         title:

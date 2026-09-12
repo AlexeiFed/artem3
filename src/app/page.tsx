@@ -7,6 +7,7 @@ import {
 import { Contacts, FloatingActions } from "@/components/site/Contacts";
 import { ContractXRay } from "@/components/site/ContractXRay";
 import { Faq } from "@/components/site/Faq";
+import { FaqPageJsonLd } from "@/components/site/FaqPageJsonLd";
 import { Header } from "@/components/site/Header";
 import { Hero } from "@/components/site/Hero";
 import { LegalServiceJsonLd } from "@/components/site/LegalServiceJsonLd";
@@ -29,6 +30,7 @@ export default async function HomePage() {
         contacts={data.contacts}
         description={seo.description}
       />
+      <FaqPageJsonLd items={data.faqs} />
       <Header
         data={data.header}
         address={data.contacts.address}

@@ -1,7 +1,13 @@
 import { z } from "zod";
 
 import { DEFAULT_TERMS_TEXT, OPERATOR_EMAIL } from "./legal-copy";
-import { SITE_DESCRIPTION, SITE_TITLE } from "./site-metadata";
+import {
+  OG_DESCRIPTION,
+  OG_SITE_NAME,
+  OG_TITLE,
+  SITE_DESCRIPTION,
+  SITE_TITLE,
+} from "./site-metadata";
 import { extractYandexVerificationContent } from "./yandex-verification";
 
 const shortText = z.string().trim().min(1).max(160);
@@ -49,11 +55,13 @@ export const DEFAULT_HERO_OFFER_BULLETS = [
 ] as const;
 
 export const DEFAULT_HERO_DISCLAIMER =
-  "Конфиденциально. Ответ в течение 1 часа в рабочее время.";
+  "Оценю вашу ситуацию.\nОтвет в течение 1 часа в рабочее время";
 
 const LEGACY_HERO_DISCLAIMERS: readonly string[] = [
   "Опишите ваш вопрос — оценю перспективы и подскажу возможные действия.",
   "Первая консультация — бесплатная. Результат по делу заранее не гарантируется.",
+  "Конфиденциально. Ответ в течение 1 часа в рабочее время.",
+  "Оценю вашу ситуацию. Ответ в течение 1 часа в рабочее время",
 ];
 
 /** @deprecated слот оффера — используйте DEFAULT_HERO_OFFER_BULLETS */
@@ -165,12 +173,18 @@ export const VkEmbedSchema = z.object({
 export const DEFAULT_SEO_SETTINGS = {
   title: SITE_TITLE,
   description: SITE_DESCRIPTION,
+  ogSiteName: OG_SITE_NAME,
+  ogTitle: OG_TITLE,
+  ogDescription: OG_DESCRIPTION,
 } as const;
 
 export const SeoSettingsSchema = z
   .object({
     title: seoTitleText,
     description: seoDescriptionText,
+    ogSiteName: seoTitleText.default(OG_SITE_NAME),
+    ogTitle: seoTitleText.default(OG_TITLE),
+    ogDescription: seoDescriptionText.default(OG_DESCRIPTION),
   })
   .default(DEFAULT_SEO_SETTINGS);
 

@@ -14,21 +14,25 @@ interface LoginFormProps {
 export function LoginForm({ nextPath }: LoginFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     setError(null);
     setSubmitting(true);
-    const form = new FormData(event.currentTarget);
+
+    const form = event.currentTarget;
+    const emailInput = form.elements.namedItem("email");
+    const passwordInput = form.elements.namedItem("password");
+    const email = emailInput instanceof HTMLInputElement ? emailInput.value : "";
+    const password =
+      passwordInput instanceof HTMLInputElement ? passwordInput.value : "";
 
     try {
       const response = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: form.get("email"),
-          password: form.get("password"),
-        }),
+        body: JSON.stringify({ email, password }),
       });
 
       if (!response.ok) {
@@ -78,16 +82,33 @@ export function LoginForm({ nextPath }: LoginFormProps) {
         <label className="font-sans text-sm text-secondary" htmlFor="password">
           Пароль
         </label>
-        <input
-          className="rounded-control border border-sage bg-background px-5 py-3 text-primary outline-none focus-visible:ring-2 focus-visible:ring-forest"
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          minLength={14}
-          maxLength={200}
-        />
+        <div className="relative">
+          <input
+            className="w-full rounded-control border border-sage bg-background py-3 pr-14 pl-5 text-primary outline-none focus-visible:ring-2 focus-visible:ring-forest"
+            id="password"
+            name="password"
+            type={passwordVisible ? "text" : "password"}
+            autoComplete="current-password"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            required
+            minLength={14}
+            maxLength={200}
+          />
+          <button
+            className="absolute top-1/2 right-3 -translate-y-1/2 rounded-control p-1 text-secondary outline-none focus-visible:ring-2 focus-visible:ring-forest"
+            type="button"
+            aria-label={passwordVisible ? "Скрыть пароль" : "Показать пароль"}
+            aria-pressed={passwordVisible}
+            aria-controls="password"
+            onClick={() => {
+              setPasswordVisible((visible) => !visible);
+            }}
+          >
+            <PasswordVisibilityIcon visible={passwordVisible} />
+          </button>
+        </div>
       </div>
 
       {error ? (
@@ -104,5 +125,42 @@ export function LoginForm({ nextPath }: LoginFormProps) {
         {submitting ? "Входим…" : "Войти"}
       </button>
     </form>
+  );
+}
+
+function PasswordVisibilityIcon({ visible }: { visible: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="22"
+      height="22"
+      aria-hidden="true"
+    >
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M2.6 12s3.6-7 9.4-7 9.4 7 9.4 7-3.6 7-9.4 7-9.4-7-9.4-7z"
+      />
+      <circle
+        cx="12"
+        cy="12"
+        r="3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      {visible ? (
+        <path
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          d="M4 20 20 4"
+        />
+      ) : null}
+    </svg>
   );
 }

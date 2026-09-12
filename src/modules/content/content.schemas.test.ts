@@ -128,8 +128,52 @@ describe("HeroSettingsSchema", () => {
     });
 
     expect(parsed.hero.disclaimer).toBe(
-      "Конфиденциально. Ответ в течение 1 часа в рабочее время.",
+      "Оценю вашу ситуацию.\nОтвет в течение 1 часа в рабочее время",
     );
+  });
+
+  it("migrates the confidential disclaimer without touching other admin hero copy", () => {
+    const settings = createValidHeroSettings();
+    const parsed = HeroSettingsSchema.parse({
+      ...settings,
+      hero: {
+        ...settings.hero,
+        title: "Заголовок из админки",
+        subtitle: "Развод • Алименты • Имущество • Дети",
+        disclaimer:
+          "Конфиденциально. Ответ в течение 1 часа в рабочее время.",
+      },
+    });
+
+    expect(parsed.hero.title).toBe("Заголовок из админки");
+    expect(parsed.hero.subtitle).toBe(
+      "Развод • Алименты • Имущество • Дети",
+    );
+    expect(parsed.hero.disclaimer).toBe(
+      "Оценю вашу ситуацию.\nОтвет в течение 1 часа в рабочее время",
+    );
+  });
+
+  it("fills Open Graph defaults without overwriting admin Title and Description", () => {
+    const settings = createValidHeroSettings();
+    const parsed = HeroSettingsSchema.parse({
+      ...settings,
+      seo: {
+        title: "Семейный юрист в Хабаровске — Артём Сысуев",
+        description:
+          "Семейный юрист в Хабаровске. 11+ лет практики, 380+ клиентов. Цена известна заранее. Ответ в течение часа.",
+      },
+    });
+
+    expect(parsed.seo.title).toBe(
+      "Семейный юрист в Хабаровске — Артём Сысуев",
+    );
+    expect(parsed.seo.description).toContain("Ответ в течение часа");
+    expect(parsed.seo.ogSiteName).toBe("Артём Сысуев — семейный юрист");
+    expect(parsed.seo.ogTitle).toBe(
+      "Семейный юрист в Хабаровске — развод, алименты, раздел имущества",
+    );
+    expect(parsed.seo.ogDescription).toContain("Ответ в течение 1 часа");
   });
 
   it("accepts empty offer bullets so the list can be omitted", () => {
@@ -305,6 +349,22 @@ describe("ServiceSchema", () => {
         }),
       ).previewSituations,
     ).toEqual(["Без согласия супруга", "При наличии детей"]);
+  });
+
+  it("keeps hero markup in card preview lines", () => {
+    expect(
+      ServiceSchema.parse(
+        serviceContentInput({
+          previewSituations: [
+            '<span class="text-brass">без согласия</span> супруга',
+            "При наличии детей",
+          ],
+        }),
+      ).previewSituations,
+    ).toEqual([
+      '<span class="text-brass">без согласия</span> супруга',
+      "При наличии детей",
+    ]);
   });
 });
 

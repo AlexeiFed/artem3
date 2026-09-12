@@ -76,7 +76,9 @@ describe("mergeSeedHero", () => {
       },
     };
 
-    expect(mergeSeedHero(stored, seedHero).seo).toEqual(stored.seo);
+    const merged = mergeSeedHero(stored, seedHero);
+    expect(merged.seo.title).toBe(stored.seo.title);
+    expect(merged.seo.description).toBe(stored.seo.description);
   });
 
   it("falls back to seed when stored settings are invalid", () => {

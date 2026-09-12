@@ -19,6 +19,8 @@ import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["cyrillic", "latin"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
   variable: "--font-cormorant",
   display: "swap",
 });
@@ -50,6 +52,9 @@ export async function generateMetadata(): Promise<Metadata> {
     yandexVerificationContent: analytics.yandexVerificationContent,
     title: seo.title,
     description: seo.description,
+    ogSiteName: seo.ogSiteName,
+    ogTitle: seo.ogTitle,
+    ogDescription: seo.ogDescription,
   });
 }
 

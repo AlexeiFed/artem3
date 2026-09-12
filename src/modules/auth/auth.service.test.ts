@@ -169,6 +169,18 @@ describe("auth service", () => {
     );
   });
 
+  it("verifies a password typed on a Russian keyboard as the latin original", async () => {
+    const verify = vi.fn().mockResolvedValue(true);
+    const deps = dependencies({ verifyPassword: verify });
+
+    await createAuthService(deps).login(
+      { email: "admin@example.com", password: "сщккусе-зфыыцщкв" },
+      { clientIp: "203.0.113.5", now: new Date("2026-07-12T10:00:00.000Z") },
+    );
+
+    expect(verify).toHaveBeenCalledWith(USER.passwordHash, "correct-password");
+  });
+
   it("attaches remaining login attempts on invalid credentials", async () => {
     const verifyPassword = vi.fn().mockResolvedValue(false);
     const deps = dependencies({

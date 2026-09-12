@@ -7,6 +7,7 @@ export const designTokens = {
     accentForest: "#2F4A36",
     accentBrass: "#C5A880",
     accentBrassDark: "#8C6840",
+    surfaceInk: "#3F4942",
     error: "#B33A3A",
   },
   motion: {
@@ -33,6 +34,7 @@ export type DesignTokenCssVariables = Readonly<{
   "--token-color-accent-forest": string;
   "--token-color-accent-brass": string;
   "--token-color-accent-brass-dark": string;
+  "--token-color-surface-ink": string;
   "--token-color-error": string;
   "--token-motion-ease-cinematic": string;
   "--token-motion-duration-fast": string;
@@ -52,6 +54,7 @@ export const designTokenCssVariables: DesignTokenCssVariables = {
   "--token-color-accent-forest": designTokens.color.accentForest,
   "--token-color-accent-brass": designTokens.color.accentBrass,
   "--token-color-accent-brass-dark": designTokens.color.accentBrassDark,
+  "--token-color-surface-ink": designTokens.color.surfaceInk,
   "--token-color-error": designTokens.color.error,
   "--token-motion-ease-cinematic": `cubic-bezier(${designTokens.motion.easeCinematic.join(
     ", ",

@@ -25,6 +25,10 @@ describe("QuickAccess", () => {
     expect(razvod).toHaveTextContent("Без согласия супруга");
     expect(razvod).toHaveTextContent("При наличии детей");
     expect(razvod).toHaveTextContent("Подробнее");
+    expect(razvod.querySelector(".quick-card-more-label")).toHaveTextContent(
+      "Подробнее",
+    );
+    expect(razvod.querySelector(".quick-card-arrow")).toHaveTextContent("→");
     expect(razvod.textContent).not.toMatch(/•/u);
     expect(razvod).not.toHaveTextContent(
       "Развод без согласия супруга",
@@ -90,5 +94,33 @@ describe("QuickAccess", () => {
     const card = screen.getByRole("link", { name: /Земельные споры/u });
     expect(card).toHaveTextContent("Подробнее");
     expect(card).not.toHaveTextContent("Без согласия супруга");
+  });
+
+  it("renders admin brass markup inside card preview lines", () => {
+    const data = getPreviewLandingData();
+    const custom = {
+      ...data,
+      services: data.services.map((service) =>
+        service.slug === "razvod"
+          ? {
+              ...service,
+              previewSituations: [
+                '<span class="text-brass">без согласия</span> супруга',
+                "При наличии детей",
+              ] as [string, string],
+            }
+          : service,
+      ),
+    };
+
+    render(
+      <QuickAccess items={custom.quickLinks} services={custom.services} />,
+    );
+
+    const razvod = screen.getByRole("link", { name: /Расторжение брака/u });
+    const highlight = razvod.querySelector(".quick-card-situations .text-brass");
+    expect(highlight).toHaveTextContent("без согласия");
+    expect(razvod).toHaveTextContent("без согласия супруга");
+    expect(razvod.innerHTML).not.toContain("onclick");
   });
 });

@@ -6,6 +6,7 @@ import { EntityEditor } from "@/components/admin/EntityEditor";
 import { MediaUploader } from "@/components/admin/MediaUploader";
 import { SortableEntityList } from "@/components/admin/SortableEntityList";
 import { AdminApiErrorSchema } from "@/modules/content/admin-content.schemas";
+import { sanitizeHeroMarkup } from "@/lib/hero-markup";
 
 export interface ServiceEditorItem {
   id: string;
@@ -230,13 +231,13 @@ export function ServicesEditor({
               {
                 name: "cardPreview1",
                 label: "Карточка «С чем помочь» — строка 1",
-                type: "text",
-                hint: "Короткий превью-текст на лендинге, не дублирует «Практику».",
+                type: "richtext",
+                hint: "Короткий превью-текст на лендинге. Выделите ключ кнопкой «Латунь» — как в Hero.",
               },
               {
                 name: "cardPreview2",
                 label: "Карточка «С чем помочь» — строка 2",
-                type: "text",
+                type: "richtext",
               },
               {
                 name: "situationsText",
@@ -326,8 +327,8 @@ export function ServicesEditor({
                 throw new Error("Нужно от 3 до 6 пунктов списка (по одному в строке)");
               }
               const previewSituations: [string, string] = [
-                String(value.cardPreview1 ?? "").trim(),
-                String(value.cardPreview2 ?? "").trim(),
+                sanitizeHeroMarkup(String(value.cardPreview1 ?? "")),
+                sanitizeHeroMarkup(String(value.cardPreview2 ?? "")),
               ];
               const response = await fetch(
                 `/api/admin/content/services/${selected.id}`,

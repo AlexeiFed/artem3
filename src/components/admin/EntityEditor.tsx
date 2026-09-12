@@ -3,9 +3,16 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { AdminFormError } from "./format-admin-error";
+import { RichTextEditor } from "./RichTextEditor";
 import { SaveBar } from "./SaveBar";
 
-export type EntityFieldType = "text" | "textarea" | "number" | "checkbox" | "url";
+export type EntityFieldType =
+  | "text"
+  | "textarea"
+  | "number"
+  | "checkbox"
+  | "url"
+  | "richtext";
 
 export interface EntityField {
   name: string;
@@ -156,7 +163,16 @@ export function EntityEditor({
             {field.hint ? (
               <p className="font-sans text-xs text-secondary">{field.hint}</p>
             ) : null}
-            {field.type === "textarea" ? (
+            {field.type === "richtext" ? (
+              <RichTextEditor
+                id={fieldId}
+                label={field.label}
+                multiline={false}
+                className={`rounded-control border bg-background px-4 py-3 text-primary outline-none focus-visible:ring-2 ${controlClass}`}
+                value={typeof current === "string" ? current : ""}
+                onChange={(next) => updateField(field.name, next)}
+              />
+            ) : field.type === "textarea" ? (
               <textarea
                 id={fieldId}
                 aria-invalid={hasError}

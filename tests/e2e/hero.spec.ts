@@ -22,9 +22,7 @@ for (const viewport of viewports) {
       page.locator("#main").getByRole("button", {
         name: "Получить оценку ситуации",
       }),
-      page.getByText("Конфиденциально. Ответ в течение 1 часа в рабочее время.", {
-        exact: false,
-      }),
+      page.getByText("Оценю вашу ситуацию.", { exact: false }),
       page.getByRole("list", { name: "Практика в цифрах" }),
     ];
 

@@ -32,6 +32,9 @@ const HERO_FIELD_LABELS: Record<string, string> = {
   "hero.disclaimer": "Дисклеймер под CTA",
   "seo.title": "Title",
   "seo.description": "Description",
+  "seo.ogSiteName": "og:site_name",
+  "seo.ogTitle": "og:title",
+  "seo.ogDescription": "og:description",
   "servicesIntro.eyebrow": "Практика — надзаголовок",
   "servicesIntro.title": "Практика — заголовок",
 };
@@ -44,7 +47,7 @@ export function HeroLandingEditor({
   const [error, setError] = useState(loadError);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
-  const seo = hero.seo ?? DEFAULT_SEO_SETTINGS;
+  const seo = { ...DEFAULT_SEO_SETTINGS, ...hero.seo };
 
   function patchHero(
     updater: (current: HeroSettings) => HeroSettings,
@@ -125,6 +128,60 @@ export function HeroLandingEditor({
           <span className="text-xs">
             До 320 символов. Сейчас {seo.description.length}.
           </span>
+        </label>
+        <p className="font-sans text-sm text-secondary">
+          Превью ссылки в Telegram / WhatsApp / VK. Не дублирует Title.
+        </p>
+        <label className="grid gap-2 font-sans text-sm text-secondary">
+          og:site_name
+          <input
+            className="rounded-card border border-sage/40 bg-background px-4 py-3 text-primary"
+            value={seo.ogSiteName}
+            maxLength={200}
+            onChange={(event) =>
+              patchHero((current) => ({
+                ...current,
+                seo: {
+                  ...(current.seo ?? DEFAULT_SEO_SETTINGS),
+                  ogSiteName: event.target.value,
+                },
+              }))
+            }
+          />
+        </label>
+        <label className="grid gap-2 font-sans text-sm text-secondary">
+          og:title
+          <input
+            className="rounded-card border border-sage/40 bg-background px-4 py-3 text-primary"
+            value={seo.ogTitle}
+            maxLength={200}
+            onChange={(event) =>
+              patchHero((current) => ({
+                ...current,
+                seo: {
+                  ...(current.seo ?? DEFAULT_SEO_SETTINGS),
+                  ogTitle: event.target.value,
+                },
+              }))
+            }
+          />
+        </label>
+        <label className="grid gap-2 font-sans text-sm text-secondary">
+          og:description
+          <textarea
+            className="min-h-24 rounded-card border border-sage/40 bg-background px-4 py-3 text-primary"
+            value={seo.ogDescription}
+            maxLength={320}
+            onChange={(event) =>
+              patchHero((current) => ({
+                ...current,
+                seo: {
+                  ...(current.seo ?? DEFAULT_SEO_SETTINGS),
+                  ogDescription: event.target.value,
+                },
+              }))
+            }
+          />
         </label>
       </section>
 

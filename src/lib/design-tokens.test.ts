@@ -12,6 +12,7 @@ describe("design tokens", () => {
       "--token-color-accent-forest": designTokens.color.accentForest,
       "--token-color-accent-brass": designTokens.color.accentBrass,
       "--token-color-accent-brass-dark": designTokens.color.accentBrassDark,
+      "--token-color-surface-ink": designTokens.color.surfaceInk,
       "--token-color-error": designTokens.color.error,
       "--token-motion-ease-cinematic": `cubic-bezier(${designTokens.motion.easeCinematic.join(
         ", ",

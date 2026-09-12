@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { DEFAULT_SEO_SETTINGS } from "./content.schemas";
 import { SITE_DESCRIPTION, SITE_TITLE } from "./site-metadata";
 import { resolvePublicSeo } from "./resolve-public-seo";
 
@@ -15,6 +16,9 @@ describe("resolvePublicSeo", () => {
     ).toEqual({
       title: "Семейный юрист в Хабаровске",
       description: "Оценю перспективы дела в Хабаровске.",
+      ogSiteName: DEFAULT_SEO_SETTINGS.ogSiteName,
+      ogTitle: DEFAULT_SEO_SETTINGS.ogTitle,
+      ogDescription: DEFAULT_SEO_SETTINGS.ogDescription,
     });
   });
 
@@ -22,6 +26,9 @@ describe("resolvePublicSeo", () => {
     expect(resolvePublicSeo({})).toEqual({
       title: SITE_TITLE,
       description: SITE_DESCRIPTION,
+      ogSiteName: DEFAULT_SEO_SETTINGS.ogSiteName,
+      ogTitle: DEFAULT_SEO_SETTINGS.ogTitle,
+      ogDescription: DEFAULT_SEO_SETTINGS.ogDescription,
     });
   });
 });

@@ -14,6 +14,7 @@ interface RichTextEditorProps {
   multiline?: boolean;
   className?: string;
   label: string;
+  id?: string;
 }
 
 export function RichTextEditor({
@@ -22,6 +23,7 @@ export function RichTextEditor({
   multiline = true,
   className = "",
   label,
+  id,
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
 
@@ -112,6 +114,7 @@ export function RichTextEditor({
         contentEditable
         suppressContentEditableWarning
         className={`whitespace-pre-wrap empty:min-h-[1.5lh] ${className}`}
+        {...(id === undefined ? {} : { id })}
         onInput={commit}
         onBlur={commit}
         onPaste={(event) => {

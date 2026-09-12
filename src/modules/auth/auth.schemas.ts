@@ -1,16 +1,24 @@
 import { z } from "zod";
 
+import { normalizeAdminPassword } from "./normalize-password";
+
+export const AdminPasswordSchema = z
+  .string()
+  .min(14)
+  .max(200)
+  .transform(normalizeAdminPassword);
+
 export const LoginInputSchema = z
   .object({
     email: z.string().trim().toLowerCase().email().max(254),
-    password: z.string().min(14).max(200),
+    password: AdminPasswordSchema,
   })
   .strict();
 
 export const ChangePasswordInputSchema = z
   .object({
-    currentPassword: z.string().min(14).max(200),
-    newPassword: z.string().min(14).max(200),
+    currentPassword: AdminPasswordSchema,
+    newPassword: AdminPasswordSchema,
   })
   .strict()
   .superRefine((value, context) => {

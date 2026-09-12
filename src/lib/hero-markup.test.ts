@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  disclaimerToHtml,
   heroMarkupToEditorHtml,
   sanitizeHeroMarkup,
   stripHeroMarkup,
@@ -39,5 +40,22 @@ describe("hero markup", () => {
         'Семейный юрист <span class="text-brass">в Хабаровске</span>',
       ),
     ).toBe("Семейный юрист в Хабаровске");
+  });
+
+  it("breaks a one-line disclaimer after the first sentence and keeps brass", () => {
+    expect(
+      disclaimerToHtml(
+        "Оценю вашу ситуацию. Ответ в течение 1 часа в рабочее время.",
+      ),
+    ).toBe(
+      "Оценю вашу ситуацию.<br>Ответ в течение 1 часа в рабочее время.",
+    );
+    expect(
+      disclaimerToHtml(
+        'Оценю вашу ситуацию. Ответ в течение <span class="text-brass">1 часа</span> в рабочее время.',
+      ),
+    ).toBe(
+      'Оценю вашу ситуацию.<br>Ответ в течение <span class="text-brass">1 часа</span> в рабочее время.',
+    );
   });
 });

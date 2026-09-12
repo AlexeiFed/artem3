@@ -14,6 +14,7 @@ import {
 import {
   sanitizeHeroMarkup,
   stripHeroMarkup,
+  disclaimerToHtml,
 } from "@/lib/hero-markup";
 import type { LandingData } from "@/modules/content/content.types";
 
@@ -250,7 +251,7 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
           </h1>
 
           {data.subtitle ? (
-            <motion.h2
+            <motion.p
               className="hero-subtitle"
               initial={shouldReduceMotion ? false : { opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -301,7 +302,7 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
           <p
             className="hero-disclaimer"
             dangerouslySetInnerHTML={{
-              __html: sanitizeHeroMarkup(data.disclaimer),
+              __html: disclaimerToHtml(data.disclaimer),
             }}
           />
         </div>
