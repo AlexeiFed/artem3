@@ -122,7 +122,12 @@ describe("ServicesSection", () => {
     const uploaded = document.querySelector(
       ".service-card aside img.service-icon",
     );
-    expect(uploaded).toHaveAttribute("src", "/media/custom-service-icon.png");
+    expect(uploaded).toHaveAttribute(
+      "src",
+      expect.stringContaining(
+        "/_next/image?url=%2Fmedia%2Fcustom-service-icon.png",
+      ),
+    );
     expect(uploaded).toHaveAttribute("alt", "");
   });
 

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { ReactNode } from "react";
 
 /**
@@ -51,21 +52,28 @@ const ICONS: Record<string, ReactNode> = {
   ),
 };
 
+const SERVICE_ICON_PX = 112;
+
 export function ServiceIcon({
   slug,
   iconUrl,
+  sizes = `${SERVICE_ICON_PX}px`,
 }: {
   slug: string;
   iconUrl?: string | null;
+  sizes?: string;
 }) {
   if (iconUrl) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element -- CMS icon, local or HTTPS
-      <img
+      <Image
         className="service-icon service-icon-image"
         src={iconUrl}
         alt=""
         aria-hidden="true"
+        width={SERVICE_ICON_PX}
+        height={SERVICE_ICON_PX}
+        sizes={sizes}
+        unoptimized={iconUrl.startsWith("https://")}
       />
     );
   }

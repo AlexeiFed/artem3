@@ -38,7 +38,6 @@ const getServerReducedMotionSnapshot = () => false;
 const { durationBase, durationFast, durationSlow, easeCinematic } =
   designTokens.motion;
 const titleDelay = (durationFast * 2) / 3;
-const titleStagger = durationFast / 3;
 const subtitleDelay = durationFast + titleDelay;
 const dossierDelay = durationBase + durationFast / 2;
 const metricsDelay = dossierDelay + durationFast;
@@ -97,13 +96,23 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
   const [videoFailed, setVideoFailed] = useState(false);
   const [posterFailed, setPosterFailed] = useState(false);
   const [videoPlaying, setVideoPlaying] = useState(false);
+  const [videoArmed, setVideoArmed] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const shouldReduceMotion = hydrated && reduced;
   const renderVideo = hydrated && !shouldReduceMotion;
+  const showVideo = renderVideo && videoArmed;
   const offerBullets = data.offerBullets.filter(Boolean);
 
   useEffect(() => {
     if (!renderVideo) return;
+
+    // Не requestIdleCallback: Lenis крутит rAF, idle может не наступить.
+    const timer = window.setTimeout(() => setVideoArmed(true), 0);
+    return () => window.clearTimeout(timer);
+  }, [renderVideo]);
+
+  useEffect(() => {
+    if (!showVideo) return;
     const video = videoRef.current;
     if (!video) return;
 
@@ -126,7 +135,7 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
       video.removeEventListener("canplay", attemptPlay);
       video.removeEventListener("playing", attemptPlay);
     };
-  }, [renderVideo]);
+  }, [showVideo]);
 
   useEffect(() => {
     const hero = document.getElementById("main");
@@ -179,7 +188,7 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
           />
         )}
 
-        {renderVideo ? (
+        {showVideo ? (
           <video
             ref={videoRef}
             data-testid="hero-video"
@@ -188,29 +197,29 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
               videoFailed ? "is-failed" : videoPlaying ? "is-playing" : undefined
             }
             src={data.video.fallbackUrl}
-            poster={data.video.posterUrl}
             autoPlay
             muted
             loop
             playsInline
-            preload="auto"
+            preload="metadata"
             tabIndex={-1}
             {...{ "webkit-playsinline": "" }}
             onError={() => setVideoFailed(true)}
           />
         ) : null}
+
+        <motion.div
+          className="hero-case-cover"
+          aria-hidden="true"
+          initial={
+            shouldReduceMotion ? false : { clipPath: "inset(0 0 0 0)" }
+          }
+          animate={{ clipPath: "inset(0 100% 0 0)" }}
+          transition={{ duration: durationSlow, ease: easeCinematic }}
+        />
       </div>
 
       <div className="hero-overlay" aria-hidden="true" />
-      <motion.div
-        className="hero-case-cover"
-        aria-hidden="true"
-        initial={
-          shouldReduceMotion ? false : { clipPath: "inset(0 0 0 0)" }
-        }
-        animate={{ clipPath: "inset(0 100% 0 0)" }}
-        transition={{ duration: durationSlow, ease: easeCinematic }}
-      />
 
       <div className="hero-content shell">
         <div className="hero-copy">
@@ -229,18 +238,10 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
 
           <h1 aria-label={stripHeroMarkup(data.title)}>
             {titleLines(data.title).map((line, index, lines) => (
-              <motion.span
+              <span
                 aria-hidden="true"
                 className={`hero-title-line${line.place ? " hero-title-place" : ""}${line.wrap ? " hero-title-line-wrap" : ""}`}
                 key={`${index}-${line.text}`}
-                initial={
-                  shouldReduceMotion ? false : { opacity: 0, y: "55%" }
-                }
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  delay: titleDelay + index * titleStagger,
-                  duration: durationBase,
-                }}
                 dangerouslySetInnerHTML={{
                   __html: sanitizeHeroMarkup(
                     index < lines.length - 1 ? `${line.text} ` : line.text,

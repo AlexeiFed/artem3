@@ -2,7 +2,7 @@
 
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -56,6 +56,30 @@ describe("Hero", () => {
 
     expect(html).not.toContain('data-testid="hero-video"');
     expect(html).toContain('data-testid="hero-poster"');
+  });
+
+  it("paints the title on the server without hiding it for LCP", () => {
+    const html = renderToString(
+      <Hero data={getPreviewLandingData().hero} />,
+    );
+    const titleMarkup = html.match(
+      /<h1[\s\S]*?<\/h1>/u,
+    )?.[0];
+
+    expect(titleMarkup).toBeDefined();
+    expect(titleMarkup).toContain("hero-title-line");
+    expect(titleMarkup).not.toMatch(/opacity:\s*0/u);
+    expect(titleMarkup).not.toMatch(/translateY/u);
+  });
+
+  it("keeps the curtain inside the media stage so it cannot cover the title", () => {
+    const { container } = renderHero();
+    const stage = screen.getByTestId("hero-stage");
+
+    expect(stage.querySelector(".hero-case-cover")).not.toBeNull();
+    expect(
+      container.querySelector(".hero-content .hero-case-cover"),
+    ).toBeNull();
   });
 
   it("renders the kicker and offer bullets as separate lines", () => {
@@ -191,22 +215,27 @@ describe("Hero", () => {
     ).toEqual(["0", "0", "0"]);
   });
 
-  it("starts muted playback after hydration", () => {
+  it("starts muted playback after hydration", async () => {
     renderHero();
 
-    expect(HTMLVideoElement.prototype.play).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(HTMLVideoElement.prototype.play).toHaveBeenCalled();
+    });
   });
 
-  it("renders the local muted looping video without VK or sound controls", () => {
+  it("renders the local muted looping video without VK or sound controls", async () => {
     const { data } = renderHero();
-    const video = screen.getByTestId("hero-video");
+
+    expect(screen.queryByTestId("hero-video")).not.toBeInTheDocument();
+
+    const video = await screen.findByTestId("hero-video");
 
     expect(video).toHaveAttribute("src", data.video.fallbackUrl);
-    expect(video).toHaveAttribute("poster", data.video.posterUrl);
+    expect(video).not.toHaveAttribute("poster");
     expect(video).toHaveAttribute("autoplay");
     expect(video).toHaveAttribute("loop");
     expect(video).toHaveAttribute("playsinline");
-    expect(video).toHaveAttribute("preload", "auto");
+    expect(video).toHaveAttribute("preload", "metadata");
     expect(video).toHaveAttribute("muted");
     expect(video).toHaveProperty("muted", true);
     expect(screen.queryByTitle(/VK-плеер/u)).not.toBeInTheDocument();
@@ -215,10 +244,10 @@ describe("Hero", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("keeps the poster when video loading fails", () => {
+  it("keeps the poster when video loading fails", async () => {
     renderHero();
 
-    fireEvent.error(screen.getByTestId("hero-video"));
+    fireEvent.error(await screen.findByTestId("hero-video"));
 
     expect(screen.getByTestId("hero-video")).toHaveAttribute(
       "data-video-failed",

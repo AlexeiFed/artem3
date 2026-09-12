@@ -28,6 +28,9 @@ const nextConfig: NextConfig = {
   output: "standalone",
   serverExternalPackages: ["argon2"],
   allowedDevOrigins: ["127.0.0.1"],
+  images: {
+    formats: ["image/avif", "image/webp"],
+  },
   async rewrites() {
     return [
       {

@@ -32,6 +32,7 @@ export function QuickAccess({
                 <ServiceIcon
                   slug={item.slug}
                   iconUrl={service?.iconUrl ?? null}
+                  sizes="32px"
                 />
                 <span className="quick-card-num" aria-hidden="true">
                   {String(index + 1).padStart(2, "0")}

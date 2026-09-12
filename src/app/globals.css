@@ -561,6 +561,8 @@ h2 {
 }
 
 .hero-stage {
+  z-index: 0;
+  isolation: isolate;
   background: var(--token-color-accent-forest);
 }
 

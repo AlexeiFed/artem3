@@ -279,7 +279,8 @@ test("uses the local muted loop", async ({ page }) => {
 
   const video = page.getByTestId("hero-video");
   await expect(video).toHaveAttribute("src", "/media/artem-hero-loop.mp4");
-  await expect(video).toHaveAttribute("poster", "/media/artem-hero-poster.jpg");
+  await expect(video).not.toHaveAttribute("poster");
+  await expect(video).toHaveAttribute("preload", "metadata");
   await expect(video).toHaveJSProperty("muted", true);
   await expect(video).toHaveJSProperty("loop", true);
 });
