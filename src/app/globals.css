@@ -24,8 +24,11 @@
 
 :root {
   --site-header-offset: 5.5rem;
-  --site-shell-max: 82rem;
+  --site-shell-max: 96rem;
   --site-shell-gutter: 2rem;
+  --site-rail-inset: 1.25rem;
+  --site-rail-width: calc(2.85rem + 1.2rem + 2px);
+  --site-rail-gap: 1rem;
   /* fallback до ResizeObserver: ~3 ряда табов на мобилке */
   --site-tabs-offset: 10.5rem;
   --site-section-pad: clamp(3.75rem, 7vw, 6.5rem);
@@ -161,7 +164,10 @@ h2 {
 }
 
 .shell {
-  width: min(100% - 4rem, 82rem);
+  width: min(
+    100% - (2 * var(--site-shell-gutter)),
+    var(--site-shell-max)
+  );
   margin-inline: auto;
 }
 
@@ -532,23 +538,33 @@ h2 {
   color: var(--token-color-background);
 }
 
+.hero-content {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  min-height: 100svh;
+  align-items: flex-start;
+  padding-block: clamp(7rem, 17vh, 10rem) 11rem;
+}
+
 @media (min-width: 48rem) {
   .hero {
-    height: 100dvh;
-    max-height: 100dvh;
+    min-height: var(--hero-visual-height, 100dvh);
+    height: var(--hero-visual-height, 100dvh);
+    max-height: var(--hero-visual-height, 100dvh);
   }
 
   .hero-content {
-    height: 100dvh;
+    height: var(--hero-visual-height, 100dvh);
     min-height: 0;
-    max-height: 100dvh;
+    max-height: var(--hero-visual-height, 100dvh);
     padding-top: calc(var(--site-header-offset) + 3.25rem);
     padding-bottom: 0;
   }
 
   .hero-dossier,
   .hero-dossier-rule {
-    bottom: 1.5rem;
+    bottom: max(1.5rem, var(--hero-chrome-gutter, 1.5rem));
   }
 }
 
@@ -670,15 +686,6 @@ h2 {
   transform-origin: right;
 }
 
-.hero-content {
-  position: relative;
-  z-index: 3;
-  display: flex;
-  min-height: 100svh;
-  align-items: flex-start;
-  padding-block: clamp(7rem, 17vh, 10rem) 11rem;
-}
-
 .hero-copy {
   width: min(53%, 46rem);
 }
@@ -775,10 +782,11 @@ h2 {
   line-height: 1.5;
 }
 
-/* Правый край = как у .contact-rail (1.25rem от viewport), не впритык к экрану */
+/* Правый край = как у рельса: 1.25rem от viewport, чтобы закрыть метку на видео.
+   Карточки/шапка уже уже — плашка внизу героя с рельсом не пересекается. */
 .hero-dossier {
   position: absolute;
-  right: calc((100% - 100vw) / 2 + 1.25rem);
+  right: calc((100% - 100vw) / 2 + var(--site-rail-inset));
   bottom: 1.5rem;
   left: auto;
   z-index: 2;
@@ -897,7 +905,7 @@ h2 {
   text-transform: uppercase;
 }
 
-@media (min-width: 48rem) and (max-height: 52rem) {
+@media (min-width: 48rem) and (max-height: 64rem) {
   .hero-content {
     padding-top: calc(var(--site-header-offset) + 2.25rem);
   }
@@ -925,7 +933,7 @@ h2 {
   }
 }
 
-@media (min-width: 48rem) and (min-height: 56rem) {
+@media (min-width: 48rem) and (min-height: 70rem) {
   .hero-content {
     padding-top: calc(var(--site-header-offset) + 3.75rem);
   }
@@ -956,7 +964,7 @@ h2 {
 .quick-grid {
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .quick-grid[data-count="1"] {
@@ -3147,39 +3155,18 @@ h2 {
 
 @media (min-width: 48rem) {
   .shell {
-    width: min(100% - 4rem, 82rem);
+    width: min(
+      100% - (2 * var(--site-shell-gutter)),
+      var(--site-shell-max)
+    );
   }
 
   .quick-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .quick-grid[data-count="1"] {
     grid-template-columns: minmax(0, 22rem);
-  }
-
-  .quick-grid[data-count="2"] {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .quick-grid[data-count="4"] {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .quick-grid[data-count="5"] {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-
-  .quick-grid[data-count="5"] > .quick-card:nth-child(-n + 3) {
-    grid-column: span 2;
-  }
-
-  .quick-grid[data-count="5"] > .quick-card:nth-child(n + 4) {
-    grid-column: span 3;
-  }
-
-  .quick-grid[data-count="6"] {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .quick-card {
@@ -3215,36 +3202,6 @@ h2 {
   .review-carousel article {
     justify-content: space-between;
     padding: 1.5rem;
-  }
-
-  /* 7: 4 + 3 без «хвоста» */
-  .quick-grid[data-count="7"] {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-  }
-
-  .quick-grid[data-count="7"] > .quick-card:nth-child(-n + 4) {
-    grid-column: span 3;
-  }
-
-  .quick-grid[data-count="7"] > .quick-card:nth-child(n + 5) {
-    grid-column: span 4;
-  }
-
-  .quick-grid[data-count="8"] {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .quick-grid[data-count="9"] {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .quick-grid[data-count="10"] {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-
-  .quick-grid[data-count="11"],
-  .quick-grid[data-count="12"] {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .rating-row {
@@ -3284,10 +3241,72 @@ h2 {
 }
 
 @media (min-width: 64rem) {
-  /* Как у рельса и плашки: 1.25rem от края viewport */
-  .site-header .header-inner.shell {
-    width: calc(100vw - 2.5rem);
-    max-width: none;
+  :root {
+    --site-shell-gutter: calc(
+      var(--site-rail-inset) + var(--site-rail-width) + var(--site-rail-gap)
+    );
+  }
+
+  .quick-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .quick-grid[data-count="1"] {
+    grid-template-columns: minmax(0, 22rem);
+  }
+
+  .quick-grid[data-count="2"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quick-grid[data-count="4"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quick-grid[data-count="5"] {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .quick-grid[data-count="5"] > .quick-card:nth-child(-n + 3) {
+    grid-column: span 2;
+  }
+
+  .quick-grid[data-count="5"] > .quick-card:nth-child(n + 4) {
+    grid-column: span 3;
+  }
+
+  .quick-grid[data-count="6"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  /* 7: 4 + 3 без «хвоста» */
+  .quick-grid[data-count="7"] {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  .quick-grid[data-count="7"] > .quick-card:nth-child(-n + 4) {
+    grid-column: span 3;
+  }
+
+  .quick-grid[data-count="7"] > .quick-card:nth-child(n + 5) {
+    grid-column: span 4;
+  }
+
+  .quick-grid[data-count="8"] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .quick-grid[data-count="9"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .quick-grid[data-count="10"] {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .quick-grid[data-count="11"],
+  .quick-grid[data-count="12"] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .desktop-nav {
@@ -3523,7 +3542,7 @@ h2 {
     position: fixed;
     z-index: 45;
     top: 50%;
-    right: 1.25rem;
+    right: var(--site-rail-inset);
     display: grid;
     gap: 0.45rem;
     padding: 0.6rem;

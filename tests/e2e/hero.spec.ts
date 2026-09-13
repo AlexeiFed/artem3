@@ -180,6 +180,43 @@ test("does not stretch the hero past svh when the visual viewport is larger", as
   expect(dossierBottom).toBeLessThanOrEqual(844 + 1);
 });
 
+test("keeps the desktop metrics plate inside a shorter visual viewport", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+
+  await page.evaluate(() => {
+    Object.defineProperty(window, "visualViewport", {
+      configurable: true,
+      value: {
+        get height() {
+          return 760;
+        },
+        width: 1440,
+        offsetTop: 0,
+        offsetLeft: 0,
+        scale: 1,
+        addEventListener() {},
+        removeEventListener() {},
+        dispatchEvent() {
+          return true;
+        },
+      },
+    });
+    window.dispatchEvent(new Event("resize"));
+  });
+
+  await expect
+    .poll(async () =>
+      page.locator(".hero-dossier").evaluate((element) => {
+        return element.getBoundingClientRect().bottom;
+      }),
+    )
+    .toBeLessThanOrEqual(760 + 1);
+});
+
 test("shifts desktop nav toward the phone while the header CTA is hidden", async ({
   page,
 }) => {
@@ -216,52 +253,90 @@ test("hides the header CTA until the hero leaves the viewport", async ({
   await expect(cta).toHaveCSS("visibility", "visible");
 });
 
-test("keeps header CTA on the content column and docks dossier to the viewport", async ({
+test("aligns header, dossier and sections to the content column", async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/");
+  for (const viewport of [
+    { width: 1366, height: 768 },
+    { width: 1440, height: 900 },
+    { width: 1920, height: 1080 },
+  ] as const) {
+    await page.setViewportSize(viewport);
+    await page.goto("/");
 
-  const alignment = await page.evaluate(() => {
-    const dossier = document.querySelector(".hero-dossier");
-    const copy = document.querySelector(".hero-copy");
-    const headerInner = document.querySelector(".header-inner");
-    const headerCta = document.querySelector(".header-cta");
-    const column = document.querySelector(".services.section");
-    const rail = document.querySelector(".contact-rail");
-    if (!dossier || !copy || !headerInner || !headerCta || !column || !rail) {
-      return null;
-    }
+    const alignment = await page.evaluate(() => {
+      const dossier = document.querySelector(".hero-dossier");
+      const copy = document.querySelector(".hero-copy");
+      const logo = document.querySelector(".logo");
+      const headerInner = document.querySelector(".header-inner");
+      const column = document.querySelector(".quick.section, .services.section");
+      const rail = document.querySelector(".contact-rail");
+      if (!dossier || !copy || !logo || !headerInner || !column || !rail) {
+        return null;
+      }
 
-    const dossierBox = dossier.getBoundingClientRect();
-    const copyBox = copy.getBoundingClientRect();
-    const headerBox = headerInner.getBoundingClientRect();
-    const ctaBox = headerCta.getBoundingClientRect();
-    const columnBox = column.getBoundingClientRect();
-    const railBox = rail.getBoundingClientRect();
+      const dossierBox = dossier.getBoundingClientRect();
+      const copyBox = copy.getBoundingClientRect();
+      const logoBox = logo.getBoundingClientRect();
+      const headerBox = headerInner.getBoundingClientRect();
+      const columnBox = column.getBoundingClientRect();
+      const railBox = rail.getBoundingClientRect();
 
-    return {
-      copyLeft: copyBox.left,
-      ctaRight: ctaBox.right,
-      columnLeft: columnBox.left,
-      columnRight: columnBox.right,
-      dossierRight: dossierBox.right,
-      railRight: railBox.right,
-      headerRight: headerBox.right,
-      viewportWidth: window.innerWidth,
-    };
-  });
+      return {
+        copyLeft: copyBox.left,
+        logoLeft: logoBox.left,
+        columnLeft: columnBox.left,
+        columnRight: columnBox.right,
+        dossierRight: dossierBox.right,
+        railLeft: railBox.left,
+        railRight: railBox.right,
+        headerLeft: headerBox.left,
+        headerRight: headerBox.right,
+        viewportWidth: window.innerWidth,
+      };
+    });
 
-  expect(alignment).not.toBeNull();
-  expect(
-    Math.abs((alignment?.dossierRight ?? 0) - (alignment?.railRight ?? 0)),
-  ).toBeLessThan(2);
-  expect(
-    Math.abs((alignment?.headerRight ?? 0) - (alignment?.railRight ?? 0)),
-  ).toBeLessThan(2);
-  expect(alignment?.ctaRight).toBeLessThanOrEqual(
-    (alignment?.columnRight ?? 0) + 1,
-  );
+    expect(alignment, `${viewport.width}x${viewport.height}`).not.toBeNull();
+    expect(
+      Math.abs((alignment?.headerLeft ?? 0) - (alignment?.columnLeft ?? 0)),
+      `${viewport.width} header/column left`,
+    ).toBeLessThan(2);
+    expect(
+      Math.abs((alignment?.logoLeft ?? 0) - (alignment?.columnLeft ?? 0)),
+      `${viewport.width} logo/column left`,
+    ).toBeLessThan(2);
+    expect(
+      Math.abs((alignment?.copyLeft ?? 0) - (alignment?.columnLeft ?? 0)),
+      `${viewport.width} copy/column left`,
+    ).toBeLessThan(2);
+    expect(
+      Math.abs((alignment?.headerRight ?? 0) - (alignment?.columnRight ?? 0)),
+      `${viewport.width} header/column right`,
+    ).toBeLessThan(2);
+    expect(
+      Math.abs(
+        (alignment?.columnLeft ?? 0) -
+          ((alignment?.viewportWidth ?? 0) - (alignment?.columnRight ?? 0)),
+      ),
+      `${viewport.width} symmetric gutters`,
+    ).toBeLessThan(2);
+    expect(
+      (alignment?.railLeft ?? 0) - (alignment?.columnRight ?? 0),
+      `${viewport.width} rail gap from column`,
+    ).toBeGreaterThan(12);
+    expect(
+      Math.abs(
+        (alignment?.dossierRight ?? 0) - ((alignment?.viewportWidth ?? 0) - 20),
+      ),
+      `${viewport.width} dossier at rail inset`,
+    ).toBeLessThan(2);
+    expect(
+      Math.abs(
+        (alignment?.railRight ?? 0) - ((alignment?.viewportWidth ?? 0) - 20),
+      ),
+      `${viewport.width} rail at 1.25rem`,
+    ).toBeLessThan(2);
+  }
 });
 
 test("does not draw a divider through the hero portrait", async ({ page }) => {

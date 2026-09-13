@@ -10,6 +10,7 @@ import { designTokens } from "@/lib/design-tokens";
 import {
   HERO_CHROME_GUTTER_VAR,
   heroChromeGutter,
+  readHeroVisualHeight,
 } from "@/lib/hero-visual-height";
 import {
   sanitizeHeroMarkup,
@@ -142,14 +143,22 @@ export function Hero({ data }: { data: LandingData["hero"] }) {
     if (!hero) return;
 
     const applyGutter = () => {
+      const visualHeight = window.visualViewport?.height ?? window.innerHeight;
+      const layoutHeight = window.innerHeight;
       hero.style.setProperty(
         HERO_CHROME_GUTTER_VAR,
         heroChromeGutter({
           userAgent: navigator.userAgent,
-          visualHeight: window.visualViewport?.height ?? window.innerHeight,
-          layoutHeight: window.innerHeight,
+          visualHeight,
+          layoutHeight,
         }),
       );
+      if (window.matchMedia("(min-width: 48rem)").matches) {
+        hero.style.setProperty(
+          "--hero-visual-height",
+          `${readHeroVisualHeight(visualHeight, layoutHeight)}px`,
+        );
+      }
     };
 
     applyGutter();
