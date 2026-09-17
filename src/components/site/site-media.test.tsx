@@ -2,13 +2,13 @@
 
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ModalProvider } from "@/components/forms/ModalProvider";
 import { getPreviewLandingData } from "@/modules/content/preview-landing-data";
 
-import { Contacts, FloatingActions } from "./Contacts";
+import { Contacts, FAB_ICON_CYCLE_MS, FloatingActions } from "./Contacts";
 import { Faq } from "./Faq";
 
 let observerCallback: IntersectionObserverCallback | null = null;
@@ -38,6 +38,22 @@ class IntersectionObserverStub implements IntersectionObserver {
 }
 
 vi.stubGlobal("IntersectionObserver", IntersectionObserverStub);
+vi.stubGlobal(
+  "matchMedia",
+  vi.fn(
+    (query: string): MediaQueryList =>
+      ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }) as MediaQueryList,
+  ),
+);
 
 afterEach(() => {
   observerCallback = null;
@@ -125,6 +141,45 @@ describe("contact and FAQ presentation", () => {
     });
 
     hero.remove();
+  });
+
+  it("cycles the floating contact icon through messengers", async () => {
+    const setIntervalSpy = vi.spyOn(window, "setInterval");
+    try {
+      const { contacts } = getPreviewLandingData();
+      render(
+        <ModalProvider metrikaId={undefined}>
+          <FloatingActions contacts={contacts} />
+        </ModalProvider>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId("phone-fab-icon")).toBeInTheDocument();
+      });
+
+      const cycleCall = setIntervalSpy.mock.calls.find(
+        (call) => call[1] === FAB_ICON_CYCLE_MS,
+      );
+      const tick = cycleCall?.[0];
+      expect(tick).toEqual(expect.any(Function));
+
+      act(() => {
+        (tick as () => void)();
+      });
+      expect(screen.getByTestId("telegram-fab-icon")).toBeInTheDocument();
+
+      act(() => {
+        (tick as () => void)();
+      });
+      expect(screen.getByTestId("whatsapp-fab-icon")).toBeInTheDocument();
+
+      act(() => {
+        (tick as () => void)();
+      });
+      expect(screen.getByTestId("max-fab-icon")).toBeInTheDocument();
+    } finally {
+      setIntervalSpy.mockRestore();
+    }
   });
 
   it("renders the personal FAQ invite below the accordion", () => {

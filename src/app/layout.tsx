@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, Inter } from "next/font/google";
 import type { CSSProperties, ReactNode } from "react";
 
 import { ConsentGatedMetrika } from "@/components/analytics/ConsentGatedMetrika";
@@ -15,21 +14,8 @@ import { getPublicEnv } from "@/lib/env/public";
 import { getPublicAnalytics } from "@/modules/content/public-analytics";
 import { getPublicSeo } from "@/modules/content/public-seo";
 import { buildSiteMetadata } from "@/modules/content/site-metadata";
+import "./fonts";
 import "./globals.css";
-
-const cormorant = Cormorant_Garamond({
-  subsets: ["cyrillic", "latin"],
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
-  variable: "--font-cormorant",
-  display: "swap",
-});
-
-const inter = Inter({
-  subsets: ["cyrillic", "latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
 
 type RootLayoutProps = Readonly<{
   children: ReactNode;
@@ -67,11 +53,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
   const metrikaId = analytics.metrikaId;
 
   return (
-    <html
-      lang="ru"
-      className={`${cormorant.variable} ${inter.variable}`}
-      style={rootStyle}
-    >
+    <html lang="ru" style={rootStyle}>
       <body>
         {metrikaId ? <ConsentGatedMetrika counterId={metrikaId} /> : null}
         <LenisProvider>

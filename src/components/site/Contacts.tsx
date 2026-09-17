@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/react";
+import { AnimatePresence, motion, useMotionValueEvent, useReducedMotion, useScroll } from "motion/react";
 
 import { useModal } from "@/components/forms/ModalProvider";
 import { useSmoothScroll } from "@/components/motion/LenisProvider";
+import { designTokens } from "@/lib/design-tokens";
 import type { LandingData } from "@/modules/content/content.types";
 import {
   COOKIE_POLICY_TITLE,
@@ -139,13 +140,54 @@ type ContactChannel = {
   icon: ReactNode;
 };
 
+const FAB_CYCLE_KEYS = ["phone", "telegram", "whatsapp", "max"] as const;
+export const FAB_ICON_CYCLE_MS = 2800;
+
+function fabCycleKey(index: number): (typeof FAB_CYCLE_KEYS)[number] {
+  return FAB_CYCLE_KEYS[index % FAB_CYCLE_KEYS.length] ?? "phone";
+}
+
+function FabCycleGlyph({
+  kind,
+}: {
+  kind: (typeof FAB_CYCLE_KEYS)[number];
+}) {
+  if (kind === "telegram") {
+    return (
+      <span data-testid="telegram-fab-icon">
+        <TelegramIcon className="fab-phone-icon" />
+      </span>
+    );
+  }
+  if (kind === "whatsapp") {
+    return (
+      <span data-testid="whatsapp-fab-icon">
+        <WhatsAppIcon className="fab-phone-icon" />
+      </span>
+    );
+  }
+  if (kind === "max") {
+    return (
+      <span data-testid="max-fab-icon">
+        <MaxIcon className="fab-phone-icon" />
+      </span>
+    );
+  }
+  return <PhoneIcon className="fab-phone-icon" testId="phone-fab-icon" />;
+}
+
 export function FloatingActions({ contacts }: { contacts: LandingData["contacts"] }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [showDock, setShowDock] = useState(false);
+  const [showDock, setShowDock] = useState(
+    () => typeof document !== "undefined" && !document.getElementById("main"),
+  );
   const [overContacts, setOverContacts] = useState(false);
+  const [iconIndex, setIconIndex] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
   const { scrollTo } = useSmoothScroll();
+  const reducedMotion = useReducedMotion() === true;
+  const { durationBase, easeCinematic } = designTokens.motion;
 
   const channels: ContactChannel[] = [
     {
@@ -190,7 +232,6 @@ export function FloatingActions({ contacts }: { contacts: LandingData["contacts"
   useEffect(() => {
     const hero = document.getElementById("main");
     const section = document.getElementById("contacts");
-    if (!hero) setShowDock(true);
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -235,6 +276,17 @@ export function FloatingActions({ contacts }: { contacts: LandingData["contacts"
       document.removeEventListener("touchstart", onPointerDown);
     };
   }, [menuOpen]);
+
+  useEffect(() => {
+    if (!showDock || menuOpen) return;
+    const reduced =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
+    if (reduced) return;
+    const timer = window.setInterval(() => {
+      setIconIndex((current) => current + 1);
+    }, FAB_ICON_CYCLE_MS);
+    return () => window.clearInterval(timer);
+  }, [showDock, menuOpen]);
 
   return (
     <>
@@ -305,7 +357,27 @@ export function FloatingActions({ contacts }: { contacts: LandingData["contacts"
               {menuOpen ? (
                 <CloseIcon className="fab-close-icon" />
               ) : (
-                <PhoneIcon className="fab-phone-icon" testId="phone-fab-icon" />
+                <span className="fab-icon-slot">
+                  <AnimatePresence initial={false}>
+                    <motion.span
+                      key={fabCycleKey(iconIndex)}
+                      className="fab-icon-swap"
+                      initial={
+                        reducedMotion
+                          ? false
+                          : { opacity: 0, scale: 0.55, rotate: -28, y: 8 }
+                      }
+                      animate={{ opacity: 1, scale: 1, rotate: 0, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.55, rotate: 28, y: -8 }}
+                      transition={{
+                        duration: durationBase * 0.5,
+                        ease: easeCinematic,
+                      }}
+                    >
+                      <FabCycleGlyph kind={fabCycleKey(iconIndex)} />
+                    </motion.span>
+                  </AnimatePresence>
+                </span>
               )}
             </motion.button>
           ) : null}

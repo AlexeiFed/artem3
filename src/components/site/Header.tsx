@@ -26,6 +26,11 @@ function ChevronIcon() {
   );
 }
 
+function cityFromAddress(address: string): string {
+  const [city] = address.split(",");
+  return city?.trim() ?? "";
+}
+
 export function Header({
   data,
   address,
@@ -47,6 +52,7 @@ export function Header({
   const [overHero, setOverHero] = useState(true);
   const firstLink = useRef<HTMLAnchorElement>(null);
   const { durationBase, easeCinematic } = designTokens.motion;
+  const city = cityFromAddress(address);
 
   useEffect(() => {
     const hero = document.getElementById("main");
@@ -178,6 +184,7 @@ export function Header({
         <a className="logo" href="#main" aria-label={data.logo.ariaLabel}>
           {`${data.logo.text} `}
           <small>Семейный юрист</small>
+          {city ? <span className="logo-city">{` ${city}`}</span> : null}
         </a>
         <p className="header-meta">
           <span>{`${address} `}</span>
@@ -247,6 +254,22 @@ export function Header({
                   renderMobileNavItem(item, index),
                 )}
               </nav>
+              <a
+                className="mobile-menu-phone"
+                href={phone.href}
+                aria-label={`Позвонить: ${phone.display}`}
+                onClick={() => setMenuOpen(false)}
+              >
+                <span className="mobile-menu-phone-icon" aria-hidden="true">
+                  <PhoneIcon />
+                </span>
+                <span className="mobile-menu-phone-copy">
+                  <span className="mobile-menu-phone-hint">Позвонить</span>
+                  <span className="mobile-menu-phone-number">
+                    {phone.display}
+                  </span>
+                </span>
+              </a>
               <div className="mobile-menu-footer">
                 <p className="mobile-menu-meta">
                   <span>{`${address} `}</span>

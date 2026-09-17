@@ -23,6 +23,8 @@
 }
 
 :root {
+  --font-cormorant: "Cormorant Garamond";
+  --font-inter: "Inter Variable";
   --site-header-offset: 5.5rem;
   --site-shell-max: 96rem;
   --site-shell-gutter: 2rem;
@@ -300,6 +302,8 @@ h2 {
 .logo {
   display: grid;
   margin-right: auto;
+  align-content: center;
+  gap: 0.1rem;
   font-family: var(--font-cormorant), serif;
   font-size: 1.35rem;
   font-weight: 700;
@@ -312,6 +316,21 @@ h2 {
   font-weight: 500;
   letter-spacing: 0.17em;
   text-transform: uppercase;
+}
+
+.logo-city {
+  width: max-content;
+  margin-top: 0.42rem;
+  padding-top: 0.36rem;
+  border-top: 1px solid
+    color-mix(in srgb, var(--token-color-background) 32%, transparent);
+  font-family: var(--font-inter), sans-serif;
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-transform: none;
+  opacity: 0.72;
 }
 
 /* Только десктоп: на мобилке адрес/часы — в side sheet */
@@ -449,7 +468,7 @@ h2 {
 
 .mobile-menu nav {
   display: grid;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   align-content: start;
   gap: 0;
   width: 100%;
@@ -501,6 +520,63 @@ h2 {
   gap: 1.15rem;
   margin-top: auto;
   padding-top: 0.75rem;
+}
+
+.mobile-menu-phone {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-top: 0.35rem;
+  border: 1px solid
+    color-mix(in srgb, var(--token-color-background) 32%, transparent);
+  border-radius: var(--token-radius-card);
+  padding: 0.9rem 1rem;
+  color: var(--token-color-background);
+}
+
+.mobile-menu-phone:hover,
+.mobile-menu-phone:focus-visible {
+  border-color: var(--token-color-background);
+  background: color-mix(in srgb, var(--token-color-background) 10%, transparent);
+}
+
+.mobile-menu-phone-icon {
+  display: grid;
+  width: 2.85rem;
+  height: 2.85rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--token-color-background) 14%, transparent);
+}
+
+.mobile-menu-phone-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.mobile-menu-phone-copy {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.mobile-menu-phone-hint {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+.mobile-menu-phone-number {
+  font-family: var(--font-cormorant), serif;
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
 }
 
 .mobile-menu-meta {
@@ -2499,6 +2575,24 @@ h2 {
   display: block;
 }
 
+.fab-icon-slot {
+  display: grid;
+  width: 1.4rem;
+  height: 1.4rem;
+  place-items: center;
+}
+
+.fab-icon-swap {
+  display: grid;
+  grid-area: 1 / 1;
+  place-items: center;
+}
+
+.fab-icon-swap svg {
+  width: 22px;
+  height: 22px;
+}
+
 .contact-fab:not(.is-open)::before {
   position: absolute;
   inset: -0.5rem;
@@ -3521,6 +3615,10 @@ h2 {
   }
 
   .menu-toggle {
+    display: none;
+  }
+
+  .logo-city {
     display: none;
   }
 

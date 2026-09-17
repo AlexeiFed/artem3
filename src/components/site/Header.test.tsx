@@ -49,13 +49,21 @@ describe("Header", () => {
     renderHeader();
 
     expect(document.querySelector(".header-inner .logo")?.textContent).toBe(
-      "Артём Сысуев Семейный юрист",
+      "Артём Сысуев Семейный юрист г. Хабаровск",
     );
     expect(
       document.querySelector(".header-inner .header-meta")?.textContent,
     ).toBe(
       "г. Хабаровск, ул. Ленина, 22, офис 12 Пн–Пт, 09:00–18:00 (по предварительной записи)",
     );
+  });
+
+  it("shows the city under the mobile logo", () => {
+    renderHeader();
+
+    const city = document.querySelector(".header-inner .logo-city");
+    expect(city).toBeTruthy();
+    expect(city).toHaveTextContent("г. Хабаровск");
   });
 
   it("shows address, work hours and note inside the mobile menu sheet", () => {
@@ -69,6 +77,24 @@ describe("Header", () => {
     expect(meta).toHaveTextContent("г. Хабаровск, ул. Ленина, 22, офис 12");
     expect(meta).toHaveTextContent("Пн–Пт, 09:00–18:00");
     expect(meta).toHaveTextContent("(по предварительной записи)");
+  });
+
+  it("puts a large tap-to-call phone under the mobile menu sections", () => {
+    const { data } = renderHeader();
+
+    fireEvent.click(screen.getByRole("button", { name: "Открыть меню" }));
+
+    const phoneLink = document.querySelector<HTMLAnchorElement>(
+      ".mobile-menu-phone",
+    );
+    expect(phoneLink).toBeTruthy();
+    expect(phoneLink).toHaveAttribute("href", data.contacts.phone.href);
+    expect(phoneLink).toHaveTextContent("Позвонить");
+    expect(phoneLink).toHaveTextContent(data.contacts.phone.display);
+    expect(phoneLink).toHaveAttribute(
+      "aria-label",
+      `Позвонить: ${data.contacts.phone.display}`,
+    );
   });
 
   it("hides hours note in the menu when empty", () => {
