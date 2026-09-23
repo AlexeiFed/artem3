@@ -151,6 +151,21 @@ describe("ServicesSection", () => {
     ).toBeNull();
   });
 
+  it("exposes the practice block for a view goal", () => {
+    const data = getPreviewLandingData();
+
+    render(
+      <ModalProvider metrikaId={undefined}>
+        <ServicesSection services={data.services} intro={data.servicesIntro} />
+      </ModalProvider>,
+    );
+
+    expect(document.querySelector("section.services")).toHaveAttribute(
+      "id",
+      "practice",
+    );
+  });
+
   it("marks the trust note with an inline notice cue", () => {
     const data = getPreviewLandingData();
 

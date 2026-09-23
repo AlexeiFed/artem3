@@ -17,6 +17,15 @@ describe("buildContentSecurityPolicy", () => {
     expect(policy).toContain("https://hdrc.yandex.net");
   });
 
+  it("allows connect to the yandex.ru apex, which *.yandex.ru does not cover", () => {
+    const policy = buildContentSecurityPolicy("https://artemsysuev.ru");
+    const connectSrc = policy
+      .split("; ")
+      .find((directive) => directive.startsWith("connect-src "));
+
+    expect(connectSrc?.split(" ")).toContain("https://yandex.ru");
+  });
+
   it("skips upgrade-insecure-requests on http so local assets are not forced to https", () => {
     const policy = buildContentSecurityPolicy("http://localhost:3000");
 

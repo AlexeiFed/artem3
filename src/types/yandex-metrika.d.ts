@@ -5,7 +5,7 @@ declare global {
     ym?: (
       counterId: number,
       method: "reachGoal",
-      goal: "lead_success",
+      goal: "lead_success" | "practice_view" | "contacts_view",
     ) => void;
   }
 }

@@ -74,7 +74,7 @@ export function ServicesSection({
   }, [services]);
 
   return (
-    <section className="services section shell">
+    <section id="practice" className="services section shell">
       <p
         className="eyebrow"
         dangerouslySetInnerHTML={{ __html: sanitizeHeroMarkup(intro.eyebrow) }}

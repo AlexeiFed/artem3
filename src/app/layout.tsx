@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { CSSProperties, ReactNode } from "react";
 
 import { ConsentGatedMetrika } from "@/components/analytics/ConsentGatedMetrika";
+import { MetrikaSectionViewGoals } from "@/components/analytics/MetrikaSectionViewGoals";
 import { CookieBanner } from "@/components/CookieBanner";
 import { ModalProvider } from "@/components/forms/ModalProvider";
 import { LenisProvider } from "@/components/motion/LenisProvider";
@@ -55,7 +56,12 @@ export default async function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="ru" style={rootStyle}>
       <body>
-        {metrikaId ? <ConsentGatedMetrika counterId={metrikaId} /> : null}
+        {metrikaId ? (
+          <>
+            <ConsentGatedMetrika counterId={metrikaId} />
+            <MetrikaSectionViewGoals counterId={metrikaId} />
+          </>
+        ) : null}
         <LenisProvider>
           <ModalProvider metrikaId={metrikaId}>
             {children}
