@@ -17,6 +17,36 @@ describe("buildContentSecurityPolicy", () => {
     expect(policy).toContain("https://hdrc.yandex.net");
   });
 
+  it("allows Metrika webvisor on mc.yandex.com, which *.yandex.ru does not cover", () => {
+    const policy = buildContentSecurityPolicy("https://artemsysuev.ru");
+    const directive = (name: string) =>
+      policy
+        .split("; ")
+        .find((item) => item.startsWith(`${name} `))
+        ?.split(" ");
+
+    const connectSrc = directive("connect-src");
+    const frameSrc = directive("frame-src");
+
+    expect(connectSrc).toEqual(
+      expect.arrayContaining([
+        "https://mc.yandex.com",
+        "wss://mc.yandex.com",
+        "https://mc.webvisor.com",
+        "https://mc.webvisor.org",
+        "wss://mc.webvisor.com",
+        "wss://mc.webvisor.org",
+      ]),
+    );
+    expect(frameSrc).toEqual(
+      expect.arrayContaining([
+        "https://mc.yandex.com",
+        "https://mc.webvisor.com",
+        "https://mc.webvisor.org",
+      ]),
+    );
+  });
+
   it("allows connect to the yandex.ru apex, which *.yandex.ru does not cover", () => {
     const policy = buildContentSecurityPolicy("https://artemsysuev.ru");
     const connectSrc = policy
