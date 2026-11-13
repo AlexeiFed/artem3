@@ -18,9 +18,14 @@ import {
 } from "@/modules/leads/lead-form.validation";
 import { PERSONAL_DATA_PROCESSING_POLICY_TITLE_DATIVE } from "@/modules/content/legal-copy";
 import { PERSONAL_DATA_CONSENT_VERSION } from "@/modules/leads/personal-data-consent";
+import {
+  type CanonicalLegalService,
+  pushLegalServiceLeadSuccess,
+} from "@/modules/leads/legal-service-lead";
 
 interface ModalFormProps {
   service: string | undefined;
+  selectedLegalService: CanonicalLegalService | null;
   metrikaId: number | undefined;
   onClose(): void;
 }
@@ -41,6 +46,7 @@ const HIDDEN_SERVICE_BADGES = new Set([
 
 export function ModalForm({
   service,
+  selectedLegalService,
   metrikaId,
   onClose,
 }: ModalFormProps) {
@@ -48,6 +54,7 @@ export function ModalForm({
   const consentHeadingId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
+  const submitLockRef = useRef(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("+7");
   const [situation, setSituation] = useState("");
@@ -156,7 +163,7 @@ export function ModalForm({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!isDataAgreed) return;
+    if (!isDataAgreed || submitLockRef.current) return;
 
     const nameError = validatePersonName(name);
     const phoneError = validateRussianPhoneInput(phone);
@@ -168,6 +175,7 @@ export function ModalForm({
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
+    submitLockRef.current = true;
     setStatus("sending");
     setSubmitError(null);
     try {
@@ -193,6 +201,7 @@ export function ModalForm({
           ...(fields.name?.[0] ? { name: fields.name[0] } : {}),
           ...(fields.phone?.[0] ? { phone: fields.phone[0] } : {}),
         });
+        submitLockRef.current = false;
         setStatus("idle");
         return;
       }
@@ -203,15 +212,18 @@ export function ModalForm({
         setSubmitError(
           body.error?.message ?? "Слишком много заявок. Попробуйте позже.",
         );
+        submitLockRef.current = false;
         setStatus("error");
         return;
       }
       if (response.status !== 201) throw new Error("Lead request failed");
       setStatus("success");
+      pushLegalServiceLeadSuccess(selectedLegalService);
       if (metrikaId && window.ym) {
         window.ym(metrikaId, "reachGoal", "lead_success");
       }
     } catch {
+      submitLockRef.current = false;
       setStatus("error");
     }
   }

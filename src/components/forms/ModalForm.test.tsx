@@ -11,12 +11,17 @@ import {
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import {
+  LEGAL_SERVICE_LEAD_SUCCESS_EVENT,
+  LEGAL_SERVICE_STORAGE_KEY,
+} from "@/modules/leads/legal-service-lead";
+
 import { ModalProvider, useModal } from "./ModalProvider";
 
-function Trigger() {
+function Trigger({ service = "Раздел имущества" }: { service?: string }) {
   const { openModal } = useModal();
   return (
-    <button type="button" onClick={() => openModal("Раздел имущества")}>
+    <button type="button" onClick={() => openModal(service)}>
       Открыть форму
     </button>
   );
@@ -45,6 +50,8 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   delete window.ym;
+  delete window.dataLayer;
+  sessionStorage.clear();
 });
 
 describe("global lead modal", () => {
@@ -148,6 +155,161 @@ describe("global lead modal", () => {
     await waitFor(() => {
       expect(window.ym).toHaveBeenCalledWith(123, "reachGoal", "lead_success");
     });
+    expect(window.dataLayer).toEqual([
+      {
+        event: LEGAL_SERVICE_LEAD_SUCCESS_EVENT,
+        legal_service: "Раздел имущества",
+      },
+    ]);
+    expect(sessionStorage.getItem(LEGAL_SERVICE_STORAGE_KEY)).toBe(
+      "Раздел имущества",
+    );
+  });
+
+  it("pushes legal_service null for general forms and clears prior service", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), { status: 201 }),
+    );
+
+    function DualTrigger() {
+      const { openModal } = useModal();
+      return (
+        <>
+          <button type="button" onClick={() => openModal("Алименты")}>
+            Услуга
+          </button>
+          <button type="button" onClick={() => openModal("Шапка сайта")}>
+            Общая
+          </button>
+        </>
+      );
+    }
+
+    render(
+      <ModalProvider metrikaId={undefined}>
+        <DualTrigger />
+      </ModalProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Услуга" }));
+    expect(sessionStorage.getItem(LEGAL_SERVICE_STORAGE_KEY)).toBe("Алименты");
+    fireEvent.click(screen.getByRole("button", { name: "Закрыть форму" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Общая" }));
+    expect(sessionStorage.getItem(LEGAL_SERVICE_STORAGE_KEY)).toBeNull();
+
+    fireEvent.change(screen.getByLabelText("Ваше имя"), {
+      target: { value: "Алексей" },
+    });
+    fireEvent.change(screen.getByLabelText("Телефон"), {
+      target: { value: "9991234567" },
+    });
+    checkConsent();
+    fireEvent.click(screen.getByRole("button", { name: "Получить план действий" }));
+
+    await screen.findByRole("heading", {
+      name: /Спасибо за обращение!\s*Заявка принята\./,
+    });
+    expect(window.dataLayer).toEqual([
+      {
+        event: LEGAL_SERVICE_LEAD_SUCCESS_EVENT,
+        legal_service: null,
+      },
+    ]);
+  });
+
+  it("maps non-top-5 services to null legal_service", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), { status: 201 }),
+    );
+
+    render(
+      <ModalProvider metrikaId={undefined}>
+        <Trigger service="Земельные споры" />
+      </ModalProvider>,
+    );
+
+    openAndFill();
+    checkConsent();
+    fireEvent.click(screen.getByRole("button", { name: "Получить план действий" }));
+
+    await screen.findByRole("heading", {
+      name: /Спасибо за обращение!\s*Заявка принята\./,
+    });
+    expect(window.dataLayer).toEqual([
+      {
+        event: LEGAL_SERVICE_LEAD_SUCCESS_EVENT,
+        legal_service: null,
+      },
+    ]);
+  });
+
+  it("does not push dataLayer on failed submit", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(null, { status: 500 }),
+    );
+
+    render(
+      <ModalProvider metrikaId={undefined}>
+        <Trigger />
+      </ModalProvider>,
+    );
+
+    openAndFill();
+    checkConsent();
+    fireEvent.click(screen.getByRole("button", { name: "Получить план действий" }));
+
+    expect(
+      await screen.findByText(/Не удалось отправить заявку/),
+    ).toBeVisible();
+    expect(window.dataLayer).toBeUndefined();
+  });
+
+  it("sends only one lead and one dataLayer event on double submit", async () => {
+    let resolveFetch: ((value: Response) => void) | undefined;
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveFetch = resolve;
+        }),
+    );
+
+    render(
+      <ModalProvider metrikaId={undefined}>
+        <Trigger />
+      </ModalProvider>,
+    );
+
+    openAndFill();
+    checkConsent();
+    const submit = screen.getByRole("button", { name: "Получить план действий" });
+    fireEvent.click(submit);
+    fireEvent.click(submit);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    resolveFetch?.(new Response(JSON.stringify({ ok: true }), { status: 201 }));
+
+    await screen.findByRole("heading", {
+      name: /Спасибо за обращение!\s*Заявка принята\./,
+    });
+    expect(window.dataLayer).toHaveLength(1);
+  });
+
+  it("still opens when sessionStorage throws SecurityError", () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("blocked", "SecurityError");
+    });
+
+    render(
+      <ModalProvider metrikaId={undefined}>
+        <Trigger />
+      </ModalProvider>,
+    );
+
+    expect(() =>
+      fireEvent.click(screen.getByRole("button", { name: "Открыть форму" })),
+    ).not.toThrow();
+    expect(screen.getByRole("dialog")).toBeVisible();
   });
 
   it("labels the situation field without the redundant optional hint", () => {

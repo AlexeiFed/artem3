@@ -7,5 +7,6 @@ declare global {
       method: "reachGoal",
       goal: "lead_success" | "practice_view" | "contacts_view",
     ) => void;
+    dataLayer?: Array<Record<string, unknown>>;
   }
 }

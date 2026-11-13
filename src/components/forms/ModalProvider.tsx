@@ -9,6 +9,12 @@ import {
   useState,
 } from "react";
 
+import {
+  type CanonicalLegalService,
+  rememberSelectedLegalService,
+  toCanonicalLegalService,
+} from "@/modules/leads/legal-service-lead";
+
 import { ModalForm } from "./ModalForm";
 
 interface ModalContextValue {
@@ -28,9 +34,14 @@ export function ModalProvider({
   metrikaId,
 }: ModalProviderProps) {
   const [service, setService] = useState<string>();
+  const [selectedLegalService, setSelectedLegalService] =
+    useState<CanonicalLegalService | null>(null);
   const [open, setOpen] = useState(false);
   const openModal = useCallback((nextService?: string) => {
+    const legalService = toCanonicalLegalService(nextService);
     setService(nextService);
+    setSelectedLegalService(legalService);
+    rememberSelectedLegalService(legalService);
     setOpen(true);
   }, []);
   const closeModal = useCallback(() => setOpen(false), []);
@@ -45,6 +56,7 @@ export function ModalProvider({
       {open ? (
         <ModalForm
           service={service}
+          selectedLegalService={selectedLegalService}
           metrikaId={metrikaId}
           onClose={closeModal}
         />
